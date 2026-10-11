@@ -45,6 +45,8 @@ const (
 const (
 	flagUnsigned      = 32
 	flagAutoIncrement = 512
+	flagEnum          = 256
+	flagSet           = 2048
 	binaryCharset     = 63
 	maxInt            = 2147483647
 )
@@ -313,4 +315,103 @@ func paramJavaType(dataType, dtd string) string {
 		return "byte[]"
 	}
 	return "java.lang.Object"
+}
+
+// rawName — тип словами драйвера, как DatabaseTypeName у go-sql-driver/mysql.
+func (f field) rawName() string {
+	unsigned := ""
+	if f.unsigned() {
+		unsigned = "UNSIGNED "
+	}
+	switch f.typ {
+	case tTiny:
+		return unsigned + "TINYINT"
+	case tShort:
+		return unsigned + "SMALLINT"
+	case tInt24:
+		return unsigned + "MEDIUMINT"
+	case tLong:
+		return unsigned + "INT"
+	case tLongLong:
+		return unsigned + "BIGINT"
+	case tDecimal, tNewDecimal:
+		return "DECIMAL"
+	case tFloat:
+		return "FLOAT"
+	case tDouble:
+		return "DOUBLE"
+	case tNull:
+		return "NULL"
+	case tTimestamp, tTimestamp2:
+		return "TIMESTAMP"
+	case tDate, tNewDate:
+		return "DATE"
+	case tTime, tTime2:
+		return "TIME"
+	case tDateTime, tDateTime2:
+		return "DATETIME"
+	case tYear:
+		return "YEAR"
+	case tBit:
+		return "BIT"
+	case tJSON:
+		return "JSON"
+	case tGeometry:
+		return "GEOMETRY"
+	case tEnum:
+		return "ENUM"
+	case tSet:
+		return "SET"
+	case tVarChar, tVarString:
+		if f.flags&flagEnum != 0 {
+			return "ENUM"
+		}
+		if f.flags&flagSet != 0 {
+			return "SET"
+		}
+		if f.binary() {
+			return "VARBINARY"
+		}
+		return "VARCHAR"
+	case tString:
+		if f.flags&flagEnum != 0 {
+			return "ENUM"
+		}
+		if f.flags&flagSet != 0 {
+			return "SET"
+		}
+		if f.binary() {
+			return "BINARY"
+		}
+		return "CHAR"
+	case tTinyBlob:
+		if f.binary() {
+			return "TINYBLOB"
+		}
+		return "TINYTEXT"
+	case tMediumBlob:
+		if f.binary() {
+			return "MEDIUMBLOB"
+		}
+		return "MEDIUMTEXT"
+	case tLongBlob:
+		if f.binary() {
+			return "LONGBLOB"
+		}
+		return "LONGTEXT"
+	case tBlob:
+		if f.binary() {
+			return "BLOB"
+		}
+		return "TEXT"
+	}
+	return ""
+}
+
+// paramRawName — тип параметра процедуры словами драйвера.
+func paramRawName(dataType, dtd string) string {
+	if strings.Contains(dtd, "unsigned") {
+		return "UNSIGNED " + strings.ToUpper(dataType)
+	}
+	return strings.ToUpper(dataType)
 }

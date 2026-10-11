@@ -3,9 +3,6 @@
 // Init ничего не перезаписывает: если хоть один из его файлов уже есть, это ошибка,
 // и не создаётся ничего (запуск по ошибке в готовом проекте безвреден). XSD принадлежат
 // версии sdm, их обновляет RefreshXSD при каждой генерации.
-//
-// data_store_no_orm.go.txt — копия src/resources/data_store_no_orm.go из sdm-plugins;
-// при правке шаблона там — обновить и здесь.
 package skeleton
 
 import (
@@ -19,6 +16,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/panedrone/go-sdm/datastore"
 )
 
 //go:embed files
@@ -28,6 +27,7 @@ type Options struct {
 	ProjectDir string // папка go.mod
 	SdmDir     string // относительно ProjectDir, с '/'
 	DaoDir     string // относительно ProjectDir, с '/'; модели — в DaoDir/models
+	ORM        string // data store: datastore.Variants, "" — первый
 }
 
 var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
@@ -53,29 +53,38 @@ func Init(o Options) ([]string, error) {
 	if !token.IsIdentifier(pkg) {
 		return nil, fmt.Errorf("the last element of the DAO folder must be a Go package name: %q", o.DaoDir)
 	}
+	orm := o.ORM
+	if orm == "" {
+		orm = datastore.Variants[0]
+	}
+	ds, err := datastore.Files(orm, pkg)
+	if err != nil {
+		return nil, err
+	}
+	assign := "0"
+	if orm == "sqlx" {
+		assign = "2" // ptr to DTO or ptr to slice of DTO-s
+	}
 	vars := strings.NewReplacer(
 		"{{module}}", module,
 		"{{sql}}", path.Join(o.SdmDir, "sql"),
 		"{{dto}}", path.Join(o.DaoDir, "models"),
 		"{{dao}}", o.DaoDir,
-		"{{package}}", pkg,
+		"{{assign}}", assign,
 	)
 	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))
 	daoDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.DaoDir))
-	type step struct{ src, dst string }
+	// src — файл скелета, text — готовый текст (data store)
+	type step struct{ src, text, dst string }
 	steps := []step{
-		{"sdm.xml", filepath.Join(sdmDir, "sdm.xml")},
-		{"settings.xml", filepath.Join(sdmDir, "settings.xml")},
-		{"data_store_no_orm.go.txt", filepath.Join(daoDir, "data_store_no_orm.go")},
-		{"data_store_no_orm_ex.go.txt", filepath.Join(daoDir, "data_store_no_orm_ex.go")},
-		// sqlx и gorm — под "//go:build ignore": переключение — перенос этой строки
-		{"data_store_sqlx.go.txt", filepath.Join(daoDir, "data_store_sqlx.go")},
-		{"data_store_sqlx_ex.go.txt", filepath.Join(daoDir, "data_store_sqlx_ex.go")},
-		{"data_store_gorm.go.txt", filepath.Join(daoDir, "data_store_gorm.go")},
-		{"data_store_gorm_ex.go.txt", filepath.Join(daoDir, "data_store_gorm_ex.go")},
+		{src: "sdm.xml", dst: filepath.Join(sdmDir, "sdm.xml")},
+		{src: "settings.xml", dst: filepath.Join(sdmDir, "settings.xml")},
+	}
+	for _, name := range []string{"data_store_" + orm + ".go", "data_store_" + orm + "_ex.go"} {
+		steps = append(steps, step{text: ds[name], dst: filepath.Join(daoDir, name)})
 	}
 	for _, x := range xsds {
-		steps = append(steps, step{x, filepath.Join(sdmDir, x)})
+		steps = append(steps, step{src: x, dst: filepath.Join(sdmDir, x)})
 	}
 	// сначала проверка всего: либо создаётся всё, либо ничего
 	var existing []string
@@ -96,11 +105,15 @@ func Init(o Options) ([]string, error) {
 	}
 	var written []string
 	for _, s := range steps {
-		data, err := files.ReadFile("files/" + s.src)
-		if err != nil {
-			return written, err
+		text := s.text
+		if s.src != "" {
+			data, err := files.ReadFile("files/" + s.src)
+			if err != nil {
+				return written, err
+			}
+			text = vars.Replace(string(data))
 		}
-		if err := os.WriteFile(s.dst, []byte(vars.Replace(string(data))), 0o644); err != nil {
+		if err := os.WriteFile(s.dst, []byte(text), 0o644); err != nil {
 			return written, err
 		}
 		written = append(written, s.dst)

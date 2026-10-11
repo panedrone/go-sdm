@@ -1,4 +1,8 @@
-package {{package}}
+//go:build ignore
+
+// Your part of the data store for database/sql (no ORM): the connection. See data_store_no_orm.go.
+
+package dbal
 
 import (
 	"context"

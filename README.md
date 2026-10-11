@@ -52,12 +52,17 @@ sdm
 The first run finds no configuration and creates it:
 
 ```
-go-sdm/sdm.xml                classes to generate
-go-sdm/settings.xml           folders, database URL, type map
-go-sdm/*.xsd                  completion and validation in the IDE
-dbal/data_store_no_orm.go     the data store used by the generated code (database/sql + pgx)
-dbal/data_store_no_orm_ex.go  your part: connection
+go-sdm/sdm.xml                         classes to generate
+go-sdm/settings.xml                    folders, database URL, type map
+go-sdm/*.xsd                           completion and validation in the IDE
+internal/dbal/data_store_no_orm.go     the data store used by the generated code (database/sql + pgx)
+internal/dbal/data_store_no_orm_ex.go  your part: connection
 ```
+
+The generated code goes under `internal/`: the DAO and the models are the data layer of your
+application, not an API for other modules, and the Go compiler keeps them so. Deeper folders work
+the same way, for example `internal/noorm/dbal` (`sdm init -dao internal/noorm/dbal` or
+`scope` in `settings.xml`).
 
 Describe classes in `go-sdm/sdm.xml`, set `<jdbc url>` in `go-sdm/settings.xml` and run `sdm`
 again: from now on it generates models and DAO. It also keeps the XSD in step with the
@@ -70,12 +75,14 @@ version of `sdm`.
 | `sdm generate` | generates into the folders of `settings.xml`, writes only what changed |
 | `sdm check` | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate |
 
-Options: `-dir <folder>` instead of `go-sdm`, `-dao <folder>` (for `init`) instead of `dbal`.
+Options: `-dir <folder>` instead of `go-sdm`; for `init`, `-dao <folder>` instead of `internal/dbal`
+and `-orm sqlx` or `-orm gorm` instead of database/sql.
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
 
 ## database/sql, sqlx or gorm
 
-`sdm init` prepares all three. A class is generated for one of them by its name in `sdm.xml`:
+`sdm init` prepares the type map for all three. A class is generated for one of them by its
+name in `sdm.xml`:
 
 ```xml
 <dto-class name="Task" ref="tasks"/>       <!-- database/sql -->
@@ -83,32 +90,44 @@ Options: `-dir <folder>` instead of `go-sdm`, `-dao <folder>` (for `init`) inste
 <dto-class name="gorm-Task" ref="tasks"/>  <!-- gorm: gorm:"column:...;size:...;primaryKey;..." tags -->
 ```
 
-The DAO folder gets a data store for each of them; sqlx and gorm are switched off by the
-first line `//go:build ignore`. To use sqlx or gorm, move this line from
-`data_store_sqlx.go` + `data_store_sqlx_ex.go` (or the gorm pair) to
-`data_store_no_orm.go` + `data_store_no_orm_ex.go`. For sqlx, set `field-assign-mode="2"`
-in `settings.xml`. Remove what you don't use.
+The generated DAO need a data store in their folder: two files, the code and your part
+(`_ex`, the connection). `sdm init -orm no_orm|sqlx|gorm` writes the pair you choose
+(`no_orm` by default; for `sqlx` also `field-assign-mode="2"`). By hand, take them from
+[`datastore/`](datastore):
+
+| | |
+|---|---|
+| database/sql | [data_store_no_orm.go](datastore/no_orm/data_store_no_orm.go), [data_store_no_orm_ex.go](datastore/no_orm/data_store_no_orm_ex.go) |
+| sqlx | [data_store_sqlx.go](datastore/sqlx/data_store_sqlx.go), [data_store_sqlx_ex.go](datastore/sqlx/data_store_sqlx_ex.go) |
+| gorm | [data_store_gorm.go](datastore/gorm/data_store_gorm.go), [data_store_gorm_ex.go](datastore/gorm/data_store_gorm_ex.go) |
+
+remove the first line `//go:build ignore` and set the package name of your DAO folder.
 
 ## Type map
 
-`<type detected="...">` in `settings.xml` says what the database reports about a column,
-in Go words:
+`<type detected="...">` in `settings.xml` is the type of a column as the driver names it:
 
-```
-int16 int32 int64 uint64 float32 float64 decimal string []byte bool time.Time
-uuid array cursor json xml interval money any (not detected)
-```
+| Database   | `detected`                                                                       |
+|------------|----------------------------------------------------------------------------------|
+| PostgreSQL | `int4`, `int8`, `numeric`, `varchar`, `text`, `timestamptz`, `uuid`, `_text` (arrays), `refcursor`, ... |
+| MySQL      | `INT`, `UNSIGNED BIGINT`, `DECIMAL`, `VARCHAR`, `TEXT`, `DATETIME`, `JSON`, ...  |
+| SQLite     | what the column is declared with: `INTEGER`, `VARCHAR`, `REAL`, ...              |
 
-with a prefix for sqlx and gorm classes (`sqlx-int32`, `gorm-time.Time`) and `+auto` for
+with a prefix for sqlx and gorm classes (`sqlx-int4`, `gorm-timestamptz`) and `+auto` for
 the column of `auto="..."` (`gorm-uuid+auto`). `target` is the Go type of the field, its tags
 and the function that reads it from a row:
 
 ```xml
-<type detected="int32" target="int32${json} -> SetInt32"/>
+<type detected="int4" target="int32${json} -> SetInt32"/>
 ```
 
-The Java names of the IDE plug-ins (`java.lang.Integer`, ...) are understood as well, so their
-`settings.xml` works as is; `go test` checks that both spellings produce the same code.
+`sdm init` writes the keys of PostgreSQL. To see which names your database gives, empty the
+type map (`<type-map default=""/>`) and generate: the code then has the raw names of the
+driver instead of Go types. Where the driver says nothing (SQLite
+expressions), the key is `java.lang.Object`. A type written in `sdm.xml` (`<field type="int4">`,
+`return-type="int8"`) goes through the same type map.
+
+The `settings.xml` of the IDE plug-ins (Java names: `java.lang.Integer`, ...) works as is.
 
 The XML files are meant to be edited in an IDE with XML Schema support:
 GoLand out of the box, VS Code with the "XML" extension by Red Hat.
@@ -123,5 +142,6 @@ internal/cg/      the core: fields, parameters, type map, macros, ref and method
 internal/gogen/   Go output: models, DAO, go.tmpl
 internal/gen/     one generation run; go test runs it on in-memory SQLite against golden files
 internal/skeleton the files of 'sdm init'
+datastore/        the data stores for database/sql, sqlx and gorm (also for download)
 cli/              design-time tools, not a part of the build
 ```

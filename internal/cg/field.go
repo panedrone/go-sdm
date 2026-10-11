@@ -13,6 +13,7 @@ type FieldInfo struct {
 	lowerCamel         string
 	renderedType       string
 	originalType       string
+	raw                string // тип словами драйвера, без модели; "" — драйвер не сообщил
 	originalScalarType string
 	scalarType         string
 	model              string
@@ -88,6 +89,7 @@ func (f FieldInfo) WithRenderedType(t string) FieldInfo {
 }
 
 func (f FieldInfo) WithAssignFunc(s string) FieldInfo { f.assignFunc = s; return f }
+func (f FieldInfo) WithRaw(s string) FieldInfo        { f.raw = s; return f }
 func (f FieldInfo) WithName(s string) FieldInfo       { f.name = s; return f }
 func (f FieldInfo) WithComment(s string) FieldInfo    { f.comment = s; return f }
 func (f FieldInfo) WithScalarType(s string) FieldInfo { f.scalarType = s; return f }
@@ -104,6 +106,17 @@ func (f FieldInfo) WithDecimalDigits(n int) FieldInfo { f.decimalDigits = n; ret
 func (f FieldInfo) WithRsMd(precision, scale, displaySize int) FieldInfo {
 	f.precision, f.scale, f.displaySize = precision, scale, displaySize
 	return f
+}
+
+// rawKey — сырое имя как ключ type-map, с моделью класса: "gorm-int4" ("" — нет).
+func (f FieldInfo) rawKey(suffix string) string {
+	if f.raw == "" {
+		return ""
+	}
+	if f.model != "" {
+		return f.model + "-" + f.raw + suffix
+	}
+	return f.raw + suffix
 }
 
 // Для шаблонов.

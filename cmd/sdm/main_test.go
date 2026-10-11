@@ -39,7 +39,7 @@ func TestAuto(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := strings.Replace(string(b), `url="jdbc:postgresql://localhost:5432/postgres"`, `url="jdbc:sqlite:app.sqlite"`, 1)
+	s := strings.Replace(string(b), `url="postgres://localhost:5432/postgres"`, `url="sqlite:app.sqlite"`, 1)
 	if err := os.WriteFile(settings, []byte(s), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -53,13 +53,17 @@ func TestAuto(t *testing.T) {
 	if code := run(nil, &out, &errOut); code != 0 {
 		t.Fatalf("generate: %d %s", code, errOut.String())
 	}
-	for _, f := range []string{"dbal/models/task.go", "dbal/tasks_dao.go"} {
+	for _, f := range []string{"internal/dbal/models/task.go", "internal/dbal/tasks_dao.go"} {
 		if !strings.Contains(out.String(), "created: "+f) {
 			t.Errorf("%s not generated: %s", f, out.String())
 		}
 	}
+	out.Reset()
 	if code := run([]string{"check"}, &out, &errOut); code != 0 {
 		t.Errorf("check after generate: %d %s", code, errOut.String())
+	}
+	if !strings.Contains(out.String(), "up to date: 2 classes") {
+		t.Errorf("check output: %s", out.String())
 	}
 	if _, err := os.Stat(filepath.Join("go-sdm", "sdm.xsd")); err != nil {
 		t.Error(err)
@@ -90,5 +94,19 @@ func TestInitExisting(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(sdmXML); string(b) != "mine" {
 		t.Error("sdm.xml overwritten")
+	}
+}
+
+// строка состояния не показывает логин и пароль
+func TestDbLabel(t *testing.T) {
+	for url, want := range map[string]string{
+		"jdbc:postgresql://localhost:5432/my_tests":  "localhost:5432/my_tests",
+		"postgres://u:secret@db.host:5432/app":       "db.host:5432/app",
+		"jdbc:mysql://h:3306/orders?user=u&pwd=p":    "h:3306/orders",
+		"jdbc:sqlite:$PROJECT_DIR$/todolist.sqlite3": "$PROJECT_DIR$/todolist.sqlite3",
+	} {
+		if got := dbLabel(url); got != want {
+			t.Errorf("%s: %q", url, got)
+		}
 	}
 }

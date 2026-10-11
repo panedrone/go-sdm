@@ -4,6 +4,8 @@
 //
 // Типы называются Java-именами (java.lang.Integer, java.util.Date, ...): на них
 // завязаны ключи <type detected=...> в settings.xml существующих проектов.
+//
+// RawType — то же словами драйвера: второй словарь ключей type-map, наравне с Java-именами.
 package meta
 
 // Metadata — одна реализация на диалект (pg, позже mysql и sqlite).
@@ -31,6 +33,7 @@ const (
 type Column struct {
 	Name        string
 	JavaType    string // JavaObject, если не определён
+	RawType     string // тип словами драйвера (pg: int4, MySQL: INT, SQLite: INTEGER); "" — не сообщил
 	IsAI        bool
 	Scale       int
 	Precision   int
@@ -40,7 +43,8 @@ type Column struct {
 // TableColumn — строка DatabaseMetaData.getColumns. nil — драйвер не смог сообщить.
 type TableColumn struct {
 	Name          string
-	DataType      *int // java.sql.Types
+	DataType      *int   // java.sql.Types
+	RawType       string // тип словами драйвера; нужен там, где колонка результата его не знает (SQLite)
 	ColumnSize    *int
 	DecimalDigits *int
 	IsAI          *bool
@@ -61,4 +65,5 @@ type Params struct {
 	CountUnknown bool // метаданные параметров есть, но их число узнать не удалось
 	Count        int
 	JavaTypes    []string // JavaObject там, где не определён
+	RawTypes     []string // типы словами драйвера; "" — не сообщил (длина — как у JavaTypes)
 }

@@ -145,6 +145,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		res = append(res, meta.Column{
 			Name:        name,
 			JavaType:    ff.javaType(),
+			RawType:     ff.rawName(),
 			IsAI:        f.Flag&flagAutoIncrement != 0,
 			Scale:       ff.scale(),
 			Precision:   p,
@@ -193,7 +194,7 @@ func (db *DB) resultFields(sql string, call bool) ([]*gm.Field, error) {
 func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	sql := unescapeCall(jdbcSQL)
 	_, n := nullParams(sql)
-	res := &meta.Params{Count: n, JavaTypes: make([]string, typeCount)}
+	res := &meta.Params{Count: n, JavaTypes: make([]string, typeCount), RawTypes: make([]string, typeCount)}
 	for i := range res.JavaTypes {
 		res.JavaTypes[i] = meta.JavaObject
 	}
@@ -201,7 +202,7 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	if proc == "" {
 		return res, nil
 	}
-	declared, err := db.procParams(proc)
+	declared, raws, err := db.procParams(proc)
 	if err != nil {
 		return nil, err
 	}
@@ -213,13 +214,14 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 		}
 		if k < typeCount && i < len(declared) {
 			res.JavaTypes[k] = declared[i]
+			res.RawTypes[k] = raws[i]
 		}
 		k++
 	}
 	return res, nil
 }
 
-func (db *DB) procParams(proc string) ([]string, error) {
+func (db *DB) procParams(proc string) (javaTypes, rawTypes []string, err error) {
 	proc = strings.ReplaceAll(proc, "`", "")
 	schema := "DATABASE()"
 	args := []any{}
@@ -233,15 +235,16 @@ func (db *DB) procParams(proc string) ([]string, error) {
 		where SPECIFIC_SCHEMA = `+schema+` and SPECIFIC_NAME = ? and ROUTINE_TYPE = 'PROCEDURE'
 		  and ORDINAL_POSITION > 0 order by ORDINAL_POSITION`, args...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var res []string
 	for i := 0; i < r.RowNumber(); i++ {
 		dt, _ := r.GetString(i, 0)
 		dtd, _ := r.GetString(i, 1)
-		res = append(res, paramJavaType(strings.ToLower(dt), strings.ToLower(dtd)))
+		dt, dtd = strings.ToLower(dt), strings.ToLower(dtd)
+		javaTypes = append(javaTypes, paramJavaType(dt, dtd))
+		rawTypes = append(rawTypes, paramRawName(dt, dtd))
 	}
-	return res, nil
+	return javaTypes, rawTypes, nil
 }
 
 // Table -----------------------------------------------------------

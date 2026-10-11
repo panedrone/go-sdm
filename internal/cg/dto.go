@@ -170,9 +170,13 @@ func (c *Core) refineByTypeMapAndMacros(fi FieldInfo, typeName string) (FieldInf
 	var err error
 	switch start := strings.IndexByte(typeName, '|'); {
 	case start == -1: // только тип: "int64"
-		target, err = c.mc.ParseTargetType(c.tm.Target(typeName), fi)
+		mapped := c.tm.Target(typeName)
+		if typeName == strings.TrimSpace(fi.originalType) { // первый проход: тип из метаданных
+			mapped = c.tm.TargetRaw(typeName, fi.rawKey(""))
+		}
+		target, err = c.mc.ParseTargetType(mapped, fi)
 	case start == 0: // "|0: hello0|1:hello1" — к типу из метаданных
-		target, err = c.mc.ParseTargetType(c.tm.Target(fi.originalType)+typeName, fi)
+		target, err = c.mc.ParseTargetType(c.tm.TargetRaw(fi.originalType, fi.rawKey(""))+typeName, fi)
 	default: // "{type}|0:Integer|1:hello1"
 		target, err = c.mc.ParseTargetType(typeName, fi)
 	}

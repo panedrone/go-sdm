@@ -1,9 +1,10 @@
 //go:build ignore
 
-// The data store for gorm. To use it instead of no_orm: move the line "//go:build ignore"
-// from this file and data_store_gorm_ex.go to data_store_no_orm.go and data_store_no_orm_ex.go.
+// The data store for gorm, used by the generated DAO. "sdm init -orm gorm" writes it
+// to the DAO folder. A copy by hand: this file and data_store_gorm_ex.go, without the line
+// "//go:build ignore" and with the package name of the DAO folder.
 
-package {{package}}
+package dbal
 
 import (
 	"context"

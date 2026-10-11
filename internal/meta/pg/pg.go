@@ -15,6 +15,7 @@ import (
 )
 
 type pgType struct {
+	name    string // typname: int4, varchar, _int4, ...
 	isArray bool
 	elem    uint32
 }
@@ -22,7 +23,7 @@ type pgType struct {
 type DB struct {
 	ctx   context.Context
 	conn  *pgx.Conn
-	types map[uint32]pgType // pg_type для OID-ов вне javaTypes
+	types map[uint32]pgType // pg_type по OID
 }
 
 var _ meta.Metadata = (*DB)(nil)
@@ -64,6 +65,10 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		if err != nil {
 			return nil, err
 		}
+		raw, err := db.pgType(f.DataTypeOID)
+		if err != nil {
+			return nil, err
+		}
 		ai := false
 		if f.TableOID != 0 {
 			ai, err = db.isAutoIncrement(f.TableOID, f.TableAttributeNumber)
@@ -74,6 +79,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		res = append(res, meta.Column{
 			Name:        name,
 			JavaType:    javaType,
+			RawType:     raw.name,
 			IsAI:        ai,
 			Scale:       scale(oid, f.TypeModifier),
 			Precision:   precision(oid, f.TypeModifier),
@@ -92,17 +98,23 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := &meta.Params{Count: len(sd.ParamOIDs), JavaTypes: make([]string, 0, typeCount)}
+	res := &meta.Params{Count: len(sd.ParamOIDs), JavaTypes: make([]string, 0, typeCount), RawTypes: make([]string, 0, typeCount)}
 	for i := 0; i < typeCount; i++ {
 		if i >= len(sd.ParamOIDs) {
 			res.JavaTypes = append(res.JavaTypes, meta.JavaObject)
+			res.RawTypes = append(res.RawTypes, "")
 			continue
 		}
 		javaType, _, err := db.resolve(sd.ParamOIDs[i])
 		if err != nil {
 			return nil, err
 		}
+		raw, err := db.pgType(sd.ParamOIDs[i])
+		if err != nil {
+			return nil, err
+		}
 		res.JavaTypes = append(res.JavaTypes, javaType)
+		res.RawTypes = append(res.RawTypes, raw.name)
 	}
 	return res, nil
 }
@@ -129,8 +141,8 @@ func (db *DB) pgType(oid uint32) (pgType, error) {
 	}
 	var t pgType
 	err := db.conn.QueryRow(db.ctx,
-		`select t.typcategory = 'A', t.typelem from pg_catalog.pg_type t where t.oid = $1`, oid).
-		Scan(&t.isArray, &t.elem)
+		`select t.typname, t.typcategory = 'A', t.typelem from pg_catalog.pg_type t where t.oid = $1`, oid).
+		Scan(&t.name, &t.isArray, &t.elem)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = nil
 	}

@@ -42,7 +42,7 @@ func columnFields(cols []meta.Column, model string, mode FieldNamesMode, explici
 		if err != nil {
 			return nil, err
 		}
-		fi = fi.WithAI(c.IsAI).WithDecimalDigits(c.Scale).WithRsMd(c.Precision, c.Scale, c.DisplaySize)
+		fi = fi.WithRaw(c.RawType).WithAI(c.IsAI).WithDecimalDigits(c.Scale).WithRsMd(c.Precision, c.Scale, c.DisplaySize)
 		if pk != nil {
 			a, err := pkColNameAlias(c.Name)
 			if err != nil {
@@ -104,11 +104,11 @@ func createTableFields(t *meta.Table, pk map[string]bool, tm *TypeMap, mode Fiel
 	res := &tableFields{}
 	for _, c := range t.Columns {
 		fi := byCol[c.Name]
-		detected := fi.renderedType
+		detected, suffix := fi.renderedType, ""
 		if strings.EqualFold(c.Name, autoCol) && model != "" {
-			detected += "+" + autoGen
+			suffix = "+" + autoGen
 		}
-		fi = fi.WithRenderedType(tm.Target(detected))
+		fi = fi.WithRenderedType(tm.TargetRaw(detected+suffix, fi.rawKey(suffix)))
 		a, err := pkColNameAlias(c.Name)
 		if err != nil {
 			return nil, err
@@ -139,6 +139,9 @@ func parseAutoColumn(auto string) (string, string) {
 
 func refineByTableColumn(fi FieldInfo, tc meta.TableColumn, model string) FieldInfo {
 	fi = fi.WithComment("t")
+	if fi.raw == "" {
+		fi = fi.WithRaw(tc.RawType) // SQLite: у выражений типа нет, у колонки таблицы он объявлен
+	}
 	fi = refineJdbcType(fi, tc, model)
 	fi = refineColSize(fi, tc)
 	if tc.DecimalDigits != nil {
@@ -272,6 +275,9 @@ func readParams(md meta.Metadata, tm *TypeMap, mc *Macros, jdbcSQL string, mode 
 		if err != nil {
 			return nil, err
 		}
+		if i < len(ps.RawTypes) {
+			base = base.WithRaw(ps.RawTypes[i])
+		}
 		p, err := createParamInfo(tm, mc, mode, d, &base)
 		if err != nil {
 			return nil, err
@@ -293,7 +299,7 @@ func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor st
 			target = tm.Target(meta.JavaObject)
 		} else {
 			var err error
-			target, err = mc.ParseTargetType(tm.Target(base.renderedType), *base)
+			target, err = mc.ParseTargetType(tm.TargetRaw(base.renderedType, base.rawKey("")), *base)
 			if err != nil {
 				return ParamInfo{}, err
 			}

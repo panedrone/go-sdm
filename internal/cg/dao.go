@@ -234,7 +234,7 @@ func (c *Core) customSQLFields(jdbcSQL, dtoOrReturnType string, returnTypeIsDto 
 		}
 		for i := 0; err == nil && i < len(daoFields); i++ {
 			var t string
-			t, err = c.mc.ParseTargetType(c.tm.Target(daoFields[i].renderedType), daoFields[i])
+			t, err = c.mc.ParseTargetType(c.tm.TargetRaw(daoFields[i].renderedType, daoFields[i].rawKey("")), daoFields[i])
 			daoFields[i] = daoFields[i].WithRenderedType(t)
 		}
 		if err != nil {

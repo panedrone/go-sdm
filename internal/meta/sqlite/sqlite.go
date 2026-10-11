@@ -104,7 +104,8 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		if name == "" {
 			name = "col_" + strconv.Itoa(i+1)
 		}
-		p, s, _ := sizeInParens(stmt.ColumnDeclType(i))
+		decl := stmt.ColumnDeclType(i)
+		p, s, _ := sizeInParens(decl)
 		ai := false
 		if table := stmt.ColumnTableName(i); table != "" {
 			_, _, _, _, ai, err = db.conn.TableColumnMetadata(stmt.ColumnDatabaseName(i), table, stmt.ColumnOriginName(i))
@@ -115,6 +116,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		res = append(res, meta.Column{
 			Name:        name,
 			JavaType:    meta.JavaObject,
+			RawType:     rawName(decl),
 			IsAI:        ai,
 			Scale:       s,
 			Precision:   p,
@@ -130,7 +132,7 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 		return nil, err
 	}
 	defer stmt.Close()
-	res := &meta.Params{Count: stmt.BindCount(), JavaTypes: make([]string, typeCount)}
+	res := &meta.Params{Count: stmt.BindCount(), JavaTypes: make([]string, typeCount), RawTypes: make([]string, typeCount)}
 	for i := range res.JavaTypes {
 		res.JavaTypes[i] = javaString // и за пределами Count: xerial не бросает
 	}
@@ -213,6 +215,7 @@ func (db *DB) tableColumns(schema, table string) ([]meta.TableColumn, error) {
 			res = append(res, meta.TableColumn{
 				Name:          name,
 				DataType:      &dataType,
+				RawType:       rawName(declType),
 				ColumnSize:    &size,
 				DecimalDigits: &digits,
 				IsAI:          &ai,
@@ -327,4 +330,12 @@ func xerialError(err error) error {
 	}
 	msg := strings.TrimPrefix(e.Error(), sqlite3.ERROR.Error()+": ")
 	return errors.New("[SQLITE_ERROR] SQL error or missing database (" + msg + ")")
+}
+
+// rawName — объявленный тип словами драйвера: "varchar(50)" -> "VARCHAR"; "" — не объявлен.
+func rawName(declType string) string {
+	if i := strings.IndexByte(declType, '('); i >= 0 {
+		declType = declType[:i]
+	}
+	return strings.ToUpper(strings.TrimSpace(declType))
 }

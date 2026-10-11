@@ -33,9 +33,9 @@ type Result struct {
 // относительный путь SQLite — тоже от неё.
 func OpenMetadata(projectDir string, j sdmxml.Jdbc) (meta.Metadata, error) {
 	url := strings.NewReplacer("$PROJECT_DIR$", projectDir, "${project_loc}", projectDir).Replace(strings.TrimSpace(j.URL))
-	if file, ok := strings.CutPrefix(url, "jdbc:sqlite:"); ok {
+	if file, ok := strings.CutPrefix(strings.TrimPrefix(url, "jdbc:"), "sqlite:"); ok {
 		if file == ":memory:" {
-			return nil, errors.New("jdbc:sqlite::memory: has no tables to generate from")
+			return nil, errors.New("sqlite::memory: has no tables to generate from")
 		}
 		if !filepath.IsAbs(file) {
 			file = filepath.Join(projectDir, file)
@@ -56,9 +56,15 @@ func OpenMetadata(projectDir string, j sdmxml.Jdbc) (meta.Metadata, error) {
 	return pg.Open(context.Background(), cs)
 }
 
+// Progress — вызывается перед генерацией каждого класса: n-й из total.
+type Progress func(n, total int, class string)
+
 // Run — генерация всех DTO и DAO проекта. Ошибка конкретного класса — в File.Err,
-// общая ошибка (настройки, XML) — в error.
-func Run(projectDir, sdmDir string, md meta.Metadata) (*Result, error) {
+// общая ошибка (настройки, XML) — в error. progress может быть nil.
+func Run(projectDir, sdmDir string, md meta.Metadata, progress Progress) (*Result, error) {
+	if progress == nil {
+		progress = func(int, int, string) {}
+	}
 	s, err := sdmxml.LoadSettings(sdmDir)
 	if err != nil {
 		return nil, err
@@ -81,7 +87,9 @@ func Run(projectDir, sdmDir string, md meta.Metadata) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	total := len(sdm.DtoClasses) + len(sdm.DaoClasses)
 	for _, c := range sdm.DtoClasses {
+		progress(len(res.Dto)+1, total, c.Name)
 		f := File{Class: c.Name, Name: fileName(c.Name)}
 		f.Content, f.Err = dtoGen.Translate(c.Name)
 		res.Dto = append(res.Dto, f)
@@ -91,6 +99,7 @@ func Run(projectDir, sdmDir string, md meta.Metadata) (*Result, error) {
 		return nil, err
 	}
 	for _, c := range sdm.DaoClasses {
+		progress(len(res.Dto)+len(res.Dao)+1, total, c.Name)
 		f := File{Class: c.Name, Name: fileName(c.Name)}
 		f.Content, f.Err = daoGen.Translate(c)
 		res.Dao = append(res.Dao, f)

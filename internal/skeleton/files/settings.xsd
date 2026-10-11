@@ -43,8 +43,8 @@
     </xs:element>
     <xs:element name="jdbc">
         <xs:complexType>
-            <xs:attribute name="jar" use="required" type="xs:string"/>
-            <xs:attribute name="class" use="required" type="xs:string"/>
+            <xs:attribute name="jar" use="optional" type="xs:string"/>
+            <xs:attribute name="class" use="optional" type="xs:string"/>
             <xs:attribute name="url" use="required" type="xs:string"/>
             <xs:attribute name="user" use="required" type="xs:string"/>
             <xs:attribute name="pwd" use="required" type="xs:string"/>

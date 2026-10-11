@@ -1,4 +1,4 @@
-// sdm — генератор DAO для Go по sdm.xml и метаданным живой базы (PostgreSQL, SQLite).
+// sdm — генератор DAO для Go по sdm.xml и метаданным живой базы (PostgreSQL, MySQL, SQLite).
 package main
 
 import (
@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/panedrone/go-sdm/datastore"
 	"github.com/panedrone/go-sdm/internal/gen"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 	"github.com/panedrone/go-sdm/internal/skeleton"
@@ -19,9 +20,11 @@ const version = "0.1.0-dev"
 const usage = `sdm %s — SQL DAL Maker for Go
 
 usage:
-  sdm [-dir go-sdm] [-dao dbal]   no configuration yet: init; otherwise: generate
-  sdm init [-dir go-sdm] [-dao dbal]
-                                  create sdm.xml, settings.xml, XSD and the data store;
+  sdm [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm]
+                                  no configuration yet: init; otherwise: generate
+  sdm init [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm]
+                                  create sdm.xml, settings.xml, XSD and the data store
+                                  (database/sql, sqlx or gorm; no_orm by default);
                                   an error if any of them exists, nothing is overwritten
   sdm generate [-dir go-sdm]      generate models and DAO into the folders of settings.xml
   sdm check [-dir go-sdm]         exit 1 if the generated code is out of date (for CI)
@@ -75,11 +78,12 @@ func newFlags(name string, stderr io.Writer) (*flag.FlagSet, *string) {
 
 func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, bool) {
 	fs, dir := newFlags(name, stderr)
-	dao := fs.String("dao", "dbal", "folder of generated DAO, relative to go.mod; models go to <dao>/models")
+	dao := fs.String("dao", "internal/dbal", "folder of generated DAO, relative to go.mod; models go to <dao>/models")
+	orm := fs.String("orm", datastore.Variants[0], "data store: "+strings.Join(datastore.Variants, ", "))
 	if err := fs.Parse(args); err != nil {
 		return skeleton.Options{}, false
 	}
-	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao)}, true
+	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm}, true
 }
 
 // runAuto — без команды: init, если конфигурации ещё нет, иначе generate.
@@ -126,13 +130,17 @@ func generate(dir string, write bool, stdout, stderr io.Writer) int {
 	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
 		s.Jdbc.Pwd = pwd
 	}
+	st := newStatus(stderr)
+	st.show("connecting to %s ...", dbLabel(s.Jdbc.URL))
 	md, err := gen.OpenMetadata(".", s.Jdbc)
 	if err != nil {
+		st.clear()
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	defer md.Close()
-	res, err := gen.Run(".", dir, md)
+	res, err := gen.Run(".", dir, md, st.progress)
+	st.clear()
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
@@ -166,6 +174,9 @@ func generate(dir string, write bool, stdout, stderr io.Writer) int {
 	}
 	if !write && len(changes) > 0 {
 		return 1
+	}
+	if len(changes) == 0 {
+		fmt.Fprintf(stdout, "up to date: %d classes\n", len(res.Dto)+len(res.Dao))
 	}
 	return 0
 }

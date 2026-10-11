@@ -20,41 +20,42 @@ func SplitTargetType(target string) (typ, assign string, ok bool) {
 
 // TypeMap — <type-map> (JaxbTypeMap.java).
 //
-// <type detected="..."> понимает два словаря: Java-имена, как у IDE-плагина
-// (java.lang.Integer), и Go-имена (int32) — их пишет sdm init. Метаданные сообщают тип
-// Java-именем; ключ с Go-именем срабатывает только через перевод этого имени (goAlias),
-// а не прямым совпадением строк: иначе цель "string" при повторном проходе ядра
-// совпала бы с ключом "string" и перемапилась ещё раз.
+// <type detected="..."> — два словаря наравне: Java-имена, как у IDE-плагина
+// (java.lang.Integer), и сырые имена драйвера (pg: int4, MySQL: INT, SQLite: INTEGER).
+// Ключи — одна карта, как у плагина. Сырое имя метаданных подставляется только на первом
+// проходе (TargetRaw); на повторном проходе ядра ищется сама строка типа, как в Java.
 type TypeMap struct {
-	detected    map[string]string // Java-имена и всё, что не из словаря Go-имён
-	byAlias     map[string]string // Go-имена
+	detected    map[string]string
 	defaultType string
 }
 
 func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
-	res := &TypeMap{detected: map[string]string{}, byAlias: map[string]string{}, defaultType: tm.Default}
+	res := &TypeMap{detected: map[string]string{}, defaultType: tm.Default}
 	for _, t := range tm.Types {
-		if isAliasKey(t.Detected) {
-			res.byAlias[t.Detected] = t.Target
-		} else {
-			res.detected[t.Detected] = t.Target
-		}
+		res.detected[t.Detected] = t.Target
 	}
 	return res
 }
 
-// Target — 'detected' — тип из метаданных или явно объявленный в XML.
+// Target — detected — уже отображённый тип или явно объявленный в XML.
 func (m *TypeMap) Target(detected string) string {
-	if len(m.detected) == 0 && len(m.byAlias) == 0 {
+	return m.TargetRaw(detected, "")
+}
+
+// TargetRaw — тип из метаданных: Java-имя detected и сырое имя драйвера raw ("" — нет).
+// Пустой type-map — сырое имя как есть: видно, какие ключи нужны (misc.html#type-map).
+func (m *TypeMap) TargetRaw(detected, raw string) string {
+	if len(m.detected) == 0 {
+		if raw != "" {
+			return raw
+		}
 		return detected // нет переопределений — как есть, независимо от default
 	}
 	if t, ok := m.detected[detected]; ok {
 		return t
 	}
-	if a, ok := goAlias(detected); ok {
-		if t, ok := m.byAlias[a]; ok {
-			return t
-		}
+	if t, ok := m.detected[raw]; ok && raw != "" {
+		return t
 	}
 	if strings.TrimSpace(m.defaultType) == "" {
 		return detected

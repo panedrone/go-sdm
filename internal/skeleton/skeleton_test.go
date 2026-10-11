@@ -28,7 +28,7 @@ func TestInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(written) != 11 || !Exists(dir, "go-sdm") {
+	if len(written) != 7 || !Exists(dir, "go-sdm") {
 		t.Fatalf("written %d, exists %t", len(written), Exists(dir, "go-sdm"))
 	}
 
@@ -48,15 +48,28 @@ func TestInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(ds), "\npackage dbal\n") || strings.HasPrefix(string(ds), "//go:build") {
+	if !strings.HasPrefix(string(ds), "package dbal\n") {
 		t.Error("data_store_no_orm.go: package dbal, no build constraint expected")
 	}
-	// sqlx и gorm не мешают сборке: исключены строкой //go:build ignore
-	for _, f := range []string{"data_store_sqlx.go", "data_store_sqlx_ex.go", "data_store_gorm.go", "data_store_gorm_ex.go"} {
-		b, err := os.ReadFile(filepath.Join(dir, "internal", "dbal", f))
-		if err != nil || !strings.HasPrefix(string(b), "//go:build ignore\n") || !strings.Contains(string(b), "\npackage dbal\n") {
+
+	// -orm sqlx: только пара sqlx, field-assign-mode="2"
+	dir = newProject(t)
+	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "store", ORM: "sqlx"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"data_store_sqlx.go", "data_store_sqlx_ex.go"} {
+		if b, err := os.ReadFile(filepath.Join(dir, "store", f)); err != nil || !strings.HasPrefix(string(b), "package store\n") {
 			t.Errorf("%s: %v", f, err)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "store", "data_store_no_orm.go")); err == nil {
+		t.Error("data_store_no_orm.go not expected")
+	}
+	if s, err := sdmxml.LoadSettings(filepath.Join(dir, "go-sdm")); err != nil || s.Dao.FieldAssignMode != 2 {
+		t.Errorf("sqlx: field-assign-mode: %v", err)
+	}
+	if _, err := Init(Options{ProjectDir: newProject(t), SdmDir: "go-sdm", DaoDir: "dbal", ORM: "ent"}); err == nil {
+		t.Error("unknown -orm accepted")
 	}
 }
 

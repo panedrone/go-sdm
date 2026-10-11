@@ -1,9 +1,10 @@
 //go:build ignore
 
-// The data store for sqlx. To use it instead of no_orm: move the line "//go:build ignore"
-// from this file and data_store_sqlx_ex.go to data_store_no_orm.go and data_store_no_orm_ex.go.
+// The data store for database/sql (no ORM), used by the generated DAO. "sdm init -orm no_orm" writes it
+// to the DAO folder. A copy by hand: this file and data_store_no_orm_ex.go, without the line
+// "//go:build ignore" and with the package name of the DAO folder.
 
-package {{package}}
+package dbal
 
 import (
 	"context"
@@ -11,8 +12,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
 	"io"
 	"reflect"
 	"strconv"
@@ -24,9 +23,9 @@ var DS func(context context.Context) DataStore
 
 /*
 	This file is a part of SQL DAL Maker Project: https://sqldalmaker.sourceforge.net
-	It demonstrates how to implement an interface DataStore in Go + sqlx.
+	It demonstrates how to implement an interface DataStore in Go using "database/sql" package directly (no-orm scenario).
 	More about DataStore: https://sqldalmaker.sourceforge.net/preconfig.html#ds
-	Recent version: https://github.com/panedrone/sqldalmaker/blob/master/src/resources/data_store_sqlx.go
+	Recent version: https://github.com/panedrone/sqldalmaker/blob/master/src/resources/data_store_no_orm.go
 
 	Copy-paste this code to your project and change it for your needs.
 	Improvements are welcome: sqldalmaker@gmail.com
@@ -35,7 +34,7 @@ var DS func(context context.Context) DataStore
 */
 
 type DataStore interface {
-	Db() *sqlx.DB
+	Db() *sql.DB
 
 	Open() error
 	Close() error
@@ -92,10 +91,10 @@ type InOut struct {
 
 type _DS struct {
 	paramPrefix string
-	db          *sqlx.DB
+	db          *sql.DB
 }
 
-func (ds *_DS) Db() *sqlx.DB {
+func (ds *_DS) Db() *sql.DB {
 	return ds.db
 }
 
@@ -106,41 +105,38 @@ func (ds *_DS) Db() *sqlx.DB {
 package dbal
 
 import (
-	"github.com/jmoiron/sqlx"
+	"database/sql"
    	// _ "github.com/mattn/go-sqlite3"      // SQLite3
    	// _ "github.com/denisenkom/go-mssqldb" // SQL Server
    	// _ "github.com/godror/godror"			// Oracle
-   	_ "github.com/go-sql-driver/mysql"      // MySQL
+   	// _ "github.com/go-sql-driver/mysql"   // MySQL
    	// _ "github.com/ziutek/mymysql/godrv"  // MySQL
-   	// _ "github.com/jackc/pgx/v5/stdlib"   // PostgreSQL
+   	_ "github.com/jackc/pgx/v5/stdlib"      // PostgreSQL
 )
-
-var ds = &_DS{}
 
 func (ds *_DS) initDb() (err error) {
 	// === PostgreSQL ===========================
 	ds.paramPrefix = "$"
-	ds.db, err = sqlx.Open("pgx", "postgres://postgres:sa@localhost/my-tests?sslmode=disable")
-	// ds.db, err = sqlx.Open("pgx", "postgres://postgres:sa@localhost/my-tests?sslmode=verify-full")
+	ds.db, err = sql.Open("pgx", "postgres://postgres:sa@localhost/my-tests?sslmode=disable")
+	// ds.db, err = sql.Open("pgx", "postgres://postgres:sa@localhost/my-tests?sslmode=verify-full")
 	// === SQLite3 =============================
-	// ds.db, err = sqlx.Open("sqlite3", "./log.sqlite")
-	// ds.db, err = sqlx.Open("sqlite3", "./northwindEF.sqlite")
-	// === MySQL ===============================
-	// ds.db, err = sqlx.Open("mysql", "root:root@/sakila")
-	// ds.db, err = sqlx.Open("mymysql", "sakila/root/root")
+	// ds.db, err = sql.Open("sqlite3", "./log.sqlite")
+	// ds.db, err = sql.Open("sqlite3", "./northwindEF.sqlite")
 	// === SQL Server ==========================
 	// https://github.com/denisenkom/go-mssqldb
 	// The sqlserver driver uses normal MS SQL Server syntax and expects parameters in the
 	// sql query to be in the form of either @Name or @p1 to @pN (ordinal position).
 	// ensure sqlserver:// in beginning. this one is not valid:
-	// ------ ds.db, err = sqlx.Open("sqlserver", "sa:root@/localhost:1433/SQLExpress?database=AdventureWorks2014")
-	// this one is ok:
-	ds.paramPrefix = "@p"
-	ds.db, err = sqlx.Open("sqlserver", "sqlserver://sa:root@localhost:1433?database=AdventureWorks2014")
-	// === Oracle =============================
+	// ------ ds.db, err = sql.Open("sqlserver", "sa:root@/localhost:1433/SQLExpress?database=AdventureWorks2014")
+	// ds.paramPrefix = "@p"
+	// ds.db, err = sql.Open("sqlserver", "sqlserver://sa:root@localhost:1433?database=AdventureWorks2014")
+	// === MySQL ===============================
+	// ds.db, err = sql.Open("mysql", "root:root@/sakila")
+	// ds.db, err = sql.Open("mymysql", "sakila/root/root")
+	// === Oracle ==============================
 	// "github.com/godror/godror"
-	//ds.paramPrefix = ":"
-	//ds.db, err = sqlx.Open("godror", `user="ORDERS" password="root" connectString="localhost:1521/orcl"`)
+	// ds.paramPrefix = ":"
+	// ds.db, err = sql.Open("godror", `user="ORDERS" password="root" connectString="localhost:1521/orcl"`)
 	return
 }
 
@@ -197,17 +193,17 @@ func (ds *_DS) isMsSql() bool {
 
 const txKey = "tx"
 
-func getTxSqlx(ctx context.Context) *sqlx.Tx {
-	tx, _ := ctx.Value(txKey).(*sqlx.Tx)
+func getTx(ctx context.Context) *sql.Tx {
+	tx, _ := ctx.Value(txKey).(*sql.Tx)
 	return tx
 }
 
 func (ds *_DS) Begin(ctx context.Context) (txCtx context.Context, err error) {
-	tx := getTxSqlx(ctx)
+	tx := getTx(ctx)
 	if tx != nil {
 		return nil, errors.New("already in " + txKey)
 	}
-	tx, err = ds.db.Beginx()
+	tx, err = ds.db.Begin()
 	txCtx = context.WithValue(ctx, txKey, tx)
 	return
 }
@@ -216,7 +212,7 @@ func (ds *_DS) Commit(txCtx *context.Context) (err error) {
 	if txCtx == nil {
 		return errNilParam()
 	}
-	tx := getTxSqlx(*txCtx)
+	tx := getTx(*txCtx)
 	if tx == nil {
 		return errNotInTx()
 	}
@@ -229,7 +225,7 @@ func (ds *_DS) Rollback(txCtx *context.Context) (err error) {
 	if txCtx == nil {
 		return errNilParam()
 	}
-	tx := getTxSqlx(*txCtx)
+	tx := getTx(*txCtx)
 	if tx == nil {
 		return errNotInTx()
 	}
@@ -238,24 +234,16 @@ func (ds *_DS) Rollback(txCtx *context.Context) (err error) {
 	return
 }
 
-func (ds *_DS) selectSqlx(ctx context.Context, dest interface{}, sqlString string, args ...interface{}) error {
-	tx := getTxSqlx(ctx)
+func (ds *_DS) query(ctx context.Context, sqlString string, args ...interface{}) (*sql.Rows, error) {
+	tx := getTx(ctx)
 	if tx == nil {
-		return ds.db.SelectContext(ctx, dest, sqlString, args...)
+		return ds.db.QueryContext(ctx, sqlString, args...)
 	}
-	return tx.SelectContext(ctx, dest, sqlString, args...)
+	return tx.QueryContext(ctx, sqlString, args...)
 }
 
-func (ds *_DS) querySqlx(ctx context.Context, sqlString string, args ...interface{}) (*sqlx.Rows, error) {
-	tx := getTxSqlx(ctx)
-	if tx == nil {
-		return ds.db.QueryxContext(ctx, sqlString, args...)
-	}
-	return tx.QueryxContext(ctx, sqlString, args...)
-}
-
-func (ds *_DS) execSqlx(ctx context.Context, sqlString string, args ...interface{}) (sql.Result, error) {
-	tx := getTxSqlx(ctx)
+func (ds *_DS) exec(ctx context.Context, sqlString string, args ...interface{}) (sql.Result, error) {
+	tx := getTx(ctx)
 	if tx == nil {
 		return ds.db.ExecContext(ctx, sqlString, args...)
 	}
@@ -265,7 +253,7 @@ func (ds *_DS) execSqlx(ctx context.Context, sqlString string, args ...interface
 func (ds *_DS) insertPgSql(ctx context.Context, sqlString string, aiNames string, args ...interface{}) (id interface{}, err error) {
 	// fetching of multiple AI values is not implemented so far:
 	sqlString += " RETURNING " + aiNames
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
+	rows, err := ds.query(ctx, sqlString, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +276,7 @@ func (ds *_DS) insertOracle(ctx context.Context, sqlString string, aiNames strin
 	// var id64 int64 --- it works, but...
 	args = append(args, sql.Out{Dest: &id64, In: false})
 	// ----------------
-	_, err = ds.execSqlx(ctx, sqlString, args...)
+	_, err = ds.exec(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
@@ -302,7 +290,7 @@ func (ds *_DS) insertMsSql(ctx context.Context, sqlString string, args ...interf
 	// ID = convert(bigint, SCOPE_IDENTITY()); to the end of your query (ref SCOPE_IDENTITY).
 	//  This will ensure you are getting the correct ID and will prevent a network round trip.
 	sqlString += ";SELECT @@IDENTITY;"
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
+	rows, err := ds.query(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
@@ -317,7 +305,7 @@ func (ds *_DS) insertMsSql(ctx context.Context, sqlString string, args ...interf
 }
 
 func (ds *_DS) insertDefault(ctx context.Context, sqlString string, args ...interface{}) (id interface{}, err error) {
-	res, err := ds.execSqlx(ctx, sqlString, args...)
+	res, err := ds.exec(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
@@ -326,21 +314,15 @@ func (ds *_DS) insertDefault(ctx context.Context, sqlString string, args ...inte
 }
 
 func (ds *_DS) Insert(ctx context.Context, sqlString string, aiNames string, args ...interface{}) (id interface{}, err error) {
-	if len(aiNames) == 0 { // len(nil) == 0
-		err = errors.New("_DS.insert is not applicable for aiNames = " + aiNames)
-		return
-	}
-	// Builtin LastInsertId works only with MySQL and SQLite3
 	sqlString = ds.formatSQL(sqlString)
 	if ds.isPgSql() {
 		return ds.insertPgSql(ctx, sqlString, aiNames, args...)
 	} else if ds.isMsSql() {
 		return ds.insertMsSql(ctx, sqlString, args...)
 	} else if ds.isOracle() {
-		// Oracle: specify AI values explicitly:
-		// <crud-auto model="ProjectInfo" table="PROJECTS" generated="P_ID"/>
 		return ds.insertOracle(ctx, sqlString, aiNames, args...)
 	}
+	// Builtin LastInsertId works only with MySQL and SQLite3
 	return ds.insertDefault(ctx, sqlString, args...)
 }
 
@@ -461,7 +443,7 @@ func (ds *_DS) processExecParams(args []interface{}, onRowArr *[]interface{}, qu
 }
 
 func (ds *_DS) queryImplRcOracle(ctx context.Context, sqlString string, onRowArr []interface{}, queryArgs ...interface{}) error {
-	rows, err := ds.querySqlx(ctx, sqlString, queryArgs...)
+	rows, err := ds.query(ctx, sqlString, queryArgs...)
 	if err != nil {
 		return err
 	}
@@ -476,16 +458,23 @@ func (ds *_DS) queryImplRcOracle(ctx context.Context, sqlString string, onRowArr
 		switch onRow := onRowArr[onRowIndex].(type) {
 		case func(map[string]interface{}):
 			// re-detect columns for each ResultSet
-			row := make(map[string]interface{})
+			colNames, values, valuePointers, err := ds.prepareFetch(rows)
+			if err != nil {
+				return err
+			}
+			data := make(map[string]interface{})
 			for rows.Next() {
-				err = rows.MapScan(row)
+				err = rows.Scan(valuePointers...)
 				if err != nil {
 					return err
 				}
-				onRow(row)
+				for i, col := range colNames {
+					data[col] = values[i]
+				}
+				onRow(data)
 			}
 		case func() (interface{}, func()):
-			err = ds.fetchSqlxRows(rows, onRow)
+			err = ds.fetchRows(rows, onRow)
 			if err != nil {
 				return err
 			}
@@ -496,26 +485,52 @@ func (ds *_DS) queryImplRcOracle(ctx context.Context, sqlString string, onRowArr
 	}
 	return nil
 }
+
+func (ds *_DS) fetchRows(rows *sql.Rows, onRow func() (interface{}, func())) (err error) {
+	for rows.Next() {
+		fa, onRowCompleted := onRow()
+		switch _fa := fa.(type) {
+		case []interface{}:
+			err = rows.Scan(_fa...)
+		default:
+			err = errUnexpectedType(_fa)
+		}
+		if err != nil {
+			return
+		}
+		onRowCompleted()
+	}
+	return
+}
+
 func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []interface{}, queryArgs ...interface{}) error {
-	rows, err := ds.querySqlx(ctx, sqlString, queryArgs...)
+	rows, err := ds.query(ctx, sqlString, queryArgs...)
 	if err != nil {
 		return err
 	}
 	defer _close(rows)
-	for _, fn := range onRowArr {
-		switch onRow := fn.(type) {
+	onRowIndex := 0
+	for {
+		switch onRow := onRowArr[onRowIndex].(type) {
 		case func(map[string]interface{}):
 			// re-detect columns for each ResultSet
-			row := make(map[string]interface{})
+			colNames, values, valuePointers, err := ds.prepareFetch(rows)
+			if err != nil {
+				return err
+			}
+			data := make(map[string]interface{})
 			for rows.Next() {
-				err = rows.MapScan(row)
+				err = rows.Scan(valuePointers...)
 				if err != nil {
 					return err
 				}
-				onRow(row)
+				for i, col := range colNames {
+					data[col] = values[i]
+				}
+				onRow(data)
 			}
 		case func() (interface{}, func()):
-			err = ds.fetchSqlxRows(rows, onRow)
+			err = ds.fetchRows(rows, onRow)
 			if err != nil {
 				return err
 			}
@@ -525,53 +540,14 @@ func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []int
 		if !rows.NextResultSet() {
 			break
 		}
+		onRowIndex++
 	}
 	return nil
-}
-
-func (ds *_DS) fetchSqlxRows(rows *sqlx.Rows, onRow func() (interface{}, func())) error {
-	sc := scanner{m: ds.db.Mapper}
-	for rows.Next() {
-		fa, onRowCompleted := onRow()
-		err := sc.Scan(rows, fa)
-		if err != nil {
-			return err
-		}
-		onRowCompleted()
-	}
-	return nil
-}
-
-type scanner struct {
-	m      *reflectx.Mapper
-	fields [][]int
-}
-
-func (s *scanner) Scan(rowsX *sqlx.Rows, fa interface{}) error {
-	// sqlx.Rows.StructScan is not working with NextResultSet and multiple struct types
-	switch _fa := fa.(type) {
-	case []interface{}:
-		return rowsX.Scan(_fa...)
-	}
-	if s.fields == nil {
-		columns, err := rowsX.Columns()
-		if err != nil {
-			return err
-		}
-		elemType := reflect.TypeOf(fa)
-		base := reflectx.Deref(elemType)
-		s.fields = s.m.TraversalsByName(base, columns)
-	}
-	values, err := toValues(s.fields, fa)
-	if err != nil {
-		return err
-	}
-	return rowsX.Scan(values...)
 }
 
 func (ds *_DS) exec2(ctx context.Context, sqlString string, onRowArr []interface{}, args ...interface{}) (rowsAffected int64, err error) {
 	var res sql.Result
-	res, err = ds.execSqlx(ctx, sqlString, args...)
+	res, err = ds.exec(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
@@ -583,7 +559,7 @@ func (ds *_DS) exec2(ctx context.Context, sqlString string, onRowArr []interface
 				switch rows := param.Dest.(type) {
 				case *driver.Rows:
 					onRow := onRowArr[onRowIndex]
-					err = ds.fetchDriverRows(*rows, onRow)
+					err = fetchDriverRows(*rows, onRow)
 					if err != nil {
 						return
 					}
@@ -596,145 +572,48 @@ func (ds *_DS) exec2(ctx context.Context, sqlString string, onRowArr []interface
 	return
 }
 
-func (ds *_DS) fetchDriverRows(dr driver.Rows, onRowFunc interface{}) error {
-	defer _close(dr)
-	rx := newRows(dr)
+func fetchDriverRows(rows driver.Rows, onRowFunc interface{}) error {
+	defer _close(rows)
+	colNames := rows.Columns()
+	values := make([]driver.Value, len(colNames))
 	switch onRow := onRowFunc.(type) {
 	case func(map[string]interface{}):
 		data := make(map[string]interface{})
 		for {
-			if !rx.Next() {
-				break // not an error
+			err := rows.Next(values)
+			if err != nil {
+				break
 			}
-			rx.toMap(data)
+			for i, col := range colNames {
+				data[col] = values[i]
+			}
 			onRow(data)
 		}
 	case func() (interface{}, func()):
-		for rx.Next() {
-			fa, onRowCompleted := onRow()
-			var err error
-			switch _fa := fa.(type) {
-			case []interface{}:
-				err = rx.toSlice(_fa)
-			default:
-				err = rx.toStruct(ds.db.Mapper, fa)
-			}
+		for {
+			err := rows.Next(values)
 			if err != nil {
+				if "EOF" == err.Error() {
+					break
+				}
 				return err
 			}
-			onRowCompleted()
+			fa, onRowCompleted := onRow()
+			switch _fa := fa.(type) {
+			case []interface{}:
+				for i, v := range values {
+					err = _setAny(_fa[i], v)
+					if err != nil {
+						return err
+					}
+				}
+				onRowCompleted()
+			default:
+				return errUnexpectedType(fa)
+			}
 		}
 	default:
-		return errUnexpectedType(onRow)
-	}
-	return nil
-}
-
-type _Rows struct {
-	rows     driver.Rows
-	colNames []string
-	values   []driver.Value
-
-	fields [][]int
-}
-
-func newRows(rows driver.Rows) *_Rows {
-	colNames := rows.Columns()
-	return &_Rows{
-		rows:     rows,
-		colNames: rows.Columns(),
-		values:   make([]driver.Value, len(colNames)),
-	}
-}
-
-func (rx *_Rows) Close() error {
-	// implement sqlx.rowsi
-	return rx.rows.Close()
-}
-
-func (rx *_Rows) Columns() ([]string, error) {
-	// implement sqlx.rowsi
-	return rx.colNames, nil
-}
-
-func (rx *_Rows) Err() error {
-	// implement sqlx.rowsi
-	return nil
-}
-
-func (rx *_Rows) Next() bool {
-	// implement sqlx.rowsi
-	err := rx.rows.Next(rx.values)
-	return err == nil
-}
-
-func (rx *_Rows) Scan(_fa ...interface{}) error {
-	// implement sqlx.rowsi --> to use in
-	for i, v := range rx.values {
-		err := _setAny(_fa[i], v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (rx *_Rows) toMap(data map[string]interface{}) {
-	for i, col := range rx.colNames {
-		data[col] = rx.values[i]
-	}
-}
-
-func (rx *_Rows) toSlice(_fa []interface{}) error {
-	for i, v := range rx.values {
-		err := _setAny(_fa[i], v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (rx *_Rows) toStruct(m *reflectx.Mapper, fa interface{}) error {
-	if rx.fields == nil {
-		elemType := reflect.TypeOf(fa)
-		base := reflectx.Deref(elemType)
-		rx.fields = m.TraversalsByName(base, rx.colNames)
-	}
-	values, err := toValues(rx.fields, fa)
-	if err != nil {
-		return err
-	}
-	return rx.Scan(values...)
-}
-
-func toValues(fields [][]int, fa interface{}) ([]interface{}, error) {
-	values := make([]interface{}, len(fields))
-	vp := reflect.ValueOf(fa)
-	v := reflect.Indirect(vp)
-	err := fieldsByTraversal(v, fields, values, true)
-	if err != nil {
-		return nil, err
-	}
-	return values, nil
-}
-
-func fieldsByTraversal(v reflect.Value, traversals [][]int, values []interface{}, ptrs bool) error {
-	v = reflect.Indirect(v)
-	if v.Kind() != reflect.Struct {
-		return errors.New("argument not a struct")
-	}
-	for i, traversal := range traversals {
-		if len(traversal) == 0 {
-			values[i] = new(interface{})
-			continue
-		}
-		f := reflectx.FieldByIndexes(v, traversal)
-		if ptrs {
-			values[i] = f.Addr().Interface()
-		} else {
-			values[i] = f.Interface()
-		}
+		return errUnexpectedType(onRowFunc)
 	}
 	return nil
 }
@@ -764,7 +643,7 @@ func (ds *_DS) Exec(ctx context.Context, sqlString string, args ...interface{}) 
 		if ds.isOracle() {
 			return 0, ds.queryImplRcOracle(ctx, sqlString, onRowArr, queryArgs...)
 		}
-		// it works with MySQL SP and PgSql
+		// it works with MySQL SP and PgSQL
 		return 0, ds.queryImplRc(ctx, sqlString, onRowArr, queryArgs...)
 	}
 	return ds.exec2(ctx, sqlString, onRowArr, queryArgs...)
@@ -781,7 +660,7 @@ func (ds *_DS) Query(ctx context.Context, sqlString string, destPtr interface{},
 	if hasParamsImplRc || hasParamsRefRc {
 		return errUnexpectedInQuery()
 	}
-	rows, err := ds.querySqlx(ctx, sqlString, queryArgs...)
+	rows, err := ds.query(ctx, sqlString, queryArgs...)
 	if err != nil {
 		return err
 	}
@@ -813,7 +692,7 @@ func (ds *_DS) Query(ctx context.Context, sqlString string, destPtr interface{},
 
 func (ds *_DS) QueryAll(ctx context.Context, sqlString string, destSlicePtr interface{}, args ...interface{}) (err error) {
 	sqlString = ds.formatSQL(sqlString)
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
+	rows, err := ds.query(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
@@ -822,7 +701,7 @@ func (ds *_DS) QueryAll(ctx context.Context, sqlString string, destSlicePtr inte
 	return
 }
 
-func (ds *_DS) selectAllScalars(rows *sqlx.Rows, dest interface{}) error {
+func (ds *_DS) selectAllScalars(rows *sql.Rows, dest interface{}) error {
 	base, direct, elemIsPtr, err := prepareSelectScalars(dest)
 	if err != nil {
 		return err
@@ -854,21 +733,18 @@ func (ds *_DS) selectAllScalars(rows *sqlx.Rows, dest interface{}) error {
 			break
 		}
 	}
-
 	err = rows.Err()
 	if err != nil {
 		return err
 	}
-
 	err = ErrMapToErr(errMap)
-
 	return err
 }
 
 func prepareSelectScalars(dest interface{}) (base reflect.Type, direct reflect.Value, elemIsPtr bool, err error) {
 	value := reflect.ValueOf(dest)
 	if value.Kind() != reflect.Ptr {
-		err = fmt.Errorf("must pass a pointer, not a value: %T", dest)
+		err = errors.New("must pass a pointer, not a value")
 		return
 	}
 	if value.IsNil() {
@@ -883,31 +759,110 @@ func prepareSelectScalars(dest interface{}) (base reflect.Type, direct reflect.V
 	}
 	direct.SetLen(0)
 	elemIsPtr = slice.Elem().Kind() == reflect.Ptr
-	base = reflectx.Deref(slice.Elem())
+	base = Deref(slice.Elem())
 	return
 }
 
 func baseType(t reflect.Type, expected reflect.Kind) (reflect.Type, error) {
-	t = reflectx.Deref(t)
+	t = Deref(t)
 	if t.Kind() != expected {
 		return nil, fmt.Errorf("expected %s but got %s", expected, t.Kind())
 	}
 	return t, nil
 }
 
+// Deref is Indirect for reflect.Types
+func Deref(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
+}
+
 func (ds *_DS) QueryRow(ctx context.Context, sqlString string, args ...interface{}) (row map[string]interface{}, err error) {
 	sqlString = ds.formatSQL(sqlString)
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
+	rows, err := ds.query(ctx, sqlString, args...)
 	if err != nil {
 		return
 	}
 	defer _close(rows)
+	colNames, values, valuePointers, err := ds.prepareFetch(rows)
+	if err != nil {
+		return
+	}
+	row = make(map[string]interface{})
 	if !rows.Next() {
 		err = errNoRows(sqlString)
 		return
 	}
-	row = make(map[string]interface{})
-	err = rows.MapScan(row)
+	err = rows.Scan(valuePointers...)
+	if err != nil {
+		return
+	}
+	for i, col := range colNames {
+		row[col] = values[i]
+	}
+	if rows.Next() {
+		err = errMultipleRows(sqlString)
+		return
+	}
+	return
+}
+
+func (ds *_DS) QueryAllRows(ctx context.Context, sqlString string, onRow func(map[string]interface{}), args ...interface{}) error {
+	// many thanks to:
+	// https://stackoverflow.com/questions/51731423/how-to-read-a-row-from-a-table-to-a-map-without-knowing-columns
+	sqlString = ds.formatSQL(sqlString)
+	rows, err := ds.query(ctx, sqlString, args...)
+	if err != nil {
+		return err
+	}
+	defer _close(rows)
+	for {
+		// re-detect columns for each ResultSet
+		colNames, values, valuePointers, err := ds.prepareFetch(rows)
+		if err != nil {
+			return err
+		}
+		data := make(map[string]interface{})
+		for rows.Next() {
+			err = rows.Scan(valuePointers...)
+			if err != nil {
+				return err
+			}
+			for i, col := range colNames {
+				data[col] = values[i]
+			}
+			onRow(data)
+		}
+		if !rows.NextResultSet() {
+			break
+		}
+	}
+	return nil
+}
+
+func (ds *_DS) Select(ctx context.Context, sqlString string, dest interface{}, args ...interface{}) (err error) {
+	sqlString = ds.formatSQL(sqlString)
+	rows, err := ds.query(ctx, sqlString, args...)
+	if err != nil {
+		return
+	}
+	defer _close(rows)
+	onRow, ok := dest.(func() (interface{}, func()))
+	if ok {
+		return ds.fetchAll(rows, onRow)
+	}
+	if !rows.Next() {
+		err = errNoRows(sqlString)
+		return
+	}
+	faArr, ok := dest.([]interface{})
+	if ok {
+		err = rows.Scan(faArr...)
+	} else {
+		err = errUnexpectedType(dest)
+	}
 	if err != nil {
 		return
 	}
@@ -918,84 +873,28 @@ func (ds *_DS) QueryRow(ctx context.Context, sqlString string, args ...interface
 	return
 }
 
-func (ds *_DS) QueryAllRows(ctx context.Context, sqlString string, onRow func(map[string]interface{}), args ...interface{}) (err error) {
-	sqlString = ds.formatSQL(sqlString)
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
-	if err != nil {
-		return
-	}
-	defer _close(rows)
+func (ds *_DS) fetchAll(rows *sql.Rows, onRow func() (interface{}, func())) (err error) {
 	for {
-		// re-detect columns for each ResultSet
-		row := make(map[string]interface{})
 		for rows.Next() {
-			err = rows.MapScan(row)
+			fa, onRowComplete := onRow()
+			faArr, isUntypedSlice := fa.([]interface{})
+			if isUntypedSlice {
+				err = rows.Scan(faArr...)
+			} else {
+				err = errUnexpectedType(fa)
+			}
 			if err != nil {
 				return
 			}
-			onRow(row)
+			onRowComplete()
 		}
 		if !rows.NextResultSet() {
-			break
+			return
 		}
 	}
-	return
 }
 
-func isPtrSlice(i interface{}) bool {
-	// https://stackoverflow.com/questions/69675420/how-to-check-if-interface-is-a-a-pointer-to-a-slice
-	if i == nil {
-		return false
-	}
-	v := reflect.ValueOf(i)
-	if v.Kind() != reflect.Ptr {
-		return false
-	}
-	return v.Elem().Kind() == reflect.Slice
-}
-
-func (ds *_DS) Select(ctx context.Context, sqlString string, dest interface{}, args ...interface{}) error {
-	sqlString = ds.formatSQL(sqlString)
-	faArr, isUntypedSlice := dest.([]interface{})
-	if !isUntypedSlice && isPtrSlice(dest) {
-		return ds.selectSqlx(ctx, dest, sqlString, args...)
-	}
-	rows, err := ds.querySqlx(ctx, sqlString, args...)
-	if err != nil {
-		return err
-	}
-	defer _close(rows)
-	onRow, ok := dest.(func() (interface{}, func()))
-	if ok {
-		for {
-			err := ds.fetchSqlxRows(rows, onRow)
-			if err != nil {
-				return err
-			}
-			if !rows.NextResultSet() {
-				break
-			}
-		}
-		return nil
-	}
-	if !rows.Next() {
-		return errNoRows(sqlString)
-	}
-	if isUntypedSlice {
-		err = rows.Scan(faArr...)
-	} else {
-		err = rows.StructScan(dest) // pointer to single DTO
-	}
-	if err != nil {
-		return err
-	}
-	if rows.Next() {
-		return errMultipleRows(sqlString)
-	}
-	return nil
-}
-
-func (ds *_DS) prepareFetch(rows *sqlx.Rows) (colNames []string, values []interface{}, valuePointers []interface{}, err error) {
+func (ds *_DS) prepareFetch(rows *sql.Rows) (colNames []string, values []interface{}, valuePointers []interface{}, err error) {
 	colNames, err = rows.Columns()
 	if err != nil {
 		return
@@ -1015,9 +914,18 @@ func (ds *_DS) formatSQL(sqlString string) string {
 	if len(ds.paramPrefix) == 0 {
 		return sqlString
 	}
-	// https://jmoiron.github.io/sqlx/
-	// bindvars
-	return ds.db.Rebind(sqlString)
+	i := 1
+	for {
+		pos := strings.Index(sqlString, "?")
+		if pos == -1 {
+			break
+		}
+		str1 := sqlString[0:pos]
+		str2 := sqlString[pos+1:]
+		sqlString = str1 + ds.paramPrefix + strconv.Itoa(i) + str2
+		i += 1
+	}
+	return sqlString
 }
 
 /////////////////////////////////////////////////////////////

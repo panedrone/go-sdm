@@ -77,7 +77,7 @@ func runProject(label, projectDir, sdmFolder, out string) error {
 		return err
 	}
 	defer md.Close()
-	res, err := gen.Run(projectDir, sdmDir, md)
+	res, err := gen.Run(projectDir, sdmDir, md, nil)
 	if err != nil {
 		return err
 	}

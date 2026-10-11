@@ -1,22 +1,20 @@
 //go:build ignore
 
-package {{package}}
+// Your part of the data store for sqlx: the connection. See data_store_sqlx.go.
+
+package dbal
 
 import (
 	"context"
 	"os"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL
+	"github.com/jmoiron/sqlx"
 )
 
 func (ds *_DS) initDb() (err error) {
 	ds.paramPrefix = "$"
-	dsn := os.Getenv("DATABASE_URL") // postgres://user:pwd@host:5432/db
-	ds.rootDb, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
-	})
+	ds.db, err = sqlx.Open("pgx", os.Getenv("DATABASE_URL")) // postgres://user:pwd@host:5432/db
 	return
 }
 

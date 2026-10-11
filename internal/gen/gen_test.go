@@ -3,12 +3,10 @@ package gen
 import (
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/panedrone/go-sdm/internal/cg"
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
 
@@ -54,7 +52,7 @@ func runGolden(t *testing.T, label, project, sdmDir string) {
 	if err := db.Exec(string(schema)); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Run(filepath.ToSlash(project), sdmDir, db)
+	res, err := Run(filepath.ToSlash(project), sdmDir, db, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,71 +120,4 @@ func expect(t *testing.T, path, got string) {
 			return
 		}
 	}
-}
-
-// TestGoTypeNames — те же проекты, но <type detected> записан Go-именами (int32,
-// time.Time, gorm-uuid...), как его пишет sdm init: вывод обязан не измениться.
-func TestGoTypeNames(t *testing.T) {
-	for _, c := range goldenCases {
-		t.Run(c.label, func(t *testing.T) {
-			project := filepath.Join("testdata", c.project)
-			sdmDir := t.TempDir()
-			src := filepath.Join(project, c.sdm)
-			entries, err := os.ReadDir(src)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, e := range entries {
-				if e.IsDir() || !strings.HasSuffix(e.Name(), ".xml") {
-					continue
-				}
-				b, err := os.ReadFile(filepath.Join(src, e.Name()))
-				if err != nil {
-					t.Fatal(err)
-				}
-				if e.Name() == "settings.xml" {
-					b = []byte(goTypeNames(t, string(b)))
-				}
-				if err := os.WriteFile(filepath.Join(sdmDir, e.Name()), b, 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			runGolden(t, c.label, project, sdmDir)
-		})
-	}
-}
-
-var (
-	reComment = regexp.MustCompile(`(?s)<!--.*?-->`)
-	reType    = regexp.MustCompile(`<type\s+detected="([^"]*)"\s+target="([^"]*)"\s*/>`)
-)
-
-// goTypeNames — Java-ключи type-map -> Go-имена. Несколько Java-типов дают одно Go-имя
-// (java.util.Date и java.time.LocalDateTime -> time.Time): одинаковые цели схлопываются,
-// разные — остаются Java-ключом (смешанный конфиг тоже должен работать).
-func goTypeNames(t *testing.T, settings string) string {
-	t.Helper()
-	settings = reComment.ReplaceAllString(settings, "")
-	seen := map[string]string{}
-	renamed := 0
-	res := reType.ReplaceAllStringFunc(settings, func(el string) string {
-		m := reType.FindStringSubmatch(el)
-		alias, ok := cg.GoAlias(m[1])
-		if !ok {
-			return el
-		}
-		if target, dup := seen[alias]; dup {
-			if target == m[2] {
-				return ""
-			}
-			return el
-		}
-		seen[alias] = m[2]
-		renamed++
-		return `<type detected="` + alias + `" target="` + m[2] + `"/>`
-	})
-	if renamed == 0 {
-		t.Fatal("no Java names in the type-map")
-	}
-	return res
 }
