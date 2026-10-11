@@ -68,6 +68,11 @@ func Init(o Options) ([]string, error) {
 		{"settings.xml", filepath.Join(sdmDir, "settings.xml")},
 		{"data_store_no_orm.go.txt", filepath.Join(daoDir, "data_store_no_orm.go")},
 		{"data_store_no_orm_ex.go.txt", filepath.Join(daoDir, "data_store_no_orm_ex.go")},
+		// sqlx и gorm — под "//go:build ignore": переключение — перенос этой строки
+		{"data_store_sqlx.go.txt", filepath.Join(daoDir, "data_store_sqlx.go")},
+		{"data_store_sqlx_ex.go.txt", filepath.Join(daoDir, "data_store_sqlx_ex.go")},
+		{"data_store_gorm.go.txt", filepath.Join(daoDir, "data_store_gorm.go")},
+		{"data_store_gorm_ex.go.txt", filepath.Join(daoDir, "data_store_gorm_ex.go")},
 	}
 	for _, x := range xsds {
 		steps = append(steps, step{x, filepath.Join(sdmDir, x)})

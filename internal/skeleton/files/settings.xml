@@ -15,10 +15,10 @@
     <!-- scope: folder of generated DAO files
 
          field-assign-mode:
-            0 - by column name
+            0 - by column name (database/sql, gorm)
             1 - by field position
-            2 - ptr to DTO or ptr to slice of DTO-s (Gorm, sqlx)
-            3 - ptr to resulting slice of DTO-s (Gorm, sqlx) -->
+            2 - ptr to DTO or ptr to slice of DTO-s (sqlx)
+            3 - ptr to resulting slice of DTO-s (sqlx) -->
 
     <dao scope="{{dao}}" field-assign-mode="0" macro=""/>
 
@@ -26,33 +26,77 @@
 
     <!-- go-sdm uses only "url", "user" and "pwd"; "jar" and "class" are for the IDE plug-in.
          url: jdbc:postgresql://host:port/db, jdbc:mysql://host:port/db or jdbc:sqlite:<file>
-         (postgres://... and mysql://... too). The data store below is for PostgreSQL (pgx):
-         for MySQL or SQLite change the driver in data_store_no_orm_ex.go -->
+         (postgres://... and mysql://... too). SDM_PWD, if set, overrides "pwd". -->
 
     <jdbc jar="postgresql-42.7.3.jar" class="org.postgresql.Driver"
           url="jdbc:postgresql://localhost:5432/postgres" user="postgres" pwd=""/>
 
+    <!-- detected: what the database says about a column, in Go words:
+
+            int16 int32 int64 uint64 float32 float64 decimal string []byte bool time.Time
+            uuid array cursor json xml interval money any (not detected)
+
+         A class is generated for database/sql, sqlx or gorm by its name in sdm.xml:
+            <dto-class name="Task" ...>       - the types without prefix
+            <dto-class name="sqlx-Task" ...>  - the types with "sqlx-"
+            <dto-class name="gorm-Task" ...>  - the types with "gorm-" ("+auto" - auto="..." column)
+         The data store in the DAO folder has to match (see "//go:build ignore" there).
+         The sets you don't use can be removed or commented out.
+
+         The Java names of the IDE plug-in (java.lang.Integer, ...) are understood as well. -->
+
     <type-map default="">
 
-        <type detected="java.util.UUID" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>
-        <type detected="java.sql.Array" target="[]string${json}"/>
+        <!-- database/sql (no ORM) -->
 
-        <type detected="java.lang.Short" target="int16${json} -> SetInt16"/>
-        <type detected="java.lang.Integer" target="int32${json} -> SetInt32"/>
-        <type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
+        <type detected="uuid" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>
+        <type detected="array" target="[]string${json}"/>
+        <type detected="int16" target="int16${json} -> SetInt16"/>
+        <type detected="int32" target="int32${json} -> SetInt32"/>
+        <type detected="int64" target="int64${json} -> SetInt64"/>
+        <type detected="float32" target="float32${json} -> SetFloat32"/>
+        <type detected="float64" target="float64${json} -> SetFloat64"/>
+        <type detected="decimal" target="float64${json} -> SetFloat64"/>
+        <type detected="string" target="string${json} -> SetString"/>
+        <type detected="[]byte" target="[]byte${json} -> SetBytes"/>
+        <type detected="bool" target="bool${json} -> SetBool"/>
+        <type detected="time.Time" target="time:time.Time${json} -> SetTime"/>
+        <type detected="cursor" target="string"/> <!-- PostgreSQL refcursor parameter -->
+        <type detected="any" target="interface{}${json}"/>
 
-        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>
-        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>
-        <type detected="java.math.BigDecimal" target="float64${json} -> SetFloat64"/>
+        <!-- sqlx -->
 
-        <type detected="java.lang.String" target="string${json} -> SetString"/>
-        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>
-        <type detected="java.lang.Boolean" target="bool${json} -> SetBool"/>
+        <type detected="sqlx-uuid" target="github.com/google/uuid:uuid.UUID${json-sqlx}"/>
+        <type detected="sqlx-array" target="[]string${json-sqlx}"/>
+        <type detected="sqlx-int16" target="int16${json-sqlx} -> SetInt16"/>
+        <type detected="sqlx-int32" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-int64" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-float32" target="float32${json-sqlx} -> SetFloat32"/>
+        <type detected="sqlx-float64" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-decimal" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-string" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-[]byte" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-bool" target="bool${json-sqlx} -> SetBool"/>
+        <type detected="sqlx-time.Time" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-any" target="interface{}${json-sqlx}"/>
 
-        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>
-        <type detected="java.time.LocalDateTime" target="time:time.Time${json} -> SetTime"/>
+        <!-- gorm -->
 
-        <type detected="java.lang.Object" target="interface{}${json}"/>
+        <type detected="gorm-uuid" target="github.com/google/uuid:uuid.UUID${json-gorm}|1:;type:uuid"/>
+        <type detected="gorm-uuid+auto"
+              target="github.com/google/uuid:uuid.UUID${json-gorm}|1:;type:uuid;default:gen_random_uuid()"/>
+        <type detected="gorm-array" target="[]string${json-gorm}"/>
+        <type detected="gorm-int16" target="int16${json-gorm} -> SetInt16"/>
+        <type detected="gorm-int32" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-int64" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-float32" target="float32${json-gorm} -> SetFloat32"/>
+        <type detected="gorm-float64" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-decimal" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-string" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-[]byte" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-bool" target="bool${json-gorm} -> SetBool"/>
+        <type detected="gorm-time.Time" target="${json-gorm-time}"/>
+        <type detected="gorm-any" target="interface{}${json-gorm}"/>
 
     </type-map>
 
@@ -67,6 +111,44 @@
         <macro name="${json-col}" value="${lower_snake_case(column)}"/>
 
         <macro name="${json}" value=" `json:&quot;${json-col}${0}&quot;`"/>
+
+        <macro name="${json-sqlx}" value=" `json:&quot;${json-col}${0}&quot; db:&quot;${column}&quot;`"/>
+
+        <macro name="${json-gorm}"
+               value=" `json:&quot;${json-col}${0}&quot; gorm:&quot;column:${column}${gorm-params}${1}&quot;`"/>
+
+        <macro name="${json-gorm-time}" value="time:time.Time${json-gorm} -> SetTime"/>
+
+        <!-- gorm tag parameters from the metadata of the column -->
+        <macro name="${gorm-params}">
+            <vm-xml>
+                <if var="$fi.ColumnSize > 0">
+                    <print var=";size:$fi.ColumnSize"/>
+                </if>
+                <if var="$fi.PK">
+                    <print var=";primaryKey"/>
+                    <if var="$fi.AI">
+                        <print var=";autoIncrement"/>
+                    </if>
+                    <else>
+                        <if var="$fi.Unique &amp;&amp; $fi.Indexed">
+                            <print var=";uniqueIndex"/>
+                            <else>
+                                <if var="$fi.Unique">
+                                    <print var=";unique"/>
+                                </if>
+                                <if var="$fi.Indexed">
+                                    <print var=";index"/>
+                                </if>
+                            </else>
+                        </if>
+                    </else>
+                </if>
+                <if var="!$fi.Nullable">
+                    <print var=";not null"/>
+                </if>
+            </vm-xml>
+        </macro>
 
     </macros>
 

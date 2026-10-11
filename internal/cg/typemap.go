@@ -19,26 +19,42 @@ func SplitTargetType(target string) (typ, assign string, ok bool) {
 }
 
 // TypeMap — <type-map> (JaxbTypeMap.java).
+//
+// <type detected="..."> понимает два словаря: Java-имена, как у IDE-плагина
+// (java.lang.Integer), и Go-имена (int32) — их пишет sdm init. Метаданные сообщают тип
+// Java-именем; ключ с Go-именем срабатывает только через перевод этого имени (goAlias),
+// а не прямым совпадением строк: иначе цель "string" при повторном проходе ядра
+// совпала бы с ключом "string" и перемапилась ещё раз.
 type TypeMap struct {
-	detected    map[string]string
+	detected    map[string]string // Java-имена и всё, что не из словаря Go-имён
+	byAlias     map[string]string // Go-имена
 	defaultType string
 }
 
 func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
-	res := &TypeMap{detected: map[string]string{}, defaultType: tm.Default}
+	res := &TypeMap{detected: map[string]string{}, byAlias: map[string]string{}, defaultType: tm.Default}
 	for _, t := range tm.Types {
-		res.detected[t.Detected] = t.Target
+		if isAliasKey(t.Detected) {
+			res.byAlias[t.Detected] = t.Target
+		} else {
+			res.detected[t.Detected] = t.Target
+		}
 	}
 	return res
 }
 
 // Target — 'detected' — тип из метаданных или явно объявленный в XML.
 func (m *TypeMap) Target(detected string) string {
-	if len(m.detected) == 0 {
+	if len(m.detected) == 0 && len(m.byAlias) == 0 {
 		return detected // нет переопределений — как есть, независимо от default
 	}
 	if t, ok := m.detected[detected]; ok {
 		return t
+	}
+	if a, ok := goAlias(detected); ok {
+		if t, ok := m.byAlias[a]; ok {
+			return t
+		}
 	}
 	if strings.TrimSpace(m.defaultType) == "" {
 		return detected

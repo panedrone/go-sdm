@@ -1,3 +1,6 @@
+// The data store for database/sql (no ORM). To use sqlx or gorm instead: move the line
+// "//go:build ignore" from data_store_sqlx*.go or data_store_gorm*.go to this file and its _ex.
+
 package {{package}}
 
 import (

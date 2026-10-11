@@ -28,7 +28,7 @@ func TestInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(written) != 7 || !Exists(dir, "go-sdm") {
+	if len(written) != 11 || !Exists(dir, "go-sdm") {
 		t.Fatalf("written %d, exists %t", len(written), Exists(dir, "go-sdm"))
 	}
 
@@ -48,8 +48,15 @@ func TestInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(string(ds), "package dbal\n") {
-		t.Errorf("package: %q", strings.SplitN(string(ds), "\n", 2)[0])
+	if !strings.Contains(string(ds), "\npackage dbal\n") || strings.HasPrefix(string(ds), "//go:build") {
+		t.Error("data_store_no_orm.go: package dbal, no build constraint expected")
+	}
+	// sqlx и gorm не мешают сборке: исключены строкой //go:build ignore
+	for _, f := range []string{"data_store_sqlx.go", "data_store_sqlx_ex.go", "data_store_gorm.go", "data_store_gorm_ex.go"} {
+		b, err := os.ReadFile(filepath.Join(dir, "internal", "dbal", f))
+		if err != nil || !strings.HasPrefix(string(b), "//go:build ignore\n") || !strings.Contains(string(b), "\npackage dbal\n") {
+			t.Errorf("%s: %v", f, err)
+		}
 	}
 }
 
