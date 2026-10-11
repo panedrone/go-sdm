@@ -7,6 +7,13 @@
         <type detected="BIGINT" target="int64${json} -> SetInt64"/>
         <type detected="SMALLINT" target="int64${json} -> SetInt64"/>
         <type detected="TINYINT" target="int64${json} -> SetInt64"/>
+        <type detected="MEDIUMINT" target="int64${json} -> SetInt64"/>
+        <type detected="UNSIGNED BIG INT" target="int64${json} -> SetInt64"/>
+        <type detected="INT2" target="int64${json} -> SetInt64"/>
+        <type detected="INT8" target="int64${json} -> SetInt64"/>
+        <type detected="STRING" target="string${json} -> SetString"/>
+        <type detected="VARYING CHARACTER" target="string${json} -> SetString"/>
+        <type detected="NATIVE CHARACTER" target="string${json} -> SetString"/>
         <type detected="REAL" target="float64${json} -> SetFloat64"/>
         <type detected="DOUBLE" target="float64${json} -> SetFloat64"/>
         <type detected="FLOAT" target="float64${json} -> SetFloat64"/>
@@ -41,6 +48,13 @@
         <type detected="sqlx-BIGINT" target="int64${json-sqlx} -> SetInt64"/>
         <type detected="sqlx-SMALLINT" target="int64${json-sqlx} -> SetInt64"/>
         <type detected="sqlx-TINYINT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-MEDIUMINT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-UNSIGNED BIG INT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-INT2" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-INT8" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-STRING" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-VARYING CHARACTER" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-NATIVE CHARACTER" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-REAL" target="float64${json-sqlx} -> SetFloat64"/>
         <type detected="sqlx-DOUBLE" target="float64${json-sqlx} -> SetFloat64"/>
         <type detected="sqlx-FLOAT" target="float64${json-sqlx} -> SetFloat64"/>
@@ -75,6 +89,13 @@
         <type detected="gorm-BIGINT" target="int64${json-gorm} -> SetInt64"/>
         <type detected="gorm-SMALLINT" target="int64${json-gorm} -> SetInt64"/>
         <type detected="gorm-TINYINT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-MEDIUMINT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-UNSIGNED BIG INT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-INT2" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-INT8" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-STRING" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-VARYING CHARACTER" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-NATIVE CHARACTER" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-REAL" target="float64${json-gorm} -> SetFloat64"/>
         <type detected="gorm-DOUBLE" target="float64${json-gorm} -> SetFloat64"/>
         <type detected="gorm-FLOAT" target="float64${json-gorm} -> SetFloat64"/>

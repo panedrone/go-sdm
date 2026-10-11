@@ -5,6 +5,8 @@ package gen
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -39,6 +41,9 @@ func OpenMetadata(projectDir string, j sdmxml.Jdbc) (meta.Metadata, error) {
 		}
 		if !filepath.IsAbs(file) {
 			file = filepath.Join(projectDir, file)
+		}
+		if _, err := os.Stat(file); err != nil {
+			return nil, fmt.Errorf("SQLite database not found: %s (<jdbc url> in settings.xml)", file)
 		}
 		return sqlite.OpenReadOnly(file)
 	}
