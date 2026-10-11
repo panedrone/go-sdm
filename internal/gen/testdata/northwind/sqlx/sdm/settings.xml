@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="settings.xsd">
+
+    <folders target="go_sqlite3_northwindEF" sql="sqlx/sdm/sql"/>
+
+    <dto scope="sqlx/dbal" inheritance="" field-names-mode="0" macro=""/>
+
+    <dao scope="sqlx/dbal" field-assign-mode="3" macro=""/>
+
+    <ide event-log="true"/>
+
+    <jdbc jar="lib/sqlite-jdbc-3.45.1.0.jar" class="org.sqlite.JDBC"
+          url="jdbc:sqlite:$PROJECT_DIR$/northwindEF.sqlite" user="" pwd=""/>
+
+    <type-map default="">
+
+        <!-- sqlite3 -->
+
+        <type detected="sqlx-java.lang.Integer" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-java.lang.Float" target="float32${json-sqlx} -> SetFloat32"/>
+        <type detected="sqlx-java.lang.Double" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-java.lang.String" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-java.util.Date" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-byte[]" target="byte[]${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-java.lang.Object" target="interface{}${json-sqlx}"/>
+
+        <type detected="java.lang.Integer" target="int64${json} -> SetInt64"/>
+        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>
+        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>
+        <type detected="java.lang.String" target="string${json} -> SetString"/>
+        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>
+        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>
+        <type detected="java.lang.Object" target="interface{}${json-sqlx}"/>
+
+        <!-- mysql, postgres, sql server  -->
+
+        <!--        <type detected="sqlx-java.util.UUID" target="github.com/google/uuid:uuid.UUID${json-sqlx}|1:;type:uuid"/>-->
+        <!--        <type detected="sqlx-java.util.UUID+auto"-->
+        <!--              target="github.com/google/uuid:uuid.UUID${json-sqlx}|1:;type:uuid;default:uuid_generate_v4()"/>-->
+
+        <!--        <type detected="sqlx-java.sql.Array" target="[]string${json-sqlx}"/>-->
+
+        <!--        <type detected="sqlx-java.lang.Short" target="int16${json-sqlx} -> SetInt16"/>-->
+        <!--        <type detected="sqlx-java.lang.Integer" target="int32${json-sqlx} -> SetInt32"/>-->
+        <!--        <type detected="sqlx-java.lang.Long" target="int64${json-sqlx} -> SetInt64"/>-->
+
+        <!--        <type detected="sqlx-java.lang.Float" target="float32${json-sqlx} -> SetFloat32"/>-->
+        <!--        <type detected="sqlx-java.lang.Double" target="float64${json-sqlx} -> SetFloat64"/>-->
+        <!--        <type detected="sqlx-java.math.BigDecimal" target="float64${json-sqlx} -> SetFloat64"/>-->
+
+        <!--        <type detected="sqlx-java.lang.String" target="string${json-sqlx} -> SetString"/>-->
+        <!--        <type detected="sqlx-byte[]" target="[]byte${json-sqlx} -> SetBytes"/>-->
+        <!--        <type detected="sqlx-java.lang.Boolean" target="bool${json-sqlx} -> SetBool"/>-->
+
+        <!--        <type detected="sqlx-java.util.Date" target="time:time.Time${json-sqlx} -> SetTime"/>-->
+        <!--        <type detected="sqlx-java.time.LocalDateTime" target="time:time.Time${json-sqlx} -> SetTime"/>-->
+
+        <!--        <type detected="sqlx-java.lang.Object" target="interface{}${json-sqlx}"/>-->
+
+        <!--        <type detected="java.util.UUID" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>-->
+        <!--        <type detected="java.sql.Array" target="[]string${json}"/>-->
+
+        <!--        <type detected="java.lang.Short" target="int16${json} -> SetInt16"/>-->
+        <!--        <type detected="java.lang.Integer" target="int32${json} -> SetInt32"/>-->
+        <!--        <type detected="java.lang.Long" target="int64${json} -> SetInt64"/>-->
+
+        <!--        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>-->
+        <!--        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>-->
+        <!--        <type detected="java.math.BigDecimal" target="float64${json} -> SetFloat64"/>-->
+
+        <!--        <type detected="java.lang.String" target="string${json} -> SetString"/>-->
+        <!--        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>-->
+        <!--        <type detected="java.lang.Boolean" target="bool${json} -> SetBool"/>-->
+
+        <!--        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>-->
+        <!--        <type detected="java.time.LocalDateTime" target="time:time.Time${json} -> SetTime"/>-->
+
+        <!--        <type detected="java.lang.Object" target="interface{}${json}"/>-->
+
+        <!--        <type detected="java.sql.ResultSet" target="string"/> &lt;!&ndash; PG cursor param &ndash;&gt;-->
+
+        <!-- oracle -->
+
+        <!--        <type detected="sqlx-java.lang.Double" target="float64${json-sqlx} -> SetFloat64"/>-->
+        <!--        <type detected="sqlx-java.math.BigDecimal" target="${json-sqlx-ora-num}"/>-->
+        <!--        <type detected="sqlx-java.math.BigDecimal+auto" target="${json-sqlx-ora-num}"/>-->
+
+        <!--        <type detected="sqlx-java.lang.String" target="string${json-sqlx} -> SetString"/>-->
+
+        <!--        <type detected="sqlx-java.util.Date" target="${json-sqlx-time}"/>-->
+        <!--        <type detected="sqlx-java.time.ZonedDateTime" target="${json-sqlx-time}"/>-->
+        <!--        <type detected="sqlx-java.time.LocalDateTime" target="${json-sqlx-time}"/>-->
+
+        <!--        <type detected="sqlx-byte[]" target="string${json-sqlx}"/>-->
+        <!--        <type detected="sqlx-java.lang.Boolean" target="int64${json-sqlx} -> SetBool"/>-->
+
+        <!--        <type detected="sqlx-java.lang.Object" target="interface{}${json-sqlx}"/>-->
+
+        <!--        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>-->
+        <!--        <type detected="java.math.BigDecimal" target="${json-ora-num}"/>-->
+        <!--        <type detected="java.math.BigDecimal+auto" target="${json-ora-num}"/>-->
+
+        <!--        <type detected="java.lang.String" target="string${json} -> SetString"/>-->
+
+        <!--        <type detected="java.util.Date" target="${json-time}"/>-->
+        <!--        <type detected="java.time.ZonedDateTime" target="${json-time}"/>-->
+        <!--        <type detected="java.time.LocalDateTime" target="${json-time}"/>-->
+
+        <!--        <type detected="byte[]" target="string${json}"/>-->
+        <!--        <type detected="java.lang.Boolean" target="int64${json} -> SetBool"/>-->
+
+        <!--        <type detected="java.lang.Object" target="interface{}${json}"/>-->
+
+    </type-map>
+
+    <macros>
+
+        <macro value="=built-in=" name="${column}"/>
+        <macro value="=built-in=" name="${lower_snake_case(column)}"/>
+        <macro value="=built-in=" name="${camelCase(column)}"/>
+        <macro value="=built-in=" name="${TitleCase(column)}"/>
+        <macro value="=built-in=" name="${kebab-case(column)}"/>
+
+        <macro name="${json-col}" value="${lower_snake_case(column)}"/>
+
+        <macro name="${json-sqlx}" value=" `json:&quot;${json-col}${0}&quot; db:&quot;${column}&quot;`"/>
+
+        <macro name="${json}" value=" `json:&quot;${json-col}${0}&quot;`"/>
+
+        <macro name="${json-sqlx-time}" value="time:time.Time${json-sqlx} -> SetTime"/>
+
+        <macro name="${json-time}" value="time:time.Time${json} -> SetTime"/>
+
+        <macro name="${json-sqlx-ora-num}"
+               value="${ora-num} `json:&quot;${json-col}${0}&quot; db:&quot;${column}&quot;` -> SetNum"/>
+
+        <macro name="${json-ora-num}" value="${ora-num} `json:&quot;${json-col}${0}&quot;` -> SetNum"/>
+
+        <macro name="${ora-num}">
+            <vm-xml>
+                <if var="$fi.Precision == 38 &amp;&amp; $fi.Scale == 0">
+                    <print var=" int64"/>
+                    <else>
+                        <print var=" github.com/godror/godror:godror.Number"/>
+                    </else>
+                </if>
+            </vm-xml>
+        </macro>
+
+    </macros>
+
+</settings>

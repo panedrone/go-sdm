@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <!-- UDF returning a scalar value ========================-->
+
+    <query ref="select get_test_rating(?)"
+           method="get_test_rating(t_id)" return-type="java.math.BigDecimal"/>
+
+    <query ref="select * from get_test_rating(?)"
+           method="get_test_rating2(t_id)" return-type="java.math.BigDecimal"/>
+
+    <!-- UDF returning TABLE ========================-->
+
+    <query-dto-list ref="select * from get_tests_by_rating(?)" method="getTestsByRatingTable(t_rating)" dto="Test3"/>
+
+    <!-- UDF returning SET_OF TABLE -->
+
+    <query-dto-list method="getTestsSetOfTable(t_rating)" dto="Test" ref="select * from get_tests_setof_table(?)"/>
+
+    <exec-dml method="execGetTestsSetOfTable(t_rating, [on_test1:Test])" ref="select * from get_tests_setof_table(?)"/>
+
+    <!--    on_test2:Test is NEVER called in PG and the tables in SET are of thr same type-->
+    <!--    <exec-dml method="execGetTestsSetOfTable(t_rating, [on_test1:Test, on_test2:Test]) ref="select * from get_tests_setof_table(?)"/>-->
+
+    <!--    SpDao.xml: <exec-dml method="execGetTestsSetOfTable(t_rating, on_test1:Test)" ref="select * from get_tests_setof_table(?)"... Parameters declared in method: 2, detected by MetaData: 1-->
+    <!--    <exec-dml method="execGetTestsSetOfTable(t_rating, on_test1:Test)" ref="select * from get_tests_setof_table(?)"/>-->
+
+    <!-- UDF returning REF_CURSOR ========================-->
+
+    <!--    this method not working because only the name of cursor is returned-->
+
+    <!--    <query-dto-list ref="select * from get_tests_by_rating_rc(?)" dto="Test"-->
+    <!--                    method="get_tests_by_rating_rc(t_rating)"/>-->
+
+    <!-- this one returns a list of cursor names-->
+
+    <query ref="select * from get_tests_by_rating_rc(?)"
+           method="get_tests_by_rating_rc(t_rating)"
+           return-type="string"/>
+
+    <query-dto-list dto="Test" ref="" external-sql="true" method="get_tests()"/>
+
+    <!--  REF_CURSOR-s as INOUT params + scalar INOUT params ========================-->
+
+    <!--    "exec-dml" in here is ok because no out params-->
+    <!--    <exec-dml method="sp_out_ref_cursor(p_rating)" ref="CALL sp_out_ref_cursor(?,'ref1')"/>-->
+    <query method="SpPinPrc(p_rating)" ref="CALL sp_out_ref_cursor(?,'ref1')"/>
+    <query-dto-list dto="Test" ref="fetch all from ref1" method="FetchRc()"/>
+
+    <!--    exec-dml cannot get out params!!!!-->
+    <!--    <exec-dml method="sp_out_ref_cursor2(p_rating, *float64 p_avg)" ref="CALL sp_out_ref_cursor2(?, 'ref2', ?)"/>-->
+    <query method="SpPinPrcPout(p_rating, *float64 p_avg)" ref="CALL sp_out_ref_cursor2(?, 'ref2', ?)"/>
+    <query-dto-list dto="Test" ref="fetch all from ref2" method="FetchRc2()"/>
+
+    <!-- get_tests_multiple ========================-->
+
+    <query-list method="get_tests_multiple_cursors(p_rating)" ref="select * from get_tests_multiple(?)"/>
+
+    <query-dto-list dto="Test5" ref="" external-sql="true" method="get_tests_multiple()"/>
+
+    <!-- OUT and INOUT parameters ========================-->
+
+    <query method="SpPoutString(*string outStr)" ref="call sp_test_out_string_param(?)"/>
+
+    <query method="SpPinOutInt64(*int64 value)" ref="call sp_test_in_out_param(?)"/>
+
+    <query-dto dto="OutParams" method="sp_test_out_string_param2()"/>
+
+    <query-dto dto="OutInt" method="sp_test_in_out_param2(int64 value)"/>
+
+    <!--    &lt;!&ndash;    exec-dml cannot get out params!!!!&ndash;&gt;-->
+    <!--    <exec-dml method="exec_sp_test_out_string_param(*string outStr)" ref="call sp_test_out_string_param(?)"/>-->
+    <!--    &lt;!&ndash;    exec-dml cannot get out params!!!!&ndash;&gt;-->
+    <!--    <exec-dml method="exec_sp_test_in_out_param(*int64 value)" ref="call sp_test_in_out_param(?)"/>-->
+
+    <!-- returns REF_CURSOR ========================-->
+
+    <exec-dml ref="CALL set_test_rating(?, ?)" method="set_test_rating(t_id, t_rating)"/>
+
+
+</dao-class>

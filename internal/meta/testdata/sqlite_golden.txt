@@ -1,0 +1,244 @@
+== sql	select * from projects
+col p_id java=java.lang.Object ai=true scale=0 precision=0 display=2147483647
+col p_name java=java.lang.Object ai=false scale=0 precision=200 display=2147483647
+== sql	select * from tasks
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col p_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+col t_priority java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_comments java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+== sql	select * from no_ai_pk
+col k1 java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col k2 java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col v java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+== sql	select * from all_types
+col id java=java.lang.Object ai=true scale=0 precision=0 display=2147483647
+col c_int java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_integer java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_bigint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_smallint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_tinyint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_real java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_double java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_float java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_numeric java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_decimal java=java.lang.Object ai=false scale=2 precision=10 display=2147483647
+col c_bool java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_varchar java=java.lang.Object ai=false scale=0 precision=50 display=2147483647
+col c_text java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_char java=java.lang.Object ai=false scale=0 precision=3 display=2147483647
+col c_clob java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_blob java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_datetime java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_timestamp java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_untyped java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_banana java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+== sql	select * from v_tasks
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+col p_name java=java.lang.Object ai=false scale=0 precision=200 display=2147483647
+== sql	select * from probe
+col a java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col b java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col d java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col e java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col f java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col g java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col h java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col i java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col j java=java.lang.Object ai=false scale=0 precision=10 display=2147483647
+col k java=java.lang.Object ai=false scale=0 precision=5 display=2147483647
+col l java=java.lang.Object ai=false scale=3 precision=8 display=2147483647
+col m java=java.lang.Object ai=false scale=0 precision=30 display=2147483647
+col n java=java.lang.Object ai=false scale=0 precision=7 display=2147483647
+col o java=java.lang.Object ai=false scale=0 precision=11 display=2147483647
+col p java=java.lang.Object ai=false scale=0 precision=20 display=2147483647
+col q java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col r java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col s java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col u java=java.lang.Object ai=false scale=2 precision=7 display=2147483647
+col v java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col w java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col x java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col y java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col z java=java.lang.Object ai=false scale=2 precision=10 display=2147483647
+== sql	select t_id, t_subject from tasks where p_id = ? and t_date >= ?
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+== sql	select count(*) as cnt, max(t_date) as last_date, sum(t_priority) as s, 1 as one, 1.5 as half, 'x' as str, null as nul, t_id + 1 as next_id from tasks
+col cnt java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col last_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col s java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col one java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col half java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col str java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col nul java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col next_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+== sql	select t.*, p.p_name from tasks t join projects p on p.p_id = t.p_id
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col p_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+col t_priority java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_comments java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col p_name java=java.lang.Object ai=false scale=0 precision=200 display=2147483647
+== sql	select (select count(*) from tasks) as sub
+col sub java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+== sql	insert into projects (p_name) values (?)
+ERROR: Exception in getColumnCount(): column 1 out of bounds [1,0]
+== sql	select * from no_such_table
+ERROR: [SQLITE_ERROR] SQL error or missing database (no such table: no_such_table)
+== params	2	select t_id, t_subject from tasks where p_id = ? and t_date >= ?
+count_unknown=false count=2 types=[java.lang.String, java.lang.String]
+== params	1	insert into projects (p_name) values (?)
+count_unknown=false count=1 types=[java.lang.String]
+== params	3	update tasks set t_subject = ?, t_comments = ? where t_id = ?
+count_unknown=false count=3 types=[java.lang.String, java.lang.String, java.lang.String]
+== params	0	select * from tasks
+count_unknown=false count=0 types=[]
+== params	2	select * from tasks where t_id = ?
+count_unknown=false count=1 types=[java.lang.String, java.lang.String]
+== table	projects
+col p_id java=java.lang.Object ai=true scale=0 precision=0 display=2147483647
+col p_name java=java.lang.Object ai=false scale=0 precision=200 display=2147483647
+tc p_id data_type=4 size=2000000000 digits=0 ai=true nullable=true fk=null indexed=false unique=false
+tc p_name data_type=12 size=200 digits=0 ai=false nullable=false fk=null indexed=true unique=true
+== table	tasks
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col p_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+col t_priority java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_comments java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+tc t_id data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc p_id data_type=4 size=2000000000 digits=0 ai=false nullable=false fk=projects.p_id indexed=true unique=true
+tc t_date data_type=12 size=2000000000 digits=10 ai=false nullable=false fk=null indexed=true unique=true
+tc t_subject data_type=12 size=256 digits=0 ai=false nullable=false fk=null indexed=true unique=true
+tc t_priority data_type=4 size=2000000000 digits=0 ai=false nullable=false fk=null indexed=false unique=false
+tc t_comments data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+== table	no_ai_pk
+col k1 java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col k2 java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col v java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+tc k1 data_type=4 size=2000000000 digits=0 ai=false nullable=false fk=null indexed=true unique=true
+tc k2 data_type=12 size=2000000000 digits=0 ai=false nullable=false fk=null indexed=true unique=true
+tc v data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+== table	all_types
+col id java=java.lang.Object ai=true scale=0 precision=0 display=2147483647
+col c_int java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_integer java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_bigint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_smallint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_tinyint java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_real java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_double java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_float java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_numeric java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_decimal java=java.lang.Object ai=false scale=2 precision=10 display=2147483647
+col c_bool java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_varchar java=java.lang.Object ai=false scale=0 precision=50 display=2147483647
+col c_text java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_char java=java.lang.Object ai=false scale=0 precision=3 display=2147483647
+col c_clob java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_blob java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_date java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_datetime java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_timestamp java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_untyped java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c_banana java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+tc id data_type=4 size=2000000000 digits=0 ai=true nullable=true fk=null indexed=false unique=false
+tc c_int data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_integer data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_bigint data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_smallint data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_tinyint data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_real data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_double data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_float data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_numeric data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_decimal data_type=6 size=12 digits=2 ai=false nullable=true fk=null indexed=false unique=false
+tc c_bool data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_varchar data_type=12 size=50 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_text data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_char data_type=12 size=3 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_clob data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_blob data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c_date data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_datetime data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_timestamp data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_untyped data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc c_banana data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+== table	v_tasks
+col t_id java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t_subject java=java.lang.Object ai=false scale=0 precision=256 display=2147483647
+col p_name java=java.lang.Object ai=false scale=0 precision=200 display=2147483647
+tc t_id data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc t_subject data_type=12 size=256 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc p_name data_type=12 size=200 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+== table	probe
+col a java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col b java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col c java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col d java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col e java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col f java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col g java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col h java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col i java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col j java=java.lang.Object ai=false scale=0 precision=10 display=2147483647
+col k java=java.lang.Object ai=false scale=0 precision=5 display=2147483647
+col l java=java.lang.Object ai=false scale=3 precision=8 display=2147483647
+col m java=java.lang.Object ai=false scale=0 precision=30 display=2147483647
+col n java=java.lang.Object ai=false scale=0 precision=7 display=2147483647
+col o java=java.lang.Object ai=false scale=0 precision=11 display=2147483647
+col p java=java.lang.Object ai=false scale=0 precision=20 display=2147483647
+col q java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col r java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col s java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col t java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col u java=java.lang.Object ai=false scale=2 precision=7 display=2147483647
+col v java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col w java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col x java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col y java=java.lang.Object ai=false scale=0 precision=0 display=2147483647
+col z java=java.lang.Object ai=false scale=2 precision=10 display=2147483647
+tc a data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc b data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc c data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc d data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc e data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc f data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc g data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc h data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc i data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc j data_type=12 size=10 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc k data_type=6 size=5 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc l data_type=6 size=11 digits=3 ai=false nullable=true fk=null indexed=false unique=false
+tc m data_type=12 size=30 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc n data_type=12 size=7 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc o data_type=4 size=11 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc p data_type=12 size=20 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc q data_type=12 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc r data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc s data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc t data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc u data_type=6 size=9 digits=2 ai=false nullable=true fk=null indexed=false unique=false
+tc v data_type=6 size=2000000000 digits=10 ai=false nullable=true fk=null indexed=false unique=false
+tc w data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc x data_type=4 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc y data_type=12 size=2000000000 digits=0 ai=false nullable=true fk=null indexed=false unique=false
+tc z data_type=12 size=12 digits=2 ai=false nullable=true fk=null indexed=false unique=false
+== table	no_such_table
+ERROR: Not found: 'no_such_table'. The search is case-sensitive.
+== pk	projects
+pk=[p_id]
+== pk	tasks
+pk=[t_id]
+== pk	no_ai_pk
+pk=[k1, k2]
+== pk	v_tasks
+pk=[]

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="gorm-PagesStat">
+        <create/>
+        <update/>
+        <delete/>
+    </crud>
+
+    <query-dto-list method="readPagesStatList" dto="gorm-PagesStat"
+                    ref="select * from pages_stat order by visits_count desc"/>
+
+    <query-dto method="get_by_http_referer(http_referer)" dto="gorm-PagesStat"
+               ref="select * from pages_stat where http_referer=?"/>
+
+</dao-class>

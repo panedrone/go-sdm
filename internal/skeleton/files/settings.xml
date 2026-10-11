@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="settings.xsd">
+
+    <!-- Paths are relative to the project root (the folder of go.mod). -->
+
+    <!-- target: "module" from go.mod; sql: base folder of SQL files -->
+
+    <folders target="{{module}}" sql="{{sql}}"/>
+
+    <!-- scope: folder of generated models; field-names-mode: 0 - TitleCase -->
+
+    <dto scope="{{dto}}" inheritance="" field-names-mode="0" macro=""/>
+
+    <!-- scope: folder of generated DAO files
+
+         field-assign-mode:
+            0 - by column name
+            1 - by field position
+            2 - ptr to DTO or ptr to slice of DTO-s (Gorm, sqlx)
+            3 - ptr to resulting slice of DTO-s (Gorm, sqlx) -->
+
+    <dao scope="{{dao}}" field-assign-mode="0" macro=""/>
+
+    <ide event-log="true"/>
+
+    <!-- go-sdm uses only "url", "user" and "pwd"; "jar" and "class" are for the IDE plug-in.
+         url: jdbc:postgresql://host:port/db or postgres://host:port/db -->
+
+    <jdbc jar="postgresql-42.7.3.jar" class="org.postgresql.Driver"
+          url="jdbc:postgresql://localhost:5432/postgres" user="postgres" pwd=""/>
+
+    <type-map default="">
+
+        <type detected="java.util.UUID" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>
+        <type detected="java.sql.Array" target="[]string${json}"/>
+
+        <type detected="java.lang.Short" target="int16${json} -> SetInt16"/>
+        <type detected="java.lang.Integer" target="int32${json} -> SetInt32"/>
+        <type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
+
+        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>
+        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>
+        <type detected="java.math.BigDecimal" target="float64${json} -> SetFloat64"/>
+
+        <type detected="java.lang.String" target="string${json} -> SetString"/>
+        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>
+        <type detected="java.lang.Boolean" target="bool${json} -> SetBool"/>
+
+        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>
+        <type detected="java.time.LocalDateTime" target="time:time.Time${json} -> SetTime"/>
+
+        <type detected="java.lang.Object" target="interface{}${json}"/>
+
+    </type-map>
+
+    <macros>
+
+        <macro value="=built-in=" name="${column}"/>
+        <macro value="=built-in=" name="${lower_snake_case(column)}"/>
+        <macro value="=built-in=" name="${camelCase(column)}"/>
+        <macro value="=built-in=" name="${TitleCase(column)}"/>
+        <macro value="=built-in=" name="${kebab-case(column)}"/>
+
+        <macro name="${json-col}" value="${lower_snake_case(column)}"/>
+
+        <macro name="${json}" value=" `json:&quot;${json-col}${0}&quot;`"/>
+
+    </macros>
+
+</settings>

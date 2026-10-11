@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <query method="count" ref="select count(*) from Customers" return-type="int" />
+
+    <query-dto-list method="getCustomersAndSuppliersByCity"
+                    dto="CustomersAndSuppliersByCity" ref="customers/Customers and Suppliers by City.sql" />
+
+    <query-dto-list ref="customers(City, CompanyName)" dto="Customer"
+                    method="find(City, CompanyName)" />
+		
+</dao-class>

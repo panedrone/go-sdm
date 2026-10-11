@@ -1,0 +1,16 @@
+jdbc_jar=sqlite-jdbc-3.7.8-20111025.014814-1.jar
+dto_fieldnames_mode=ToLowerCamelCase
+external_vm_file=
+xml_configs_folder=sqldalmaker
+jdbc_class=org.sqlite.JDBC
+jdbc_usr=
+dao_package=
+dto_package=
+jdbc_pwd=
+class_prefix=
+source_folder=dal
+external_generator_path=
+dto_inheritance=
+jdbc_url=jdbc\:sqlite\:${project_loc}/dal/log.sqlite
+sql_root_folder=sqldalmaker/sql
+dto_field_names_mode=ToLowerCamelCase

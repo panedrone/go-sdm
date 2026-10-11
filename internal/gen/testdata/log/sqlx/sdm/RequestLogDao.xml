@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="RequestLog" table="REQUEST_LOG">
+        <create method="create_request_log_item"/>
+        <delete method="delete_request_log_item"/>
+    </crud>
+
+    <query-dto-list method="get_log" dto="RequestLog" ref="get_request_log.sql" />
+        
+    <exec-dml method="clear_log" ref="delete from REQUEST_LOG" />
+    
+    <query method="get_log_items_count" ref="select count (*) from REQUEST_LOG" />
+    
+    <exec-dml method="del_from_log_by_ip(ip)" ref="delete from REQUEST_LOG where USER_IP=?" />
+    
+</dao-class>

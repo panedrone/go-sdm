@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="OrderSubtotal" ref="orders/OrderSubtotals.sql">
+    </dto-class>
+
+    <dto-class name="QuarterlyOrdersByProduct" ref="orders/Quarterly Orders by Product.sql">
+    </dto-class>
+
+    <dto-class name="ProductSales" ref="products/Product Sales.sql">
+    </dto-class>
+
+    <dto-class name="sqlx-Invoice" ref="invoices/getInvoices.sql"/>
+
+    <dto-class name="sqlx-OrderDetailsExtended" ref="orders/Order Details Extended.sql"/>
+
+    <dto-class name="sqlx-Sales" ref="sales/Sales by Category.sql"/>
+
+    <dto-class name="SalesByYear" ref="sales/Sales by Year.sql">
+    </dto-class>
+
+    <dto-class name="CustomersAndSuppliersByCity" ref="customers/Customers and Suppliers by City.sql">
+    </dto-class>
+
+    <dto-class name="sqlx-Category" ref="Categories"/>
+    <dto-class name="sqlx-Customer" ref="Customers"/>
+    <dto-class name="sqlx-Employee" ref="Employees"/>
+    <dto-class name="EmployeesTerritory" ref="EmployeesTerritories"/>
+    <dto-class name="sqlx-InternationalOrder" ref="InternationalOrders"/>
+    <dto-class name="sqlx-OrderDetail" ref="OrderDetails"/>
+    <dto-class name="sqlx-Order" ref="Orders"/>
+    <dto-class name="sqlx-PreviousEmployee" ref="PreviousEmployees"/>
+    <dto-class name="sqlx-Product" ref="Products"/>
+    <dto-class name="sqlx-Region" ref="Regions"/>
+    <dto-class name="sqlx-Supplier" ref="Suppliers"/>
+    <dto-class name="sqlx-Territory" ref="Territories"/>
+
+
+    <dao-class name="Crud_All_Dao" ref="Crud_All_Dao.xml"/>
+    <dao-class name="CustomersDao" ref="CustomersDao.xml"/>
+    <dao-class name="InvoicesDao" ref="InvoicesDao.xml"/>
+    <dao-class name="OrdersDao" ref="OrdersDao.xml"/>
+    <dao-class name="ProductsDao" ref="ProductsDao.xml"/>
+    <dao-class name="SalesDao" ref="SalesDao.xml"/>
+
+</sdm>

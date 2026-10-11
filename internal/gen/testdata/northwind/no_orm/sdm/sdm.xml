@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="OrderSubtotal" ref="orders/OrderSubtotals.sql">
+        <field type="java.lang.Integer" column="OrderID"/>
+        <field type="java.lang.Double" column="Subtotal"/>
+        <field column="xxx" type="int"/>
+    </dto-class>
+
+    <dto-class name="QuarterlyOrdersByProduct" ref="orders/Quarterly Orders by Product.sql">
+        <field type="java.lang.String" column="ProductName"/>
+        <field type="java.lang.String" column="CustomerID"/>
+        <field type="java.lang.String" column="OrderYear"/>
+    </dto-class>
+
+    <dto-class name="ProductSales" ref="products/Product Sales.sql">
+        <field type="java.lang.String" column="CategoryName"/>
+        <field type="java.lang.String" column="ProductName"/>
+        <field type="java.lang.Double" column="ProductSales"/>
+    </dto-class>
+
+    <dto-class name="Invoice" ref="invoices/getInvoices.sql">
+        <field type="Object" column="ShipName"/>
+        <field type="Object" column="ShipAddress"/>
+        <field type="Object" column="ShipCity"/>
+        <field type="Object" column="ShipRegion"/>
+        <field type="Object" column="ShipPostalCode"/>
+        <field type="Object" column="ShipCountry"/>
+        <field type="Object" column="CustomerID:1"/>
+        <field type="Object" column="CompanyName"/>
+        <field type="Object" column="Address:1"/>
+        <field type="Object" column="City:1"/>
+        <field type="Object" column="Region:1"/>
+        <field type="Object" column="PostalCode:1"/>
+        <field type="Object" column="Country:1"/>
+        <field type="Object" column="Salesperson"/>
+        <field type="Object" column="OrderID"/>
+        <field type="Object" column="OrderDate"/>
+        <field type="Object" column="RequiredDate"/>
+        <field type="Object" column="ShippedDate"/>
+        <field type="Object" column="ProductID"/>
+        <field type="Object" column="ProductName"/>
+        <field type="Object" column="UnitPrice"/>
+        <field type="Object" column="Quantity"/>
+        <field type="Object" column="Discount"/>
+        <field type="Object" column="ExtendedPrice"/>
+        <field type="Object" column="Freight"/>
+    </dto-class>
+
+    <dto-class name="OrderDetailsExtended" ref="orders/Order Details Extended.sql">
+        <field type="Object" column="OrderID"/>
+        <field type="Object" column="ProductID"/>
+        <field type="Object" column="ProductName"/>
+        <field type="Object" column="UnitPrice"/>
+        <field type="Object" column="Quantity"/>
+        <field type="Object" column="Discount"/>
+        <field type="Object" column="ExtendedPrice"/>
+    </dto-class>
+
+    <dto-class name="Sales" ref="sales/Sales by Category.sql">
+        <field type="Object" column="CategoryID"/>
+        <field type="Object" column="CategoryName"/>
+        <field type="Object" column="ProductName"/>
+        <field type="Object" column="ProductSales"/>
+    </dto-class>
+
+    <dto-class name="SalesByYear" ref="sales/Sales by Year.sql">
+        <field type="java.lang.String" column="ShippedDate"/>
+        <field type="java.lang.Integer" column="OrderID"/>
+        <field type="java.lang.Double" column="ProductSales"/>
+        <field type="java.lang.String" column="ShippedYear"/>
+    </dto-class>
+
+    <dto-class name="CustomersAndSuppliersByCity" ref="customers/Customers and Suppliers by City.sql">
+        <field type="java.lang.String" column="City"/>
+        <field type="java.lang.String" column="CompanyName"/>
+        <field type="java.lang.String" column="ContactName"/>
+        <field type="java.lang.String" column="Relationship"/>
+    </dto-class>
+
+    <dto-class name="Category" ref="Categories"/>
+    <dto-class name="Customer" ref="Customers"/>
+    <dto-class name="Employee" ref="Employees"/>
+    <dto-class name="EmployeesTerritory" ref="EmployeesTerritories"/>
+    <dto-class name="InternationalOrder" ref="InternationalOrders"/>
+    <dto-class name="OrderDetail" ref="OrderDetails"/>
+    <dto-class name="Order" ref="Orders"/>
+    <dto-class name="PreviousEmployee" ref="PreviousEmployees"/>
+    <dto-class name="Product" ref="Products"/>
+    <dto-class name="Region" ref="Regions"/>
+    <dto-class name="Supplier" ref="Suppliers"/>
+    <dto-class name="Territory" ref="Territories"/>
+
+    <dao-class name="Crud_All_Dao" ref="Crud_All_Dao.xml"/>
+    <dao-class name="CustomersDao" ref="CustomersDao.xml"/>
+    <dao-class name="InvoicesDao" ref="InvoicesDao.xml"/>
+    <dao-class name="OrdersDao" ref="OrdersDao.xml"/>
+    <dao-class name="ProductsDao" ref="ProductsDao.xml"/>
+    <dao-class name="SalesDao" ref="SalesDao.xml"/>
+
+</sdm>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="OrderSubtotal" ref="orders/OrderSubtotals.sql">
+        <field type="java.lang.Integer" column="OrderID"/>
+        <field type="java.lang.Double" column="Subtotal"/>
+        <field column="xxx" type="int"/>
+    </dto-class>
+
+    <dto-class name="QuarterlyOrdersByProduct" ref="orders/Quarterly Orders by Product.sql">
+        <field type="java.lang.String" column="ProductName"/>
+        <field type="java.lang.String" column="CustomerID"/>
+        <field type="java.lang.String" column="OrderYear"/>
+    </dto-class>
+
+    <dto-class name="ProductSales" ref="products/Product Sales.sql">
+        <field type="java.lang.String" column="CategoryName"/>
+        <field type="java.lang.String" column="ProductName"/>
+        <field type="java.lang.Double" column="ProductSales"/>
+    </dto-class>
+
+    <dto-class name="Invoice" ref="invoices/getInvoices.sql"/>
+
+    <dto-class name="OrderDetailsExtended" ref="orders/Order Details Extended.sql"/>
+
+    <dto-class name="Sales" ref="sales/Sales by Category.sql"/>
+
+    <dto-class name="SalesByYear" ref="sales/Sales by Year.sql">
+        <field type="java.lang.String" column="ShippedDate"/>
+        <field type="java.lang.Integer" column="OrderID"/>
+        <field type="java.lang.Double" column="ProductSales"/>
+        <field type="java.lang.String" column="ShippedYear"/>
+    </dto-class>
+
+    <dto-class name="CustomersAndSuppliersByCity" ref="customers/Customers and Suppliers by City.sql">
+        <field type="java.lang.String" column="City"/>
+        <field type="java.lang.String" column="CompanyName"/>
+        <field type="java.lang.String" column="ContactName"/>
+        <field type="java.lang.String" column="Relationship"/>
+    </dto-class>
+
+    <dto-class name="gorm-Category" ref="Categories"/>
+    <dto-class name="gorm-Customer" ref="Customers"/>
+    <dto-class name="gorm-Employee" ref="Employees"/>
+    <dto-class name="gorm-EmployeesTerritory" ref="EmployeesTerritories"/>
+    <dto-class name="gorm-InternationalOrder" ref="InternationalOrders"/>
+    <dto-class name="gorm-OrderDetail" ref="OrderDetails">
+        <field column="Discount" type="java.lang.Double"/>
+    </dto-class>
+    <dto-class name="gorm-Order" ref="Orders"/>
+    <dto-class name="gorm-PreviousEmployee" ref="PreviousEmployees"/>
+    <dto-class name="gorm-Product" ref="Products"/>
+    <dto-class name="gorm-Region" ref="Regions"/>
+    <dto-class name="gorm-Supplier" ref="Suppliers"/>
+    <dto-class name="gorm-Territory" ref="Territories"/>
+
+
+    <dao-class name="Crud_All_Dao" ref="Crud_All_Dao.xml"/>
+    <dao-class name="CustomersDao" ref="CustomersDao.xml"/>
+    <dao-class name="InvoicesDao" ref="InvoicesDao.xml"/>
+    <dao-class name="OrdersDao" ref="OrdersDao.xml"/>
+    <dao-class name="ProductsDao" ref="ProductsDao.xml"/>
+    <dao-class name="SalesDao" ref="SalesDao.xml"/>
+
+</sdm>

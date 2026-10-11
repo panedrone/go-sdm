@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <query method="get_code_2(string ip)" ref="SELECT code2 FROM ip_ranges WHERE ? BETWEEN min AND max"
+           return-type="string"/>
+
+    <query method="count" ref="select count(*) from ip_ranges"/>
+
+</dao-class>

@@ -1,0 +1,43 @@
+# SQLite: schema + what to dump. The same file is read by MetaDump.java (golden) and go test.
+# exec: DDL/DML, nothing is printed for it.
+
+exec	create table projects (p_id integer primary key autoincrement, p_name varchar(200) not null unique)
+exec	create table tasks (t_id integer primary key, p_id integer not null references projects(p_id), t_date date not null, t_subject varchar(256) not null, t_priority int not null default 1, t_comments text)
+exec	create table no_ai_pk (k1 integer not null, k2 text not null, v real, primary key (k1, k2))
+exec	create table all_types (id INTEGER PRIMARY KEY AUTOINCREMENT, c_int INT, c_integer INTEGER, c_bigint BIGINT, c_smallint SMALLINT, c_tinyint TINYINT, c_real REAL, c_double DOUBLE, c_float FLOAT, c_numeric NUMERIC, c_decimal DECIMAL(10,2), c_bool BOOLEAN, c_varchar VARCHAR(50), c_text TEXT, c_char CHAR(3), c_clob CLOB, c_blob BLOB, c_date DATE, c_datetime DATETIME, c_timestamp TIMESTAMP, c_untyped, c_banana banana)
+exec	create table probe (a FLOATING POINT, b CHARINT, c BOOLEANTEXT, d DOUBLECHAR, e BLOBREAL, f STRING, g VARBINARY, h JSON, i UUID, j NVARCHAR(10), k DECIMAL(5), l NUMERIC(8,3), m VARCHAR ( 30 ), n "VARCHAR(7)", o int(11), p CHARACTER VARYING(20), q BIT, r TINYTEXT, s MEDIUMBLOB, t DOUBLE PRECISION, u FLOAT(7,2), v NUMBER, w INTEGER UNSIGNED, x REALINT, y TEXTREAL, z VARCHAR(10,2))
+exec	create index ix_tasks_date on tasks (t_date)
+exec	create unique index ux_tasks_subject on tasks (p_id, t_subject)
+exec	create view v_tasks as select t.t_id, t.t_subject, p.p_name from tasks t join projects p on p.p_id = t.p_id
+
+sql	select * from projects
+sql	select * from tasks
+sql	select * from no_ai_pk
+sql	select * from all_types
+sql	select * from v_tasks
+sql	select * from probe
+sql	select t_id, t_subject from tasks where p_id = ? and t_date >= ?
+sql	select count(*) as cnt, max(t_date) as last_date, sum(t_priority) as s, 1 as one, 1.5 as half, 'x' as str, null as nul, t_id + 1 as next_id from tasks
+sql	select t.*, p.p_name from tasks t join projects p on p.p_id = t.p_id
+sql	select (select count(*) from tasks) as sub
+sql	insert into projects (p_name) values (?)
+sql	select * from no_such_table
+
+params	2	select t_id, t_subject from tasks where p_id = ? and t_date >= ?
+params	1	insert into projects (p_name) values (?)
+params	3	update tasks set t_subject = ?, t_comments = ? where t_id = ?
+params	0	select * from tasks
+params	2	select * from tasks where t_id = ?
+
+table	projects
+table	tasks
+table	no_ai_pk
+table	all_types
+table	v_tasks
+table	probe
+table	no_such_table
+
+pk	projects
+pk	tasks
+pk	no_ai_pk
+pk	v_tasks

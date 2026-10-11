@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="settings.xsd">
+
+    <!--    (*) below means "a path relative to the project root"   -->
+
+    <!-- target: the same as "module" in "go.mod" -->
+
+    <!-- sql: base folder of SQL files (*) -->
+
+    <folders target="sdm_demo_todolist" sql="sqlx/sdm/sql"/>
+
+    <!-- scope: base folder of generated DTO files (*) -->
+
+    <!-- field-names-mode: 0 - TitleCase -->
+
+    <!-- macro: VM template to render DAO classes
+
+            1. Internal VM template is used if "macro" is empty (default).
+            2. VM template is located in "<macros>...<macro><vm>|<vm-xml>..." section below.
+            3. Ending ".vm" means using of VM file and specifies the path to this file relative to the project root:
+                    <dto ... macro="<path>/<name>.vm"/> -->
+
+    <dto scope="no_orm/dbal/dto" inheritance="" field-names-mode="0" macro=""/>
+
+    <!-- scope: base folder of generated DAO files (*) -->
+
+    <!-- field-assign-mode (Go only)":
+
+            0 - by column name
+            1 - by field position
+            2 - ptr to DTO or ptr to slice of DTO-s (Gorm, sqlx)
+            3 - ptr to resulting slice of DTO-s (Gorm, sqlx) -->
+
+    <!-- macro: VM template to render DAO classes
+
+            1. Internal VM template is used if "macro" is empty (default).
+            2. VM template is located in "<macros>...<macro><vm>|<vm-xml>..." section below.
+            3. Ending ".vm" means using of VM file and specifies the path to this file relative to the project root:
+                    <dao ... macro="<path>/<name>.vm"/> -->
+
+    <dao scope="no_orm/dbal" field-assign-mode="3" macro=""/>
+
+    <ide event-log="true"/>
+
+    <!--    <jdbc jar="lib/sqlite-jdbc-3.45.1.0.jar" class="org.sqlite.JDBC"-->
+    <!--          url="jdbc:sqlite:$PROJECT_DIR$/db/todolist.sqlite" user="" pwd=""/>-->
+
+    <!--    <jdbc jar="ojdbc10.jar" class="oracle.jdbc.driver.OracleDriver"-->
+    <!--          url="jdbc:oracle:thin:@localhost:1521/XE" user="todolist" pwd="sa"/>-->
+
+    <!--    <jdbc jar="mysql-connector-j-8.4.0.jar"-->
+    <!--          class="com.mysql.cj.jdbc.Driver" url="jdbc:mysql://localhost/orders" user="root" pwd="sa"/>-->
+
+    <jdbc jar="postgresql-42.7.3.jar" class="org.postgresql.Driver"
+          url="jdbc:postgresql://localhost/orders" user="postgres" pwd="sa"/>
+
+    <type-map default="">
+
+        <!-- sqlite3 -->
+
+        <!--        <type detected="java.lang.Integer" target="int64${json} -> SetInt64"/>-->
+        <!--        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>-->
+        <!--        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>-->
+        <!--        <type detected="java.lang.String" target="string${json} -> SetString"/>-->
+        <!--        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>-->
+        <!--        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>-->
+        <!--        <type detected="java.lang.Object" target="interface{}${json}"/>-->
+
+        <!-- mysql, postgres, sql server -->
+
+        <type detected="java.util.UUID" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>
+        <type detected="java.sql.Array" target="[]string${json}"/>
+
+        <type detected="java.lang.Short" target="int16${json} -> SetInt16"/>
+        <type detected="java.lang.Integer" target="int32${json} -> SetInt32"/>
+        <type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
+
+        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>
+        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>
+        <type detected="java.math.BigDecimal" target="float64${json} -> SetFloat64"/>
+
+        <type detected="java.lang.String" target="string${json} -> SetString"/>
+        <type detected="byte[]" target="[]byte${json} -> SetBytes"/>
+        <type detected="java.lang.Boolean" target="bool${json} -> SetBool"/>
+
+        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>
+        <type detected="java.time.LocalDateTime" target="time:time.Time${json} -> SetTime"/>
+
+        <type detected="java.lang.Object" target="interface{}${json}"/>
+
+        <!-- oracle -->
+
+        <!--        <type detected="java.math.BigDecimal" target="${json-ora-num}"/>-->
+        <!--        <type detected="java.math.BigDecimal+auto" target="${json-ora-num}"/>-->
+        <!--        <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>-->
+        <!--        <type detected="java.lang.Float" target="float32${json} -> SetFloat32"/>-->
+
+        <!--        <type detected="java.lang.String" target="string${json} -> SetString"/>-->
+
+        <!--        <type detected="java.util.Date" target="${json-time}"/>-->
+        <!--        <type detected="java.time.ZonedDateTime" target="${json-time}"/>-->
+        <!--        <type detected="java.time.LocalDateTime" target="${json-time}"/>-->
+
+        <!--        <type detected="byte[]" target="string${json} -> SetBytes"/>-->
+        <!--        <type detected="java.lang.Boolean" target="int64${json} -> SetBool"/>-->
+
+        <!--        <type detected="java.lang.Object" target="interface{}{$json}"/>-->
+
+    </type-map>
+
+    <macros>
+
+        <macro value="=built-in=" name="${column}"/>
+        <macro value="=built-in=" name="${lower_snake_case(column)}"/>
+        <macro value="=built-in=" name="${camelCase(column)}"/>
+        <macro value="=built-in=" name="${TitleCase(column)}"/>
+        <macro value="=built-in=" name="${kebab-case(column)}"/>
+
+        <macro name="${json-col}" value="${lower_snake_case(column)}"/>
+
+        <macro name="${json}" value=" `json:&quot;${json-col}${0}&quot;`"/>
+
+        <macro name="${json-time}" value="time:time.Time${json} -> SetTime"/>
+
+        <macro name="${json-ora-num}" value="${ora-num} `json:&quot;${json-col}${0}&quot;` -> SetNum"/>
+
+        <macro name="${ora-num}">
+            <vm-xml>
+                <if var="$fi.Precision == 38 &amp;&amp; $fi.Scale == 0">
+                    <print var=" int64"/>
+                    <else>
+                        <print var=" github.com/godror/godror:godror.Number"/>
+                    </else>
+                </if>
+            </vm-xml>
+        </macro>
+
+    </macros>
+
+</settings>

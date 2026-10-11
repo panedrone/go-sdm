@@ -1,0 +1,20 @@
+#Sun Feb 05 19:28:56 EET 2012
+dto_fieldnames_mode=ToLowerCamelCase
+xml_configs_folder=dalmpe
+sql_base_package=
+DataStore_framework=ApacheDbUtils13
+dto_package=myproject.dto
+dao_package=myproject.dal.dao
+source_folder=src
+connection_properties=dalutils4j.connection.properties
+dto_inheritance=
+sql_root_folder=dalmpe/sql
+exernal_generator_path=dalutils4j.cg/src/net/sf/dalutils4j/cg/GeneratorEngine.java
+external_generator_path=
+
+jdbc_url=jdbc\:sqlite\:/d\:/northwindEF.db
+jdbc_class=org.sqlite.JDBC
+jdbc_jar=sqlite-jdbc-md.jar
+jdbc_pwd=
+dao_methods_mode=instance
+jdbc_usr=

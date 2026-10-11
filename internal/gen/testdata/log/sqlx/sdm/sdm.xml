@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="RequestLog" ref="get_request_log.sql">
+        <field type="int64${json-sqlx}" column="ID"/>
+        <field type="sqlx-java.util.Date" column="EVENT_TIME"/>
+        <field type="string${json-sqlx}" column="USER_IP"/>
+        <field type="string${json-sqlx}" column="REQUEST_URI"/>
+        <field type="string${json-sqlx}" column="HTTP_USER_AGENT"/>
+        <field type="string${json-sqlx}" column="HTTP_ACCEPT_LANGUAGE"/>
+        <field type="string${json-sqlx}" column="HTTP_REFERER"/>
+        <field type="bool${json-sqlx}" column="is_returning"/>
+        <field type="*string${json-sqlx}" column="c_code2"/>
+        <field type="*string${json-sqlx}" column="c_code3"/>
+        <field type="*string${json-sqlx}" column="c_name"/>
+    </dto-class>
+
+    <dto-class name="sqlx-Visitor" ref="get_visitors.sql"/>
+
+    <dto-class name="sqlx-IpRange" ref="ip_ranges"/>
+
+    <dto-class name="sqlx-PagesCount" ref="get_pages_grouped_by_country.sql" />
+
+    <dto-class name="sqlx-SessionSummary" ref="get_sessions_total.sql" />
+
+    <dto-class name="sqlx-PagesStat" ref="pages_stat" />
+
+
+    <dao-class name="IpRangesDao" ref="IpRangesDao.xml"/>
+    <dao-class name="PagesStatDao" ref="PagesStatDao.xml"/>
+    <dao-class name="RequestLogDao" ref="RequestLogDao.xml"/>
+    <dao-class name="VisitorsDao" ref="VisitorsDao.xml"/>
+
+</sdm>

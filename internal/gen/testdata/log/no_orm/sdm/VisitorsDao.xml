@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="Visitor" table="visitors" >
+        <create/>
+        <read/>
+        <update/>
+        <delete/>
+    </crud>
+    
+    <query method="getVisitorsCount()" ref="select count(*) from visitors" return-type="int64"/>
+    
+    <query-dto-list method="getPage(int start_row, int rows)" dto="Visitor" ref="get_visitors.sql" />
+
+    <query-dto-list method="getSessionsTotal" dto="SessionSummary" ref="get_sessions_total.sql" />
+
+    <query-dto-list method="getSessionsNonBounce" dto="SessionSummary" ref="get_sessions_non_bounce.sql" />
+
+    <query-dto-list method="getSessionsBounced" dto="SessionSummary" ref="get_sessions_bounced.sql" />
+    
+</dao-class>

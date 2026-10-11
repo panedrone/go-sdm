@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="Test" ref="tests"/>
+
+    <dto-class name="Test1" ref="tests" pk="t_id" auto="">
+        <header><![CDATA[// header]]></header>
+        <field type="java.lang.Integer" column="sign1"/>
+    </dto-class>
+
+    <dao-class name="InlineDao">
+        <query-dto-list method="get_tests(t_rating)" dto="Test" ref="select * from tests where t_rating >= ?"/>
+        <crud dto="Test" table="tests" fetch-generated="false">
+            <read-all method="read_all"/>
+            <update/>
+        </crud>
+        <exec-dml method="del(t_id)" ref="delete from tests where t_id = ?" external-sql="true"/>
+        <crud dto="Test1"/>
+    </dao-class>
+
+    <dao-class name="SpDao" ref="SpDao.xml"/>
+
+</sdm>

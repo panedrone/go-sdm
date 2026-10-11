@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <query method="countProducts" ref="select count(*) from Products"
+           return-type="int" />
+		
+    <query-dto-list method="getProductSales(d1, d2)" dto="ProductSales" ref="products/Product Sales.sql" />
+
+</dao-class>

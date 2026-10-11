@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="gorm-RequestLog" ref="get_request_log.sql">
+        <field type="java.lang.Integer" column="ID"/>
+        <field type="java.util.Date" column="EVENT_TIME"/>
+        <field type="java.lang.String" column="USER_IP"/>
+        <field type="java.lang.String" column="REQUEST_URI"/>
+        <field type="java.lang.String" column="HTTP_USER_AGENT"/>
+        <field type="java.lang.String" column="HTTP_ACCEPT_LANGUAGE"/>
+        <field type="java.lang.String" column="HTTP_REFERER"/>
+        <field type="java.lang.String" column="is_returning"/>
+        <field type="java.lang.String" column="c_code2"/>
+        <field type="java.lang.String" column="c_code3"/>
+        <field type="java.lang.String" column="c_name"/>
+    </dto-class>
+
+    <dto-class name="gorm-Visitor" ref="get_visitors.sql"/>
+
+    <dto-class name="gorm-IpRange" ref="ip_ranges"/>
+
+    <dto-class name="gorm-PagesCount" ref="get_pages_grouped_by_country.sql"/>
+
+    <dto-class name="gorm-SessionSummary" ref="get_sessions_total.sql"/>
+
+    <dto-class name="gorm-PagesStat" ref="pages_stat"/>
+
+
+    <dao-class name="IpRangesDao" ref="IpRangesDao.xml"/>
+    <dao-class name="PagesStatDao" ref="PagesStatDao.xml"/>
+    <dao-class name="RequestLogDao" ref="RequestLogDao.xml"/>
+    <dao-class name="VisitorsDao" ref="VisitorsDao.xml"/>
+
+
+</sdm>

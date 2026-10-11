@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="gorm-Category" table="Categories"/>
+    <crud dto="gorm-Customer" table="Customers"/>
+
+    <crud dto="gorm-Employee" table="Employees"/>
+
+    <crud dto="gorm-EmployeesTerritory" table="EmployeesTerritories"/>
+    <query-dto-list method="getEmployeesTerritoriesByEmployee(employee_id)" dto="gorm-EmployeesTerritory"
+                    ref="EmployeesTerritories(EmployeeID)"/>
+    <query-dto-list method="getEmployeesTerritoriesByTerritory(territory_id)" dto="gorm-EmployeesTerritory"
+                    ref="EmployeesTerritories(TerritoryID)"/>
+
+    <crud dto="gorm-InternationalOrder" table="InternationalOrders"/>
+    <query-dto-list method="getInternationalOrdersByOrder(order_id)" dto="gorm-InternationalOrder"
+                    ref="InternationalOrders(OrderID)"/>
+
+    <crud dto="gorm-OrderDetail" table="OrderDetails"/>
+    <query-dto-list method="getOrderDetailsByOrder(order_id)" dto="gorm-OrderDetail" ref="OrderDetails(OrderID)"/>
+    <query-dto-list method="getOrderDetailsByProduct(product_id)" dto="gorm-OrderDetail" ref="OrderDetails(ProductID)"/>
+
+<!--    <crud dto="gorm-Order" table="Orders"/>-->
+    <query-dto-list method="getOrdersByCustomer(customer_id)" dto="gorm-Order" ref="Orders(CustomerID)"/>
+
+    <crud dto="gorm-PreviousEmployee" table="PreviousEmployees"/>
+
+    <crud dto="gorm-Product" table="Products"/>
+    <query-dto-list method="getProductsBySupplier(supplier_id)" dto="gorm-Product" ref="Products(SupplierID)"/>
+    <query-dto-list method="getProductsByCategory(category_id)" dto="gorm-Product" ref="Products(CategoryID)"/>
+
+    <crud dto="gorm-Region" table="Regions"/>
+
+    <crud dto="gorm-Supplier" table="Suppliers"/>
+
+    <crud dto="gorm-Territory" table="Territories"/>
+    <query-dto-list method="getTerritoriesByRegion(region_id)" dto="gorm-Territory" ref="Territories(RegionID)"/>
+
+</dao-class>

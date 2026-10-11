@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="Category" table="Categories"/>
+    <crud dto="Customer" table="Customers"/>
+
+    <crud dto="Employee" table="Employees"/>
+
+    <crud dto="EmployeesTerritory" table="EmployeesTerritories"/>
+    <query-dto-list method="getEmployeesTerritoriesByEmployee(employee_id)" dto="EmployeesTerritory"
+                    ref="EmployeesTerritories(EmployeeID)"/>
+    <query-dto-list method="getEmployeesTerritoriesByTerritory(territory_id)" dto="EmployeesTerritory"
+                    ref="EmployeesTerritories(TerritoryID)"/>
+
+    <crud dto="InternationalOrder" table="InternationalOrders"/>
+    <query-dto-list method="getInternationalOrdersByOrder(order_id)" dto="InternationalOrder"
+                    ref="InternationalOrders(OrderID)"/>
+
+    <crud dto="OrderDetail" table="OrderDetails"/>
+    <query-dto-list method="getOrderDetailsByOrder(order_id)" dto="OrderDetail" ref="OrderDetails(OrderID)"/>
+    <query-dto-list method="getOrderDetailsByProduct(product_id)" dto="OrderDetail" ref="OrderDetails(ProductID)"/>
+
+<!--    <crud dto="Order" table="Orders"/>-->
+    <query-dto-list method="getOrdersByCustomer(customer_id)" dto="Order" ref="Orders(CustomerID)"/>
+
+    <crud dto="PreviousEmployee" table="PreviousEmployees"/>
+
+    <crud dto="Product" table="Products"/>
+    <query-dto-list method="getProductsBySupplier(supplier_id)" dto="Product" ref="Products(SupplierID)"/>
+    <query-dto-list method="getProductsByCategory(category_id)" dto="Product" ref="Products(CategoryID)"/>
+
+    <crud dto="Region" table="Regions"/>
+
+    <crud dto="Supplier" table="Suppliers"/>
+
+    <crud dto="Territory" table="Territories"/>
+    <query-dto-list method="getTerritoriesByRegion(region_id)" dto="Territory" ref="Territories(RegionID)"/>
+
+</dao-class>

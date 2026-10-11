@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <crud dto="gorm-Order"/>
+
+    <query-dto-list method="getOrderSubtotals" dto="OrderSubtotal"
+                    ref="orders/OrderSubtotals.sql"/>
+
+    <query-dto-list method="getQuarterlyOrdersByProduct(d1, d2)"
+                    dto="QuarterlyOrdersByProduct" ref="orders/Quarterly Orders by Product.sql"/>
+
+    <query-dto-list method="getOrderDetailsExtended" dto="OrderDetailsExtended"
+                    ref="orders/Order Details Extended.sql"/>
+
+</dao-class>

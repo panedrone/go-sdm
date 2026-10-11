@@ -1,0 +1,27 @@
+sql	select * from projects
+sql	select * from tests
+sql	select * from get_tests_by_rating(?)
+sql	call sp_test_out_string_param('')
+sql	call sp_test_in_out_param(?)
+sql	select get_test_rating(?)
+sql	select * from get_test_rating(?)
+sql	select * from get_tests_setof_table(?)
+sql	select * from get_tests_by_rating_rc(?)
+sql	select * from get_tests_multiple(?)
+sql	CALL sp_out_ref_cursor(?,'ref1')
+sql	CALL sp_out_ref_cursor2(?, 'ref2', ?)
+sql	fetch all from ref1
+sql	select 1::int2 c_int2, 1::int4 c_int4, 1::int8 c_int8, 1.5::numeric(10,2) c_num, 1.5::numeric c_num_free, 1.5::float4 c_f4, 1.5::float8 c_f8, true c_bool, 'a'::varchar(20) c_vc, 'a'::text c_text, 'a'::char(3) c_bpchar, 'a'::name c_name, now()::date c_date, now()::time c_time, now()::timetz c_timetz, now()::timestamp c_ts, now()::timestamptz c_tstz, '\x00'::bytea c_bytea, gen_random_uuid() c_uuid, '{}'::json c_json, '{}'::jsonb c_jsonb, array[1,2] c_int_arr, array['a'] c_text_arr, 1::money c_money, '1 day'::interval c_interval, '127.0.0.1'::inet c_inet, 'x'::xml c_xml, 1::oid c_oid, B'1'::bit c_bit, '(1,2)'::point c_point, count(*) c_count, null c_null
+params	1	select get_test_rating(?)
+params	1	select * from get_tests_by_rating(?)
+params	2	CALL set_test_rating(?, ?)
+params	1	call sp_test_in_out_param(?)
+params	1	call sp_test_out_string_param(?)
+params	2	CALL sp_out_ref_cursor2(?, 'ref2', ?)
+params	2	select * from tests where t_id = ? and t_name = ?
+params	0	select * from tests
+table	projects
+table	tests
+pk	projects
+pk	tests
+pk	public.tests

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="RequestLog" ref="get_request_log.sql">
+        <field type="java.lang.Integer" column="ID"/>
+        <field type="java.util.Date" column="EVENT_TIME"/>
+        <field type="java.lang.String" column="USER_IP"/>
+        <field type="java.lang.String" column="REQUEST_URI"/>
+        <field type="java.lang.String" column="HTTP_USER_AGENT"/>
+        <field type="java.lang.String" column="HTTP_ACCEPT_LANGUAGE"/>
+        <field type="java.lang.String" column="HTTP_REFERER"/>
+        <field type="java.lang.String" column="is_returning"/>
+        <field type="java.lang.String" column="c_code2"/>
+        <field type="java.lang.String" column="c_code3"/>
+        <field type="java.lang.String" column="c_name"/>
+    </dto-class>
+
+    <dto-class name="Visitor" ref="get_visitors.sql">
+        <field column="v_ip" type="java.lang.Integer"/>
+        <field column="v_last_datetime" type="java.util.Date"/>
+        <field column="v_sessions" type="java.lang.Integer"/>
+        <field column="v_pages" type="java.lang.Integer"/>
+        <field column="c_code2" type="java.lang.String"/>
+        <field column="c_code3" type="java.lang.String"/>
+        <field column="c_name" type="java.lang.String"/>
+    </dto-class>
+
+    <dto-class name="IpRange" ref="ip_ranges">
+        <field type="java.lang.Float" column="min"/>
+        <field type="java.lang.Float" column="max"/>
+        <field type="java.lang.String" column="code2"/>
+    </dto-class>
+
+    <dto-class name="PagesCount" ref="get_pages_grouped_by_country.sql" />
+
+    <dto-class name="SessionSummary" ref="get_sessions_total.sql" />
+
+    <dto-class name="PagesStat" ref="pages_stat" />
+
+    <dao-class name="IpRangesDao" ref="IpRangesDao.xml"/>
+    <dao-class name="PagesStatDao" ref="PagesStatDao.xml"/>
+    <dao-class name="RequestLogDao" ref="RequestLogDao.xml"/>
+    <dao-class name="VisitorsDao" ref="VisitorsDao.xml"/>
+
+</sdm>

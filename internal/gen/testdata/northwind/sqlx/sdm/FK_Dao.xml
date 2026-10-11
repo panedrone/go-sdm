@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dao-class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="dao.xsd">
+
+    <query-dto-list method="getEmployeesTerritoriesByEmployee(employee_id)" dto="EmployeesTerritory" ref="EmployeesTerritories(EmployeeID)"/>
+    <query-dto-list method="getEmployeesTerritoriesByTerritory(territory_id)" dto="EmployeesTerritory" ref="EmployeesTerritories(TerritoryID)"/>
+    <query-dto-list method="getInternationalOrdersByOrder(order_id)" dto="sqlx-InternationalOrder" ref="InternationalOrders(OrderID)"/>
+    <query-dto-list method="getOrderDetailsByOrder(order_id)" dto="sqlx-OrderDetail" ref="OrderDetails(OrderID)"/>
+    <query-dto-list method="getOrderDetailsByProduct(product_id)" dto="sqlx-OrderDetail" ref="OrderDetails(ProductID)"/>
+    <query-dto-list method="getOrdersByCustomer(customer_id)" dto="sqlx-Order" ref="Orders(CustomerID)"/>
+    <query-dto-list method="getProductsBySupplier(supplier_id)" dto="sqlx-Product" ref="Products(SupplierID)"/>
+    <query-dto-list method="getProductsByCategory(category_id)" dto="sqlx-Product" ref="Products(CategoryID)"/>
+    <query-dto-list method="getTerritoriesByRegion(region_id)" dto="sqlx-Territory" ref="Territories(RegionID)"/>
+
+</dao-class>
