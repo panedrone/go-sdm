@@ -57,10 +57,13 @@ func (m *TypeMap) TargetRaw(detected, raw string) string {
 	if t, ok := m.detected[raw]; ok && raw != "" {
 		return t
 	}
-	if strings.TrimSpace(m.defaultType) == "" {
-		return detected
+	if strings.TrimSpace(m.defaultType) != "" {
+		return m.defaultType
 	}
-	return m.defaultType
+	if raw != "" {
+		return raw // ключа нет — как есть, имя драйвера, а не Java
+	}
+	return detected
 }
 
 // Macros — <macros> (JaxbMacros.java). <vm-xml> исполняется (vmxml.go), текстового

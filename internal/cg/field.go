@@ -3,6 +3,8 @@ package cg
 import (
 	"errors"
 	"strings"
+
+	"github.com/panedrone/go-sdm/internal/meta"
 )
 
 // FieldInfo — колонка таблицы, колонка результата или поле DTO (FieldInfo.java).
@@ -109,14 +111,19 @@ func (f FieldInfo) WithRsMd(precision, scale, displaySize int) FieldInfo {
 }
 
 // rawKey — сырое имя как ключ type-map, с моделью класса: "gorm-int4" ("" — нет).
+// Драйвер типа не сообщил (параметры MySQL, выражения SQLite) — meta.RawUnknown.
 func (f FieldInfo) rawKey(suffix string) string {
-	if f.raw == "" {
-		return ""
+	raw := f.raw
+	if raw == "" {
+		if !strings.HasSuffix(f.originalType, meta.JavaObject) {
+			return ""
+		}
+		raw = meta.RawUnknown
 	}
 	if f.model != "" {
-		return f.model + "-" + f.raw + suffix
+		return f.model + "-" + raw + suffix
 	}
-	return f.raw + suffix
+	return raw + suffix
 }
 
 // Для шаблонов.

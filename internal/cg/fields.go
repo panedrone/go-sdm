@@ -296,10 +296,14 @@ func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor st
 	var target string
 	if strings.TrimSpace(typ) == "" {
 		if base == nil {
-			target = tm.Target(meta.JavaObject)
+			target = tm.TargetRaw(meta.JavaObject, meta.RawUnknown)
 		} else {
+			raw := "" // сырое имя — только к типу из метаданных, не к уже отображённому
+			if base.renderedType == base.originalType {
+				raw = base.rawKey("")
+			}
 			var err error
-			target, err = mc.ParseTargetType(tm.TargetRaw(base.renderedType, base.rawKey("")), *base)
+			target, err = mc.ParseTargetType(tm.TargetRaw(base.renderedType, raw), *base)
 			if err != nil {
 				return ParamInfo{}, err
 			}

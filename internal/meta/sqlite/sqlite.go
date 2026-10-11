@@ -134,7 +134,8 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	defer stmt.Close()
 	res := &meta.Params{Count: stmt.BindCount(), JavaTypes: make([]string, typeCount), RawTypes: make([]string, typeCount)}
 	for i := range res.JavaTypes {
-		res.JavaTypes[i] = javaString // и за пределами Count: xerial не бросает
+		res.JavaTypes[i] = javaString     // и за пределами Count: xerial не бросает
+		res.RawTypes[i] = meta.RawUnknown // типов параметров у SQLite нет; "String" — выдумка xerial
 	}
 	return res, nil
 }

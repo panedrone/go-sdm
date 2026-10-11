@@ -1,0 +1,75 @@
+    <type-map default="">
+
+        <!-- database/sql (no ORM) -->
+
+        <type detected="int2" target="int16${json} -> SetInt16"/>
+        <type detected="int4" target="int32${json} -> SetInt32"/>
+        <type detected="int8" target="int64${json} -> SetInt64"/>
+        <type detected="float4" target="float32${json} -> SetFloat32"/>
+        <type detected="float8" target="float64${json} -> SetFloat64"/>
+        <type detected="numeric" target="float64${json} -> SetFloat64"/>
+        <type detected="varchar" target="string${json} -> SetString"/>
+        <type detected="text" target="string${json} -> SetString"/>
+        <type detected="bpchar" target="string${json} -> SetString"/>
+        <type detected="json" target="string${json} -> SetString"/>
+        <type detected="jsonb" target="string${json} -> SetString"/>
+        <type detected="bytea" target="[]byte${json} -> SetBytes"/>
+        <type detected="bool" target="bool${json} -> SetBool"/>
+        <type detected="date" target="time:time.Time${json} -> SetTime"/>
+        <type detected="timestamp" target="time:time.Time${json} -> SetTime"/>
+        <type detected="timestamptz" target="time:time.Time${json} -> SetTime"/>
+        <type detected="uuid" target="github.com/google/uuid:uuid.UUID${json} -> Scan"/>
+        <type detected="_text" target="[]string${json}"/>
+        <type detected="_varchar" target="[]string${json}"/>
+        <type detected="refcursor" target="string"/>
+        <type detected="unknown" target="interface{}${json}"/>
+
+        <!-- sqlx -->
+
+        <type detected="sqlx-int2" target="int16${json-sqlx} -> SetInt16"/>
+        <type detected="sqlx-int4" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-int8" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-float4" target="float32${json-sqlx} -> SetFloat32"/>
+        <type detected="sqlx-float8" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-numeric" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-varchar" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-text" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-bpchar" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-json" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-jsonb" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-bytea" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-bool" target="bool${json-sqlx} -> SetBool"/>
+        <type detected="sqlx-date" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-timestamp" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-timestamptz" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-uuid" target="github.com/google/uuid:uuid.UUID${json-sqlx}"/>
+        <type detected="sqlx-_text" target="[]string${json-sqlx}"/>
+        <type detected="sqlx-_varchar" target="[]string${json-sqlx}"/>
+        <type detected="sqlx-unknown" target="interface{}${json-sqlx}"/>
+
+        <!-- gorm -->
+
+        <type detected="gorm-int2" target="int16${json-gorm} -> SetInt16"/>
+        <type detected="gorm-int4" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-int8" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-float4" target="float32${json-gorm} -> SetFloat32"/>
+        <type detected="gorm-float8" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-numeric" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-varchar" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-text" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-bpchar" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-json" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-jsonb" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-bytea" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-bool" target="bool${json-gorm} -> SetBool"/>
+        <type detected="gorm-date" target="${json-gorm-time}"/>
+        <type detected="gorm-timestamp" target="${json-gorm-time}"/>
+        <type detected="gorm-timestamptz" target="${json-gorm-time}"/>
+        <type detected="gorm-uuid" target="github.com/google/uuid:uuid.UUID${json-gorm}|1:;type:uuid"/>
+        <type detected="gorm-uuid+auto"
+              target="github.com/google/uuid:uuid.UUID${json-gorm}|1:;type:uuid;default:gen_random_uuid()"/>
+        <type detected="gorm-_text" target="[]string${json-gorm}"/>
+        <type detected="gorm-_varchar" target="[]string${json-gorm}"/>
+        <type detected="gorm-unknown" target="interface{}${json-gorm}"/>
+
+    </type-map>

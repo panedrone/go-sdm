@@ -71,6 +71,19 @@ func TestInit(t *testing.T) {
 	if _, err := Init(Options{ProjectDir: newProject(t), SdmDir: "go-sdm", DaoDir: "dbal", ORM: "ent"}); err == nil {
 		t.Error("unknown -orm accepted")
 	}
+
+	// -db mysql: ключи и url MySQL
+	dir = newProject(t)
+	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "dbal", DB: "mysql"}); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dir, "go-sdm", "settings.xml")); !strings.Contains(string(b), `detected="gorm-UNSIGNED INT"`) ||
+		!strings.Contains(string(b), `url="mysql://`) || strings.Contains(string(b), "{{") {
+		t.Errorf("mysql settings.xml:\n%s", b)
+	}
+	if _, err := Init(Options{ProjectDir: newProject(t), SdmDir: "go-sdm", DaoDir: "dbal", DB: "oracle"}); err == nil {
+		t.Error("unknown -db accepted")
+	}
 }
 
 // Повторный init — ошибка, и не тронуто ничего, даже XSD.

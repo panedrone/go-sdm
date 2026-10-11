@@ -20,11 +20,12 @@ const version = "0.1.0-dev"
 const usage = `sdm %s — SQL DAL Maker for Go
 
 usage:
-  sdm [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm]
+  sdm [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm] [-db pg|mysql|sqlite]
                                   no configuration yet: init; otherwise: generate
-  sdm init [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm]
+  sdm init [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm] [-db pg|mysql|sqlite]
                                   create sdm.xml, settings.xml, XSD and the data store
-                                  (database/sql, sqlx or gorm; no_orm by default);
+                                  (database/sql, sqlx or gorm; no_orm by default),
+                                  type map and url for pg (default), mysql or sqlite;
                                   an error if any of them exists, nothing is overwritten
   sdm generate [-dir go-sdm]      generate models and DAO into the folders of settings.xml
   sdm check [-dir go-sdm]         exit 1 if the generated code is out of date (for CI)
@@ -80,10 +81,11 @@ func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, 
 	fs, dir := newFlags(name, stderr)
 	dao := fs.String("dao", "internal/dbal", "folder of generated DAO, relative to go.mod; models go to <dao>/models")
 	orm := fs.String("orm", datastore.Variants[0], "data store: "+strings.Join(datastore.Variants, ", "))
+	db := fs.String("db", skeleton.DBs[0], "database of the type map and url: "+strings.Join(skeleton.DBs, ", "))
 	if err := fs.Parse(args); err != nil {
 		return skeleton.Options{}, false
 	}
-	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm}, true
+	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
 }
 
 // runAuto — без команды: init, если конфигурации ещё нет, иначе generate.

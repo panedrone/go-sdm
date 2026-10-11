@@ -1109,6 +1109,8 @@ func _setFloat64(d *float64, value interface{}) error {
 		*d = v
 	case float32:
 		*d = float64(v)
+	case int64:
+		*d = float64(v) // SQLite: REAL/MONEY column with an integer value
 	case []byte:
 		str := string(v) // PostgreSQL, MySQL
 		var err error
@@ -1219,6 +1221,9 @@ func _copy(row map[string]interface{}, col string, errMap map[string]int, fn fun
 			errMap[key] = 1
 		}
 		return
+	}
+	if value == nil {
+		return // NULL: the field keeps its zero value
 	}
 	err := fn(value)
 	if err == nil {

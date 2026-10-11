@@ -1,0 +1,87 @@
+    <type-map default="">
+
+        <!-- database/sql (no ORM) -->
+
+        <type detected="TINYINT" target="int32${json} -> SetInt32"/>
+        <type detected="SMALLINT" target="int32${json} -> SetInt32"/>
+        <type detected="MEDIUMINT" target="int32${json} -> SetInt32"/>
+        <type detected="INT" target="int32${json} -> SetInt32"/>
+        <type detected="UNSIGNED INT" target="int64${json} -> SetInt64"/>
+        <type detected="BIGINT" target="int64${json} -> SetInt64"/>
+        <type detected="UNSIGNED BIGINT" target="int64${json} -> SetInt64"/>
+        <type detected="FLOAT" target="float32${json} -> SetFloat32"/>
+        <type detected="DOUBLE" target="float64${json} -> SetFloat64"/>
+        <type detected="DECIMAL" target="float64${json} -> SetFloat64"/>
+        <type detected="CHAR" target="string${json} -> SetString"/>
+        <type detected="VARCHAR" target="string${json} -> SetString"/>
+        <type detected="TEXT" target="string${json} -> SetString"/>
+        <type detected="ENUM" target="string${json} -> SetString"/>
+        <type detected="SET" target="string${json} -> SetString"/>
+        <type detected="JSON" target="string${json} -> SetString"/>
+        <type detected="BLOB" target="[]byte${json} -> SetBytes"/>
+        <type detected="BINARY" target="[]byte${json} -> SetBytes"/>
+        <type detected="VARBINARY" target="[]byte${json} -> SetBytes"/>
+        <type detected="BIT" target="bool${json} -> SetBool"/>
+        <type detected="DATE" target="time:time.Time${json} -> SetTime"/>
+        <type detected="DATETIME" target="time:time.Time${json} -> SetTime"/>
+        <type detected="TIMESTAMP" target="time:time.Time${json} -> SetTime"/>
+        <type detected="YEAR" target="time:time.Time${json} -> SetTime"/>
+        <type detected="unknown" target="interface{}${json}"/>
+
+        <!-- sqlx -->
+
+        <type detected="sqlx-TINYINT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-SMALLINT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-MEDIUMINT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-INT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-UNSIGNED INT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-BIGINT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-UNSIGNED BIGINT" target="int64${json-sqlx} -> SetInt64"/>
+        <type detected="sqlx-FLOAT" target="float32${json-sqlx} -> SetFloat32"/>
+        <type detected="sqlx-DOUBLE" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-DECIMAL" target="float64${json-sqlx} -> SetFloat64"/>
+        <type detected="sqlx-CHAR" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-VARCHAR" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-TEXT" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-ENUM" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-SET" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-JSON" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-BLOB" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-BINARY" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-VARBINARY" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-BIT" target="bool${json-sqlx} -> SetBool"/>
+        <type detected="sqlx-DATE" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-DATETIME" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-TIMESTAMP" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-YEAR" target="time:time.Time${json-sqlx} -> SetTime"/>
+        <type detected="sqlx-unknown" target="interface{}${json-sqlx}"/>
+
+        <!-- gorm -->
+
+        <type detected="gorm-TINYINT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-SMALLINT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-MEDIUMINT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-INT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-UNSIGNED INT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-BIGINT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-UNSIGNED BIGINT" target="int64${json-gorm} -> SetInt64"/>
+        <type detected="gorm-FLOAT" target="float32${json-gorm} -> SetFloat32"/>
+        <type detected="gorm-DOUBLE" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-DECIMAL" target="float64${json-gorm} -> SetFloat64"/>
+        <type detected="gorm-CHAR" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-VARCHAR" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-TEXT" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-ENUM" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-SET" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-JSON" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-BLOB" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-BINARY" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-VARBINARY" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-BIT" target="bool${json-gorm} -> SetBool"/>
+        <type detected="gorm-DATE" target="${json-gorm-time}"/>
+        <type detected="gorm-DATETIME" target="${json-gorm-time}"/>
+        <type detected="gorm-TIMESTAMP" target="${json-gorm-time}"/>
+        <type detected="gorm-YEAR" target="${json-gorm-time}"/>
+        <type detected="gorm-unknown" target="interface{}${json-gorm}"/>
+
+    </type-map>

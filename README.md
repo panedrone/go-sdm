@@ -76,7 +76,8 @@ version of `sdm`.
 | `sdm check` | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate |
 
 Options: `-dir <folder>` instead of `go-sdm`; for `init`, `-dao <folder>` instead of `internal/dbal`
-and `-orm sqlx` or `-orm gorm` instead of database/sql.
+`-orm sqlx` or `-orm gorm` instead of database/sql, `-db mysql` or `-db sqlite`
+(the type map and the url) instead of PostgreSQL.
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
 
 ## database/sql, sqlx or gorm
@@ -121,10 +122,10 @@ and the function that reads it from a row:
 <type detected="int4" target="int32${json} -> SetInt32"/>
 ```
 
-`sdm init` writes the keys of PostgreSQL. To see which names your database gives, empty the
+`sdm init` writes the keys of PostgreSQL, `sdm init -db mysql` or `-db sqlite` those of MySQL or SQLite. To see which names your database gives, empty the
 type map (`<type-map default=""/>`) and generate: the code then has the raw names of the
-driver instead of Go types. Where the driver says nothing (SQLite
-expressions), the key is `java.lang.Object`. A type written in `sdm.xml` (`<field type="int4">`,
+driver instead of Go types. Where the driver says nothing about the type
+(MySQL parameters, SQLite expressions), the key is `unknown`. A type written in `sdm.xml` (`<field type="int4">`,
 `return-type="int8"`) goes through the same type map.
 
 The `settings.xml` of the IDE plug-ins (Java names: `java.lang.Integer`, ...) works as is.

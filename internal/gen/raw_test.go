@@ -85,7 +85,7 @@ func TestRawKeysSameAsJava(t *testing.T) {
 		<type detected="BLOB" target="string${json} -> SetString"/> <!-- xerial (плагин) видит BLOB как VARCHAR -->
 		<type detected="java.lang.String" target="string${json} -> SetString"/> <!-- параметры: у SQLite сырого типа нет -->
 		<type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
-		<type detected="java.lang.Object" target="interface{}${json}"/>`)
+		<type detected="unknown" target="interface{}${json}"/>`)
 	if len(java) == 0 || len(java) != len(raw) {
 		t.Fatalf("files: %d vs %d", len(java), len(raw))
 	}
@@ -105,8 +105,8 @@ func TestEmptyTypeMapRendersRaw(t *testing.T) {
 			t.Errorf("task.go: %q expected:\n%s", want, task)
 		}
 	}
-	// у выражений SQLite типа не сообщает — остаётся ключ, который тогда нужен
-	if c := out["task_count.go"]; !strings.Contains(c, "java.lang.Object") {
-		t.Errorf("task_count.go: java.lang.Object expected:\n%s", c)
+	// у выражений SQLite типа не сообщает — ключ unknown
+	if c := out["task_count.go"]; !strings.Contains(c, "Cnt         unknown") {
+		t.Errorf("task_count.go: unknown expected:\n%s", c)
 	}
 }

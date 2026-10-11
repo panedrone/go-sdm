@@ -28,9 +28,19 @@ type Options struct {
 	SdmDir     string // относительно ProjectDir, с '/'
 	DaoDir     string // относительно ProjectDir, с '/'; модели — в DaoDir/models
 	ORM        string // data store: datastore.Variants, "" — первый
+	DB         string // type-map и url: pg, mysql, sqlite; "" — pg
 }
 
 var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
+
+// DBs — значения sdm init -db, первое — по умолчанию.
+var DBs = []string{"pg", "mysql", "sqlite"}
+
+var dbConf = map[string]struct{ name, url, user string }{
+	"pg":     {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres"},
+	"mysql":  {"MySQL", "mysql://localhost:3306/mysql", "root"},
+	"sqlite": {"SQLite", "sqlite:app.sqlite3", ""},
+}
 
 // Exists — в папке уже есть конфигурация (sdm.xml или settings.xml).
 func Exists(projectDir, sdmDir string) bool {
@@ -61,6 +71,18 @@ func Init(o Options) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	db := o.DB
+	if db == "" {
+		db = DBs[0]
+	}
+	dc, ok := dbConf[db]
+	if !ok {
+		return nil, fmt.Errorf("unknown database %q, expected one of: %s", db, strings.Join(DBs, ", "))
+	}
+	tm, err := files.ReadFile("files/typemap_" + db + ".xml")
+	if err != nil {
+		return nil, err
+	}
 	assign := "0"
 	if orm == "sqlx" {
 		assign = "2" // ptr to DTO or ptr to slice of DTO-s
@@ -71,6 +93,10 @@ func Init(o Options) ([]string, error) {
 		"{{dto}}", path.Join(o.DaoDir, "models"),
 		"{{dao}}", o.DaoDir,
 		"{{assign}}", assign,
+		"{{db}}", dc.name,
+		"{{url}}", dc.url,
+		"{{user}}", dc.user,
+		"{{type-map}}", strings.TrimRight(string(tm), "\r\n"),
 	)
 	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))
 	daoDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.DaoDir))

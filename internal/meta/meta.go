@@ -27,6 +27,8 @@ type Metadata interface {
 
 const (
 	JavaObject = "java.lang.Object"
+	// RawUnknown — сырое имя типа, о котором драйвер ничего не сказал (ключ type-map)
+	RawUnknown = "unknown"
 )
 
 // Column — колонка результата (ResultSetMetaData).

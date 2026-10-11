@@ -20,7 +20,7 @@ func TestTypeMapRaw(t *testing.T) {
 		{"gorm-java.lang.Integer", "gorm-int4", "int32${json-gorm} -> SetInt32"},
 		{"gorm-java.util.UUID+auto", "gorm-uuid+auto", "uuid.UUID|1:;default:gen_random_uuid()"},
 		{"java.lang.Long", "int8", "int64-from-java"},
-		{"java.lang.String", "varchar", "java.lang.String"}, // нет ни того ни другого
+		{"java.lang.String", "varchar", "varchar"}, // нет ни того ни другого — имя драйвера
 		// второй проход (raw == ""): ключи — одна карта, как у плагина: совпадение строки
 		// с ключом перемапливает (для совместимости с конфигами плагина: "Object", "int", ...)
 		{"text", "", "string${json} -> SetString"},
