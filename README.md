@@ -1,10 +1,16 @@
 # go-sdm
 
-SQL DAL Maker for Go: generates DAO functions and models from a short XML description
+SQL DAL Maker for Go generates the data access layer — models and DAO — from an XML manifest
 and the metadata of a **live database**. One static binary, no runtime dependencies.
+PostgreSQL, MySQL and SQLite.
 
-SQLite is built in (pure Go, no cgo), so `go test` runs the whole cycle on an in-memory
-database: no PostgreSQL, no external tools.
+It works like the [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.net/):
+
+- **XML manifest.** The manifest describes what to generate: the models, the DAO functions,
+  and the SQL behind them.
+- **Translate.** The manifest is translated into complete Go code, free of any direct call to
+  database/sql, sqlx or gorm. Those stay behind a data store that you own (see
+  [Data store](#data-store)).
 
 ```xml
 <dto-class name="Test" ref="tests"/>
@@ -16,19 +22,39 @@ database: no PostgreSQL, no external tools.
 </dao-class>
 ```
 
-Why not just parse the DDL: the database knows what DDL doesn't show — views, functions,
-procedures with `INOUT` parameters, ref-cursors, the real types of query columns.
+**Reverse engineering** is at the heart of it. During translation the generator reads live
+metadata — tables, views, the result sets of your own SQL, the parameters of procedures — to
+resolve everything the manifest leaves open. That is why the database must be up and reachable
+whenever you generate. Parsing the DDL would not do: the database knows what DDL doesn't show —
+views, functions, procedures with `INOUT` parameters, ref-cursors, the real types of query
+columns. The manifest persists, so regeneration is repeatable: when the schema changes, you
+re-run the generator and your corrections are still there.
+
+**DAO are package-level functions in variables**, no structs, no interfaces to implement:
+
+```go
+var GetTestRating = func(ctx context.Context, tID int32) (res float64, err error) { ... }
+```
+
+A test replaces the one it needs and puts it back, no mocking library, no database:
+
+```go
+saved := dbal.GetTestRating
+dbal.GetTestRating = func(ctx context.Context, tID int32) (float64, error) { return 4.5, nil }
+t.Cleanup(func() { dbal.GetTestRating = saved })
+```
+
+SQLite is built into `sdm` (pure Go, no cgo), so `go test` of go-sdm runs the whole cycle on an
+in-memory database: no PostgreSQL, no external tools.
 
 ## Status
 
-Early development. PostgreSQL, MySQL 8 and SQLite.
-
 | | |
 |---|---|
-| `sdm` (init or generate) | ready |
-| database metadata: PostgreSQL, MySQL, SQLite | ready, verified line by line against the SQL DAL Maker IDE plug-ins |
+| `sdm` (init or generate), `sdm check` (for CI) | ready |
+| database metadata: PostgreSQL, MySQL 8, SQLite | ready, verified line by line against the SQL DAL Maker IDE plug-ins |
 | generation | ready, output byte-identical to the IDE plug-ins |
-| `sdm check` (for CI) | ready: exit 1 if the generated code is out of date |
+| data stores | PostgreSQL, MySQL, SQLite × database/sql, sqlx, gorm; DAO tests of the demo projects pass on live databases |
 
 Verified against the SQL DAL Maker IDE plug-ins on real projects: metadata line by line,
 generated code byte by byte (PostgreSQL, MySQL; SQLite in `go test`).
@@ -46,16 +72,18 @@ go install github.com/panedrone/go-sdm/cmd/sdm@latest
 In the folder of `go.mod`, just
 
 ```bash
-sdm
+sdm                # PostgreSQL
+sdm -db mysql      # or MySQL
+sdm -db sqlite     # or SQLite
 ```
 
 The first run finds no configuration and creates it:
 
 ```
 go-sdm/sdm.xml                         classes to generate
-go-sdm/settings.xml                    folders, database URL, type map
+go-sdm/settings.xml                    folders, database URL, type map of the database
 go-sdm/*.xsd                           completion and validation in the IDE
-internal/dbal/data_store_no_orm.go     the data store used by the generated code (database/sql + pgx)
+internal/dbal/data_store_no_orm.go     the data store used by the generated code, for the database
 internal/dbal/data_store_no_orm_ex.go  your part: connection
 ```
 
@@ -75,9 +103,15 @@ version of `sdm`.
 | `sdm generate` | generates into the folders of `settings.xml`, writes only what changed |
 | `sdm check` | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate |
 
-Options: `-dir <folder>` instead of `go-sdm`; for `init`, `-dao <folder>` instead of `internal/dbal`
-`-orm sqlx` or `-orm gorm` instead of database/sql, `-db mysql` or `-db sqlite`
-(the type map and the url) instead of PostgreSQL.
+Options of `init` (and of `sdm` without a configuration):
+
+| option | default | |
+|---|---|---|
+| `-db pg\|mysql\|sqlite` | `pg` | the database: type map and url in `settings.xml`, the data store for it |
+| `-orm no_orm\|sqlx\|gorm` | `no_orm` | database/sql, sqlx or gorm: the data store; for `sqlx` also `field-assign-mode="2"` |
+| `-dao <folder>` | `internal/dbal` | the folder of the DAO, models go to `<folder>/models` |
+| `-dir <folder>` | `go-sdm` | the folder of `sdm.xml` and `settings.xml` (for all commands) |
+
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
 
 ## database/sql, sqlx or gorm
@@ -91,18 +125,32 @@ name in `sdm.xml`:
 <dto-class name="gorm-Task" ref="tasks"/>  <!-- gorm: gorm:"column:...;size:...;primaryKey;..." tags -->
 ```
 
+## Data store
+
 The generated DAO need a data store in their folder: two files, the code and your part
-(`_ex`, the connection). `sdm init -orm no_orm|sqlx|gorm` writes the pair you choose
-(`no_orm` by default; for `sqlx` also `field-assign-mode="2"`). By hand, take them from
-[`datastore/`](datastore):
+(`_ex`, the connection). Each database has its own, with only what it can do:
 
-| | |
-|---|---|
-| database/sql | [data_store_no_orm.go](datastore/no_orm/data_store_no_orm.go), [data_store_no_orm_ex.go](datastore/no_orm/data_store_no_orm_ex.go) |
-| sqlx | [data_store_sqlx.go](datastore/sqlx/data_store_sqlx.go), [data_store_sqlx_ex.go](datastore/sqlx/data_store_sqlx_ex.go) |
-| gorm | [data_store_gorm.go](datastore/gorm/data_store_gorm.go), [data_store_gorm_ex.go](datastore/gorm/data_store_gorm_ex.go) |
+| | PostgreSQL | MySQL | SQLite |
+|---|---|---|---|
+| driver | pgx | go-sql-driver/mysql | mattn/go-sqlite3 |
+| generated keys | `RETURNING` | `LastInsertId` | `LastInsertId` |
+| parameters | `?` -> `$1, $2, ...` | `?` | `?` |
+| procedures: result sets | yes | yes | — |
+| ref-cursors, OUT, INOUT | yes | — | — |
 
-remove the first line `//go:build ignore` and set the package name of your DAO folder.
+`sdm init -db ... -orm ...` writes the pair you choose. By hand, take it from
+[`datastore/`](datastore), remove the first line `//go:build ignore` and set the package name of
+your DAO folder:
+
+| | PostgreSQL | MySQL | SQLite |
+|---|---|---|---|
+| database/sql | [pg/no_orm](datastore/pg/no_orm) | [mysql/no_orm](datastore/mysql/no_orm) | [sqlite/no_orm](datastore/sqlite/no_orm) |
+| sqlx | [pg/sqlx](datastore/pg/sqlx) | [mysql/sqlx](datastore/mysql/sqlx) | [sqlite/sqlx](datastore/sqlite/sqlx) |
+| gorm | [pg/gorm](datastore/pg/gorm) | [mysql/gorm](datastore/mysql/gorm) | [sqlite/gorm](datastore/sqlite/gorm) |
+
+The connection is `DATABASE_URL` (or the default in `_ex`). All nine are made from the
+templates in [`datastore/templates`](datastore/templates) by `go run ./cli/dsgen`; `go test`
+fails if they differ.
 
 ## Type map
 
@@ -145,6 +193,6 @@ internal/cg/      the core: fields, parameters, type map, macros, ref and method
 internal/gogen/   Go output: models, DAO, go.tmpl
 internal/gen/     one generation run; go test runs it on in-memory SQLite against golden files
 internal/skeleton the files of 'sdm init'
-datastore/        the data stores for database/sql, sqlx and gorm (also for download)
-cli/              design-time tools, not a part of the build
+datastore/        the data stores: <db>/<orm>/ (also for download), made from templates/
+cli/              design-time tools, not a part of the build (dsgen: the data stores)
 ```

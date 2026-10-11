@@ -15,6 +15,7 @@
         <type detected="TEXT" target="string${json} -> SetString"/>
         <type detected="VARCHAR" target="string${json} -> SetString"/>
         <type detected="CHAR" target="string${json} -> SetString"/>
+        <type detected="CHARACTER" target="string${json} -> SetString"/>
         <type detected="NVARCHAR" target="string${json} -> SetString"/>
         <type detected="NCHAR" target="string${json} -> SetString"/>
         <type detected="CLOB" target="string${json} -> SetString"/>
@@ -48,6 +49,7 @@
         <type detected="sqlx-TEXT" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-VARCHAR" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-CHAR" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-CHARACTER" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-NVARCHAR" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-NCHAR" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-CLOB" target="string${json-sqlx} -> SetString"/>
@@ -81,6 +83,7 @@
         <type detected="gorm-TEXT" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-VARCHAR" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-CHAR" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-CHARACTER" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-NVARCHAR" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-NCHAR" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-CLOB" target="string${json-gorm} -> SetString"/>

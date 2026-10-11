@@ -1,6 +1,6 @@
 //go:build ignore
 
-// Your part of the data store for sqlx: the connection. See data_store_sqlx.go.
+// Your part of the data store for sqlx and PostgreSQL: the connection. See data_store_sqlx.go.
 
 package dbal
 
@@ -13,8 +13,11 @@ import (
 )
 
 func (ds *_DS) initDb() (err error) {
-	ds.paramPrefix = "$"
-	ds.db, err = sqlx.Open("pgx", os.Getenv("DATABASE_URL")) // postgres://user:pwd@host:5432/db
+	url := os.Getenv("DATABASE_URL") // postgres://user:pwd@host:5432/db
+	if url == "" {
+		url = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	}
+	ds.db, err = sqlx.Open("pgx", url)
 	return
 }
 

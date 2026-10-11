@@ -1,0 +1,59 @@
+//go:build ignore
+
+// Your part of the data store for {{ORM}} and {{DB}}: the connection. See data_store_{{orm}}.go.
+
+package dbal
+
+import (
+	"context"
+	"os"
+
+	"github.com/jmoiron/sqlx"
+	//sdm:if pg
+	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL
+	//sdm:end
+	//sdm:if mysql
+	_ "github.com/go-sql-driver/mysql" // MySQL
+	//sdm:end
+	//sdm:if sqlite
+	_ "github.com/mattn/go-sqlite3" // SQLite3, cgo; without cgo: modernc.org/sqlite, driver "sqlite"
+	//sdm:end
+)
+
+func (ds *_DS) initDb() (err error) {
+	//sdm:if pg
+	url := os.Getenv("DATABASE_URL") // postgres://user:pwd@host:5432/db
+	if url == "" {
+		url = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	}
+	ds.db, err = sqlx.Open("pgx", url)
+	//sdm:end
+	//sdm:if mysql
+	dsn := os.Getenv("DATABASE_URL") // user:pwd@tcp(host:3306)/db?parseTime=true
+	if dsn == "" {
+		dsn = "root:root@tcp(localhost:3306)/mysql?parseTime=true" // parseTime: DATETIME -> time.Time
+	}
+	ds.db, err = sqlx.Open("mysql", dsn)
+	//sdm:end
+	//sdm:if sqlite
+	file := os.Getenv("DATABASE_URL") // path to the database file
+	if file == "" {
+		file = "./app.sqlite3"
+	}
+	ds.db, err = sqlx.Open("sqlite3", file)
+	//sdm:end
+	return
+}
+
+var _ds = &_DS{}
+
+func Ds() DataStore {
+	return _ds
+}
+
+func init() {
+	// generated DAO functions get DataStore via DS(ctx)
+	DS = func(ctx context.Context) DataStore {
+		return _ds
+	}
+}

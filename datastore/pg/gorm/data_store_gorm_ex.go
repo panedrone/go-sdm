@@ -1,6 +1,6 @@
 //go:build ignore
 
-// Your part of the data store for gorm: the connection. See data_store_gorm.go.
+// Your part of the data store for gorm and PostgreSQL: the connection. See data_store_gorm.go.
 
 package dbal
 
@@ -14,9 +14,12 @@ import (
 )
 
 func (ds *_DS) initDb() (err error) {
-	ds.paramPrefix = "$"
-	dsn := os.Getenv("DATABASE_URL") // postgres://user:pwd@host:5432/db
-	ds.rootDb, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" { // postgres://user:pwd@host:5432/db
+		dsn = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	}
+	dialector := postgres.Open(dsn)
+	ds.rootDb, err = gorm.Open(dialector, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	return

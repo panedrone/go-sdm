@@ -34,7 +34,7 @@ type Options struct {
 var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
 
 // DBs — значения sdm init -db, первое — по умолчанию.
-var DBs = []string{"pg", "mysql", "sqlite"}
+var DBs = datastore.DBs
 
 var dbConf = map[string]struct{ name, url, user string }{
 	"pg":     {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres"},
@@ -67,10 +67,6 @@ func Init(o Options) ([]string, error) {
 	if orm == "" {
 		orm = datastore.Variants[0]
 	}
-	ds, err := datastore.Files(orm, pkg)
-	if err != nil {
-		return nil, err
-	}
 	db := o.DB
 	if db == "" {
 		db = DBs[0]
@@ -78,6 +74,10 @@ func Init(o Options) ([]string, error) {
 	dc, ok := dbConf[db]
 	if !ok {
 		return nil, fmt.Errorf("unknown database %q, expected one of: %s", db, strings.Join(DBs, ", "))
+	}
+	ds, err := datastore.Files(orm, db, pkg) // data store под базу
+	if err != nil {
+		return nil, err
 	}
 	tm, err := files.ReadFile("files/typemap_" + db + ".xml")
 	if err != nil {
