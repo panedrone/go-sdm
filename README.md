@@ -129,6 +129,8 @@ driver instead of Go types. Where the driver says nothing about the type
 `return-type="int8"`) goes through the same type map.
 
 The `settings.xml` of the IDE plug-ins (Java names: `java.lang.Integer`, ...) works as is.
+A Java name in `sdm.xml` (`<field type="java.lang.Integer">`) without a key in the type map
+is replaced by the type of the column from the database, or by `unknown` if there is no column.
 
 The XML files are meant to be edited in an IDE with XML Schema support:
 GoLand out of the box, VS Code with the "XML" extension by Red Hat.

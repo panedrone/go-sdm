@@ -127,9 +127,13 @@ func (c *Core) refineByFieldXML(dto *sdmxml.DtoClass, fields []FieldInfo) ([]Fie
 	refined := map[string]bool{}
 	excluded := map[int]bool{}
 	for _, xf := range dto.Fields {
+		xt := xf.Type
 		i, ok := index[xf.Column]
 		if !ok { // объявлено в XML, но SQL такого не вернул
-			fi, err := NewFieldInfo(c.dtoMode, xf.Type, xf.Column, "xml("+xf.Column+")")
+			if c.tm.Unmapped(xt) {
+				xt = meta.JavaObject // Java-имя без ключа и без метаданных: unknown
+			}
+			fi, err := NewFieldInfo(c.dtoMode, xt, xf.Column, "xml("+xf.Column+")")
 			if err != nil {
 				return nil, err
 			}
@@ -140,11 +144,14 @@ func (c *Core) refineByFieldXML(dto *sdmxml.DtoClass, fields []FieldInfo) ([]Fie
 		if strings.TrimSpace(xf.Type) == "-" {
 			excluded[i] = true
 		}
-		fi, err := c.refineByTypeMapAndMacros(res[i], xf.Type)
+		if ok && c.tm.Unmapped(xt) {
+			xt = res[i].originalType // Java-имя без ключа: тип колонки из метаданных
+		}
+		fi, err := c.refineByTypeMapAndMacros(res[i], xt)
 		if err != nil {
 			return nil, err
 		}
-		res[i] = fi.WithScalarType(xf.Type)
+		res[i] = fi.WithScalarType(xt)
 		refined[xf.Column] = true
 	}
 	var out []FieldInfo

@@ -37,6 +37,17 @@ func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
 	return res
 }
 
+// Unmapped — тип, объявленный в XML Java-именем плагина (java.lang.Integer), для которого
+// в type-map нет ключа: вместо него берётся тип колонки из метаданных.
+func (m *TypeMap) Unmapped(typ string) bool {
+	typ = strings.TrimSpace(typ)
+	if !strings.HasPrefix(typ, "java.") {
+		return false
+	}
+	_, ok := m.detected[typ]
+	return !ok
+}
+
 // Target — detected — уже отображённый тип или явно объявленный в XML.
 func (m *TypeMap) Target(detected string) string {
 	return m.TargetRaw(detected, "")

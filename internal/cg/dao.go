@@ -114,9 +114,9 @@ func refineDaoRef(dtoOrReturnType string, returnTypeIsDto bool, dtos []sdmxml.Dt
 func (c *Core) returnedFieldInfo(explicitRetType string, daoFields []FieldInfo) (FieldInfo, error) {
 	col, typ := "ret_value", meta.JavaObject
 	switch {
-	case strings.TrimSpace(explicitRetType) != "":
+	case strings.TrimSpace(explicitRetType) != "" && !(c.tm.Unmapped(explicitRetType) && len(daoFields) > 0):
 		typ = explicitRetType
-	case len(daoFields) > 0:
+	case len(daoFields) > 0: // и Java-имя без ключа в type-map
 		col, typ = daoFields[0].columnName, daoFields[0].renderedType
 	}
 	return NewFieldInfo(c.dtoMode, typ, col, "returned-value")
