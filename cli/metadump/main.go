@@ -5,6 +5,7 @@
 //
 //	go run ./cli/metadump -url jdbc:postgresql://host:5432/db -user postgres cli/metadump/my_tests_pg.txt
 //	go run ./cli/metadump -url sqlite::memory: internal/meta/testdata/sqlite.txt
+//	go run ./cli/metadump -url jdbc:mysql://localhost/go_sdm_probe -user root cli/metadump/mysql.txt
 //
 // SQLite сверяется и в go test (internal/meta/sqlite) — эта утилита нужна для PostgreSQL.
 package main
@@ -18,6 +19,7 @@ import (
 
 	"github.com/panedrone/go-sdm/internal/meta"
 	"github.com/panedrone/go-sdm/internal/meta/metadump"
+	"github.com/panedrone/go-sdm/internal/meta/mysql"
 	"github.com/panedrone/go-sdm/internal/meta/pg"
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
@@ -53,6 +55,13 @@ func run(url, user, pwd, inputs string) error {
 func open(url, user, pwd string) (meta.Metadata, error) {
 	if file, ok := strings.CutPrefix(url, "sqlite:"); ok {
 		return sqlite.Open(file)
+	}
+	if strings.HasPrefix(url, "jdbc:mysql:") || strings.HasPrefix(url, "mysql:") {
+		addr, db, u, p, err := mysql.ConnParams(url, user, pwd)
+		if err != nil {
+			return nil, err
+		}
+		return mysql.Open(addr, db, u, p)
 	}
 	cs, err := pg.ConnString(url, user, pwd)
 	if err != nil {

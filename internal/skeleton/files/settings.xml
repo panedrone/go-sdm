@@ -25,7 +25,9 @@
     <ide event-log="true"/>
 
     <!-- go-sdm uses only "url", "user" and "pwd"; "jar" and "class" are for the IDE plug-in.
-         url: jdbc:postgresql://host:port/db or postgres://host:port/db -->
+         url: jdbc:postgresql://host:port/db, jdbc:mysql://host:port/db or jdbc:sqlite:<file>
+         (postgres://... and mysql://... too). The data store below is for PostgreSQL (pgx):
+         for MySQL or SQLite change the driver in data_store_no_orm_ex.go -->
 
     <jdbc jar="postgresql-42.7.3.jar" class="org.postgresql.Driver"
           url="jdbc:postgresql://localhost:5432/postgres" user="postgres" pwd=""/>

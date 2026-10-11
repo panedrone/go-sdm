@@ -1,0 +1,40 @@
+# MySQL 8: database go_sdm_probe (create database go_sdm_probe), Connector/J 8.4 is the golden.
+# The same file is read by MetaDump.java and cli/metadump.
+
+exec	drop table if exists t_child, t_types, t_parent
+exec	create table t_parent (p_id int auto_increment primary key, p_code varchar(10) not null unique, p_name varchar(64))
+exec	create table t_types (id bigint auto_increment primary key, c_tinyint tinyint, c_bool tinyint(1), c_bool2 boolean, c_smallint smallint, c_mediumint mediumint, c_int int not null, c_int_u int unsigned, c_bigint bigint, c_bigint_u bigint unsigned, c_decimal decimal(10,2), c_decimal0 decimal(12), c_numeric numeric(8,3), c_float float, c_double double, c_real real, c_bit1 bit(1), c_bit8 bit(8), c_date date, c_datetime datetime, c_datetime3 datetime(3), c_timestamp timestamp null, c_time time, c_year year, c_char char(3), c_varchar varchar(200), c_varchar_latin varchar(50) character set latin1, c_tinytext tinytext, c_text text, c_mediumtext mediumtext, c_longtext longtext, c_binary binary(4), c_varbinary varbinary(16), c_tinyblob tinyblob, c_blob blob, c_longblob longblob, c_enum enum('a','b'), c_set set('x','y'), c_json json, c_geometry geometry)
+exec	create table t_child (c_id int auto_increment, c_p_id int not null, c_k2 varchar(20) not null, c_note text, primary key (c_id, c_k2), index ix_note (c_note(10)), foreign key (c_p_id) references t_parent (p_id))
+exec	drop procedure if exists p_rs
+exec	create procedure p_rs(in p int) begin select p_id, p_name from t_parent where p_id > p; end
+exec	drop procedure if exists p_out
+exec	create procedure p_out(in p int, out res varchar(20)) begin set res = concat('x', p); end
+
+sql	select * from t_parent
+sql	select * from t_types
+sql	select * from t_child
+sql	select p.p_id, p.p_name as name, c.c_k2 from t_parent p join t_child c on c.c_p_id = p.p_id where p.p_id = ?
+sql	select count(*) as cnt, max(p_name) as mx, sum(p_id) as s, 1 as one, 1.5 as half, 'x' as str, null as nul, now() as dt from t_parent
+sql	select p_id from t_parent where p_name like ? and p_id > ?
+sql	insert into t_parent (p_code, p_name) values (?, ?)
+sql	call p_rs(?)
+sql	call p_out(?, ?)
+sql	{call p_rs(?)}
+sql	call no_such_proc(?)
+sql	select * from no_such_table
+
+params	2	select p_id from t_parent where p_name like ? and p_id > ?
+params	2	insert into t_parent (p_code, p_name) values (?, ?)
+params	2	call p_out(?, ?)
+params	1	call p_rs(?)
+params	0	select * from t_parent
+params	2	select * from t_parent where p_id = ?
+
+table	t_parent
+table	t_types
+table	t_child
+table	no_such_table
+
+pk	t_parent
+pk	t_child
+pk	t_types

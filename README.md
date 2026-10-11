@@ -21,14 +21,17 @@ procedures with `INOUT` parameters, ref-cursors, the real types of query columns
 
 ## Status
 
-Early development. PostgreSQL and SQLite; MySQL later.
+Early development. PostgreSQL, MySQL 8 and SQLite.
 
 | | |
 |---|---|
 | `sdm` (init or generate) | ready |
-| database metadata: PostgreSQL, SQLite | ready, verified line by line against the SQL DAL Maker IDE plug-ins |
+| database metadata: PostgreSQL, MySQL, SQLite | ready, verified line by line against the SQL DAL Maker IDE plug-ins |
 | generation | ready, output byte-identical to the IDE plug-ins |
 | `sdm check` (for CI) | ready: exit 1 if the generated code is out of date |
+
+Verified against the SQL DAL Maker IDE plug-ins on real projects: metadata line by line,
+generated code byte by byte (PostgreSQL, MySQL; SQLite in `go test`).
 
 `sdm.xml` and `settings.xml` are the same as in the
 [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.net/). go-sdm keeps them in
@@ -77,7 +80,7 @@ GoLand out of the box, VS Code with the "XML" extension by Red Hat.
 
 ```
 cmd/sdm/          the CLI
-internal/meta/    database metadata: one implementation per dialect (pg, sqlite)
+internal/meta/    database metadata: one implementation per dialect (pg, mysql, sqlite)
 internal/sdmxml/  sdm.xml, DAO XML files, settings.xml
 internal/cg/      the core: fields, parameters, type map, macros, ref and method grammar
 internal/gogen/   Go output: models, DAO, go.tmpl
