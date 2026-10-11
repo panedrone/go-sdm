@@ -9,7 +9,8 @@ type Settings struct {
 	Folders Folders `xml:"folders"`
 	Dto     Dto     `xml:"dto"`
 	Dao     Dao     `xml:"dao"`
-	Jdbc    Jdbc    `xml:"jdbc"`
+	Jdbc    DB      `xml:"jdbc"`  // IDE-плагины; go-sdm его не читает (cli/genharness — читает)
+	GoDB    *DB     `xml:"go-db"` // база go-sdm
 	TypeMap TypeMap `xml:"type-map"`
 	Macros  []Macro `xml:"macros>macro"`
 	// <ide> — настройка IDE, CLI её не читает
@@ -33,8 +34,8 @@ type Dao struct {
 	Macro           string `xml:"macro,attr"`
 }
 
-// Jdbc — jar и class не нужны: драйвер вшит в бинарник.
-type Jdbc struct {
+// DB — <go-db> и <jdbc>; у <jdbc> jar и class не нужны: драйвер вшит в бинарник.
+type DB struct {
 	URL  string `xml:"url,attr"`
 	User string `xml:"user,attr"`
 	Pwd  string `xml:"pwd,attr"`

@@ -31,7 +31,7 @@ usage:
   sdm check [-dir go-sdm]         exit 1 if the generated code is out of date (for CI)
   sdm version
 
-Run it in the folder of go.mod. The database is <jdbc url user pwd> of settings.xml;
+Run it in the folder of go.mod. The database is <go-db url user pwd> of settings.xml;
 SDM_PWD, if set, overrides "pwd".
 `
 
@@ -109,7 +109,7 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <jdbc url> in %s/settings.xml, run sdm again\n",
+	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, run sdm again\n",
 		o.SdmDir, o.SdmDir)
 	return 0
 }
@@ -129,12 +129,17 @@ func generate(dir string, write bool, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
+	if s.GoDB == nil {
+		fmt.Fprintf(stderr, "%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)\n", dir)
+		return 1
+	}
+	db := *s.GoDB
 	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
-		s.Jdbc.Pwd = pwd
+		db.Pwd = pwd
 	}
 	st := newStatus(stderr)
-	st.show("connecting to %s ...", dbLabel(s.Jdbc.URL))
-	md, err := gen.OpenMetadata(".", s.Jdbc)
+	st.show("connecting to %s ...", dbLabel(db.URL))
+	md, err := gen.OpenMetadata(".", db)
 	if err != nil {
 		st.clear()
 		fmt.Fprintln(stderr, err)

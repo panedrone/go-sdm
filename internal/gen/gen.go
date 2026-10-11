@@ -31,9 +31,9 @@ type Result struct {
 	Dto, Dao       []File
 }
 
-// OpenMetadata — база из <jdbc url user pwd>. $PROJECT_DIR$ и ${project_loc} — папка проекта,
+// OpenMetadata — база из <go-db url user pwd> (или <jdbc> — у cli/genharness). $PROJECT_DIR$ и ${project_loc} — папка проекта,
 // относительный путь SQLite — тоже от неё.
-func OpenMetadata(projectDir string, j sdmxml.Jdbc) (meta.Metadata, error) {
+func OpenMetadata(projectDir string, j sdmxml.DB) (meta.Metadata, error) {
 	url := strings.NewReplacer("$PROJECT_DIR$", projectDir, "${project_loc}", projectDir).Replace(strings.TrimSpace(j.URL))
 	if file, ok := strings.CutPrefix(strings.TrimPrefix(url, "jdbc:"), "sqlite:"); ok {
 		if file == ":memory:" {

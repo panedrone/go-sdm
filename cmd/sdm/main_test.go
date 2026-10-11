@@ -110,3 +110,32 @@ func TestDbLabel(t *testing.T) {
 		}
 	}
 }
+
+// без <go-db> — ошибка с подсказкой: <jdbc> (он в settings.xml есть) go-sdm не читает
+func TestNoGoDB(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"init", "-db", "sqlite"}, &out, &errOut); code != 0 {
+		t.Fatalf("init: %d %s", code, errOut.String())
+	}
+	settings := filepath.Join("go-sdm", "settings.xml")
+	b, err := os.ReadFile(settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := strings.Replace(string(b), `<go-db url="sqlite:app.sqlite3" user="" pwd=""/>`, "", 1) // остаётся только <jdbc>
+	if s == string(b) {
+		t.Fatal("<go-db> not found in settings.xml")
+	}
+	if err := os.WriteFile(settings, []byte(s), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	errOut.Reset()
+	if code := run([]string{"generate"}, &out, &errOut); code != 1 || !strings.Contains(errOut.String(), "<go-db") {
+		t.Errorf("generate without <go-db>: %d %q", code, errOut.String())
+	}
+}

@@ -66,6 +66,10 @@ generated code byte by byte (PostgreSQL, MySQL; SQLite in `go test`).
 `sdm.xml` and `settings.xml` are the same as in the
 [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.net/). go-sdm keeps them in
 its own folder `go-sdm/`, so it can live in a project next to the `sdm/` folder of a plug-in.
+One `settings.xml` serves both: `<jdbc>` is the database of the plug-in, `<go-db url="..." user="..." pwd="..."/>`
+is the database of go-sdm, with the URLs of Go (`postgres://...`, `mysql://...`, `sqlite:<file>`).
+go-sdm does not read `<jdbc>`, the plug-ins ignore `<go-db>`; `settings.xsd` is the same for both.
+`sdm init` writes both.
 
 ## Quick start
 
@@ -96,7 +100,7 @@ application, not an API for other modules, and the Go compiler keeps them so. De
 the same way, for example `internal/noorm/dbal` (`sdm init -dao internal/noorm/dbal` or
 `scope` in `settings.xml`).
 
-Describe classes in `go-sdm/sdm.xml`, set `<jdbc url>` in `go-sdm/settings.xml` and run `sdm`
+Describe classes in `go-sdm/sdm.xml`, set `<go-db url>` in `go-sdm/settings.xml` and run `sdm`
 again: from now on it generates models and DAO. It also keeps the XSD in step with the
 version of `sdm`.
 

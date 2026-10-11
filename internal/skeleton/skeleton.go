@@ -36,10 +36,14 @@ var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
 // DBs — значения sdm init -db, первое — по умолчанию.
 var DBs = datastore.DBs
 
-var dbConf = map[string]struct{ name, url, user string }{
-	"pg":     {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres"},
-	"mysql":  {"MySQL", "mysql://localhost:3306/mysql", "root"},
-	"sqlite": {"SQLite", "sqlite:app.sqlite3", ""},
+// dbConf — <go-db> и <jdbc> плагина: один settings.xml и для sdm, и для IDE.
+var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
+	"pg": {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres",
+		"postgresql-42.7.3.jar", "org.postgresql.Driver", "jdbc:postgresql://localhost:5432/postgres"},
+	"mysql": {"MySQL", "mysql://localhost:3306/mysql", "root",
+		"mysql-connector-j-8.4.0.jar", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://localhost:3306/mysql"},
+	"sqlite": {"SQLite", "sqlite:app.sqlite3", "",
+		"sqlite-jdbc-3.51.1.0.jar", "org.sqlite.JDBC", "jdbc:sqlite:$PROJECT_DIR$/app.sqlite3"},
 }
 
 // Exists — в папке уже есть конфигурация (sdm.xml или settings.xml).
@@ -96,6 +100,9 @@ func Init(o Options) ([]string, error) {
 		"{{db}}", dc.name,
 		"{{url}}", dc.url,
 		"{{user}}", dc.user,
+		"{{jdbc-jar}}", dc.jar,
+		"{{jdbc-class}}", dc.class,
+		"{{jdbc-url}}", dc.jdbcURL,
 		"{{type-map}}", strings.TrimRight(string(tm), "\r\n"),
 	)
 	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))

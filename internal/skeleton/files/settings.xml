@@ -25,10 +25,15 @@
 
     <ide event-log="true"/>
 
-    <!-- url: postgres://host:port/db, mysql://host:port/db or sqlite:<file>.
-         SDM_PWD, if set, overrides "pwd". -->
+    <!-- One settings.xml for the IDE plug-in and for go-sdm:
+            jdbc  - the IDE plug-in (jar, class and url of JDBC); go-sdm does not read it.
+            go-db - go-sdm (url: postgres://host:port/db, mysql://host:port/db or sqlite:<file>);
+                    the IDE plug-in ignores it. SDM_PWD, if set, overrides "pwd" of go-db. -->
 
-    <jdbc url="{{url}}" user="{{user}}" pwd=""/>
+    <jdbc jar="{{jdbc-jar}}" class="{{jdbc-class}}"
+          url="{{jdbc-url}}" user="{{user}}" pwd=""/>
+
+    <go-db url="{{url}}" user="{{user}}" pwd=""/>
 
     <!-- detected: the type of a column as the driver names it. The keys below are {{db}}
          (sdm init -db pg, mysql or sqlite). PostgreSQL says int4, varchar, timestamptz, ...;
