@@ -36,10 +36,11 @@ func TestSpecific(t *testing.T) {
 		hasNot  []string
 	}{
 		{"pg", "no_orm", []string{"RETURNING", "FetchPg", "exec2", "queryImplRc", `sql.Open("pgx"`}, nil},
-		{"mysql", "no_orm", []string{"LastInsertId", "queryImplRc", `sql.Open("mysql"`}, []string{"RETURNING", "FetchPg", "exec2", "type Out"}},
+		{"mysql", "no_orm", []string{"LastInsertId", "queryImplRc", `sql.Open("mysql"`, "type Out", "type InOut", "validateDest"}, []string{"RETURNING", "FetchPg", "exec2"}},
 		{"sqlite", "no_orm", []string{"LastInsertId", `sql.Open("sqlite3"`}, []string{"RETURNING", "queryImplRc", "processExecParams", "type Out"}},
 		{"sqlite", "gorm", []string{"sqlite.Open"}, []string{"FetchSql", "queryImplRc", "processExecParams"}},
 		{"pg", "sqlx", []string{"Rebind", "RETURNING"}, nil},
+		{"mysql", "sqlx", []string{"LastInsertId", "queryImplRc", "type Out", "type InOut", "validateDest"}, []string{"RETURNING", "FetchPg", "exec2"}},
 	}
 	for _, c := range cases {
 		files, err := Files(c.orm, c.db, "dbal")

@@ -58,6 +58,35 @@ type DataStore interface {
 	Select(ctx context.Context, sqlString string, dest interface{}, args ...interface{}) error
 }
 
+type Out struct {
+	/*
+		var outParam float64 // no need to init
+		cxDao.SpTestOutParams(47, Out{Dest: &outParam})
+		// cxDao.SpTestOutParams(47, &outParam) // <- this one is also ok for OUT parameters
+		fmt.Println(outParam)
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+	*/
+
+	// Dest is a pointer to the value that will be set to the result of the
+	// stored procedure's OUT parameter.
+	Dest interface{}
+}
+
+type InOut struct {
+	/*
+		inOutParam := 123.0 // must be initialized for INOUT
+		cxDao.SpTestInoutParams(InOut{Dest: &inOutParam})
+		fmt.Println(inOutParam)
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+	*/
+
+	// Dest is a pointer to the value that will be set to the result of the
+	// stored procedure's OUT parameter.
+	Dest interface{}
+}
+
 type _DS struct {
 	db *sqlx.DB
 }
@@ -179,6 +208,17 @@ func pointsToNil(p interface{}) bool {
 	return false
 }
 
+func validateDest(dest interface{}) (err error) {
+	if dest == nil {
+		err = errors.New("Out/InOut -> Dest is nil")
+	} else if !isPtr(dest) {
+		err = errors.New("Out/InOut -> Dest must be a Ptr")
+	} else if pointsToNil(dest) {
+		err = errors.New("Out/InOut -> Dest points to nil")
+	}
+	return
+}
+
 func (ds *_DS) processExecParams(args []interface{}, onRowArr *[]interface{}, queryArgs *[]interface{}) (hasParamsImplRc bool, hasParamsOutRc bool, err error) {
 	for _, arg := range args {
 		switch param := arg.(type) {
@@ -207,6 +247,30 @@ func (ds *_DS) processExecParams(args []interface{}, onRowArr *[]interface{}, qu
 				}
 				*onRowArr = append(*onRowArr, fn)
 			}
+		case *Out:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: false})
+		case Out:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: false})
+		case *InOut:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: true})
+		case InOut:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: true})
 		default:
 			if isPtr(arg) && pointsToNil(arg) {
 				err = errors.New("arg points to nil")

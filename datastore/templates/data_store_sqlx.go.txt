@@ -63,12 +63,18 @@ func FetchPg(cursor string) string {
 	return fmt.Sprintf(`fetch all from "%s"`, cursor)
 }
 
+//sdm:end
+//sdm:if pg mysql
 type Out struct {
 	/*
 		var outParam float64 // no need to init
 		cxDao.SpTestOutParams(47, Out{Dest: &outParam})
 		// cxDao.SpTestOutParams(47, &outParam) // <- this one is also ok for OUT parameters
 		fmt.Println(outParam)
+		//sdm:if mysql
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+		//sdm:end
 	*/
 
 	// Dest is a pointer to the value that will be set to the result of the
@@ -81,6 +87,10 @@ type InOut struct {
 		inOutParam := 123.0 // must be initialized for INOUT
 		cxDao.SpTestInoutParams(InOut{Dest: &inOutParam})
 		fmt.Println(inOutParam)
+		//sdm:if mysql
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+		//sdm:end
 	*/
 
 	// Dest is a pointer to the value that will be set to the result of the
@@ -232,8 +242,6 @@ func pointsToNil(p interface{}) bool {
 	return false
 }
 
-//sdm:end
-//sdm:if pg
 func validateDest(dest interface{}) (err error) {
 	if dest == nil {
 		err = errors.New("Out/InOut -> Dest is nil")
@@ -296,6 +304,7 @@ func (ds *_DS) processExecParams(args []interface{}, onRowArr *[]interface{}, qu
 			*onRowArr = append(*onRowArr, param) // add single func
 			var rows driver.Rows
 			*queryArgs = append(*queryArgs, sql.Out{Dest: &rows, In: false})
+		//sdm:end
 		case *Out:
 			err = validateDest(param.Dest)
 			if err != nil {
@@ -320,7 +329,6 @@ func (ds *_DS) processExecParams(args []interface{}, onRowArr *[]interface{}, qu
 				return
 			}
 			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: true})
-		//sdm:end
 		default:
 			if isPtr(arg) && pointsToNil(arg) {
 				err = errors.New("arg points to nil")
