@@ -83,7 +83,7 @@ go install github.com/panedrone/go-sdm/cmd/sdm@latest
 In the folder of `go.mod`, just
 
 ```bash
-sdm                # PostgreSQL
+sdm -db pg         # PostgreSQL
 sdm -db mysql      # or MySQL
 sdm -db sqlite     # or SQLite
 ```
