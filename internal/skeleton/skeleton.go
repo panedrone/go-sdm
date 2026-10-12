@@ -41,7 +41,7 @@ var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 	"pg": {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres",
 		"postgresql-42.7.3.jar", "org.postgresql.Driver", "jdbc:postgresql://localhost:5432/postgres"},
 	"mysql": {"MySQL", "mysql://localhost:3306/mysql", "root",
-		"mysql-connector-j-8.4.0.jar", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://localhost:3306/mysql"},
+		"mysql-connector-j-26.7.0.jar", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://localhost:3306/mysql"},
 	"sqlite": {"SQLite", "sqlite:app.sqlite3", "",
 		"sqlite-jdbc-3.51.1.0.jar", "org.sqlite.JDBC", "jdbc:sqlite:$PROJECT_DIR$/app.sqlite3"},
 }

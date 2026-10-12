@@ -49,7 +49,7 @@
     <!--    <jdbc jar="ojdbc10.jar" class="oracle.jdbc.driver.OracleDriver"-->
     <!--          url="jdbc:oracle:thin:@localhost:1521/XE" user="todolist" pwd="sa"/>-->
 
-    <!--    <jdbc jar="mysql-connector-j-8.4.0.jar"-->
+    <!--    <jdbc jar="mysql-connector-j-26.7.0.jar"-->
     <!--          class="com.mysql.cj.jdbc.Driver" url="jdbc:mysql://localhost/orders" user="root" pwd="sa"/>-->
 
     <jdbc jar="postgresql-42.7.3.jar" class="org.postgresql.Driver"
