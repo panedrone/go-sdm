@@ -197,7 +197,7 @@ is replaced by the type of the column from the database, or by `unknown` if ther
 The XML files are meant to be edited in an IDE with XML Schema support:
 GoLand out of the box, VS Code with the "XML" extension by Red Hat.
 
-## CRUD and Raw-SQL
+## Syntax of XML manifest
 
 * [https://sqldalmaker.sourceforge.net/dto-models.html](https://sqldalmaker.sourceforge.net/dto-models.html)
 
