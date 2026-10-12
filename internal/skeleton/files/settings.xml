@@ -17,9 +17,9 @@
 
          field-assign-mode:
             0 - by column name (database/sql, gorm)
-            1 - by field position
-            2 - ptr to DTO or ptr to slice of DTO-s (sqlx)
-            3 - ptr to resulting slice of DTO-s (sqlx) -->
+            1 - by field position (unsafe)
+            2 - ptr to DTO or ptr to slice of DTO-s (gorm, sqlx)
+            3 - ptr to resulting slice of DTO-s (gorm, sqlx) -->
 
     <dao scope="{{dao}}" field-assign-mode="{{assign}}" macro=""/>
 
