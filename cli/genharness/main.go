@@ -94,7 +94,7 @@ func write(dir, outputDir string, files []gen.File) int {
 	for _, f := range files {
 		if f.Err != nil {
 			errors++
-			_ = os.WriteFile(filepath.Join(dir, f.Class+".ERROR.txt"), []byte("java.lang.Exception: "+f.Err.Error()), 0o644)
+			_ = os.WriteFile(filepath.Join(dir, f.Class+".ERROR.txt"), []byte("Error: "+f.Err.Error()), 0o644)
 			continue
 		}
 		_ = os.WriteFile(filepath.Join(dir, f.Name), []byte(f.Content), 0o644)

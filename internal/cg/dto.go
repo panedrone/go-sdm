@@ -52,7 +52,7 @@ func (c *Core) dtoFields(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo, e
 		fields, err = c.refineByFieldXML(dto, fields)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("<dto-class name=\"%s\"... java.lang.Exception: %s", dto.Name, err.Error())
+		return nil, fmt.Errorf("<dto-class name=\"%s\"... Error: %s", dto.Name, err.Error())
 	}
 	res := make([]FieldInfo, len(fields))
 	for i, fi := range fields {
