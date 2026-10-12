@@ -55,8 +55,18 @@ func typeWithoutImport(t string) string {
 }
 
 // typeWithoutImportAndTag — "time:time.Time `json:...`" -> "time.Time".
+//
+// Тип — всё до тега (до '`'), а не до первого пробела, как в Java: имя драйвера, которого нет
+// в type-map, пишется как есть, а у MySQL оно бывает из двух слов ("UNSIGNED SMALLINT").
 func typeWithoutImportAndTag(t string) string {
-	return first(jsplit(typeWithoutImport(t), reWS))
+	s := typeWithoutImport(t)
+	if s != strings.TrimLeft(s, " \t\r\n") {
+		return first(jsplit(s, reWS)) // как в Java: ведущий пробел — пустой тип
+	}
+	if i := strings.IndexByte(s, '`'); i >= 0 {
+		s = s[:i]
+	}
+	return strings.TrimSpace(s)
 }
 
 // padRight — String.format("%-N.Ns", s): дополнить пробелами и обрезать до N символов.
