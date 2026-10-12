@@ -6,6 +6,9 @@
         <type detected="SMALLINT" target="int32${json} -> SetInt32"/>
         <type detected="MEDIUMINT" target="int32${json} -> SetInt32"/>
         <type detected="INT" target="int32${json} -> SetInt32"/>
+        <type detected="UNSIGNED TINYINT" target="int32${json} -> SetInt32"/>
+        <type detected="UNSIGNED SMALLINT" target="int32${json} -> SetInt32"/>
+        <type detected="UNSIGNED MEDIUMINT" target="int32${json} -> SetInt32"/>
         <type detected="UNSIGNED INT" target="int64${json} -> SetInt64"/>
         <type detected="BIGINT" target="int64${json} -> SetInt64"/>
         <type detected="UNSIGNED BIGINT" target="int64${json} -> SetInt64"/>
@@ -15,10 +18,19 @@
         <type detected="CHAR" target="string${json} -> SetString"/>
         <type detected="VARCHAR" target="string${json} -> SetString"/>
         <type detected="TEXT" target="string${json} -> SetString"/>
+        <type detected="TINYTEXT" target="string${json} -> SetString"/>
+        <type detected="MEDIUMTEXT" target="string${json} -> SetString"/>
+        <type detected="LONGTEXT" target="string${json} -> SetString"/>
+        <type detected="TIME" target="string${json} -> SetString"/>
+        <type detected="GEOMETRY" target="string${json} -> SetString"/>
         <type detected="ENUM" target="string${json} -> SetString"/>
         <type detected="SET" target="string${json} -> SetString"/>
         <type detected="JSON" target="string${json} -> SetString"/>
         <type detected="BLOB" target="[]byte${json} -> SetBytes"/>
+        <type detected="TINYBLOB" target="[]byte${json} -> SetBytes"/>
+        <type detected="MEDIUMBLOB" target="[]byte${json} -> SetBytes"/>
+        <type detected="LONGBLOB" target="[]byte${json} -> SetBytes"/>
+        <type detected="NULL" target="interface{}${json}"/>
         <type detected="BINARY" target="[]byte${json} -> SetBytes"/>
         <type detected="VARBINARY" target="[]byte${json} -> SetBytes"/>
         <type detected="BIT" target="bool${json} -> SetBool"/>
@@ -34,6 +46,9 @@
         <type detected="sqlx-SMALLINT" target="int32${json-sqlx} -> SetInt32"/>
         <type detected="sqlx-MEDIUMINT" target="int32${json-sqlx} -> SetInt32"/>
         <type detected="sqlx-INT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-UNSIGNED TINYINT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-UNSIGNED SMALLINT" target="int32${json-sqlx} -> SetInt32"/>
+        <type detected="sqlx-UNSIGNED MEDIUMINT" target="int32${json-sqlx} -> SetInt32"/>
         <type detected="sqlx-UNSIGNED INT" target="int64${json-sqlx} -> SetInt64"/>
         <type detected="sqlx-BIGINT" target="int64${json-sqlx} -> SetInt64"/>
         <type detected="sqlx-UNSIGNED BIGINT" target="int64${json-sqlx} -> SetInt64"/>
@@ -43,10 +58,19 @@
         <type detected="sqlx-CHAR" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-VARCHAR" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-TEXT" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-TINYTEXT" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-MEDIUMTEXT" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-LONGTEXT" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-TIME" target="string${json-sqlx} -> SetString"/>
+        <type detected="sqlx-GEOMETRY" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-ENUM" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-SET" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-JSON" target="string${json-sqlx} -> SetString"/>
         <type detected="sqlx-BLOB" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-TINYBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-MEDIUMBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-LONGBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
+        <type detected="sqlx-NULL" target="interface{}${json-sqlx}"/>
         <type detected="sqlx-BINARY" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-VARBINARY" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-BIT" target="bool${json-sqlx} -> SetBool"/>
@@ -62,6 +86,9 @@
         <type detected="gorm-SMALLINT" target="int32${json-gorm} -> SetInt32"/>
         <type detected="gorm-MEDIUMINT" target="int32${json-gorm} -> SetInt32"/>
         <type detected="gorm-INT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-UNSIGNED TINYINT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-UNSIGNED SMALLINT" target="int32${json-gorm} -> SetInt32"/>
+        <type detected="gorm-UNSIGNED MEDIUMINT" target="int32${json-gorm} -> SetInt32"/>
         <type detected="gorm-UNSIGNED INT" target="int64${json-gorm} -> SetInt64"/>
         <type detected="gorm-BIGINT" target="int64${json-gorm} -> SetInt64"/>
         <type detected="gorm-UNSIGNED BIGINT" target="int64${json-gorm} -> SetInt64"/>
@@ -71,10 +98,19 @@
         <type detected="gorm-CHAR" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-VARCHAR" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-TEXT" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-TINYTEXT" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-MEDIUMTEXT" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-LONGTEXT" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-TIME" target="string${json-gorm} -> SetString"/>
+        <type detected="gorm-GEOMETRY" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-ENUM" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-SET" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-JSON" target="string${json-gorm} -> SetString"/>
         <type detected="gorm-BLOB" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-TINYBLOB" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-MEDIUMBLOB" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-LONGBLOB" target="[]byte${json-gorm} -> SetBytes"/>
+        <type detected="gorm-NULL" target="interface{}${json-gorm}"/>
         <type detected="gorm-BINARY" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-VARBINARY" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-BIT" target="bool${json-gorm} -> SetBool"/>

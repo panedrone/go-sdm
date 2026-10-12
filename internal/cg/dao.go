@@ -85,7 +85,11 @@ func (c *Core) QueryInfo(ref string, descriptors []string, dtoOrReturnType strin
 	}
 	res := make([]FieldInfo, len(fields))
 	for i, fi := range fields {
-		res[i] = fi.WithRenderedType(c.tm.Target(fi.renderedType))
+		raw := "" // сырое имя — только к ещё не отображённому типу
+		if fi.renderedType == fi.originalType {
+			raw = fi.rawKey("")
+		}
+		res[i] = fi.WithRenderedType(c.tm.TargetRaw(fi.renderedType, raw))
 	}
 	return &DaoSqlInfo{SQL: jdbcSQL, HasSQL: true, Fields: res, Params: params}, nil
 }
@@ -119,7 +123,11 @@ func (c *Core) returnedFieldInfo(explicitRetType string, daoFields []FieldInfo) 
 	case len(daoFields) > 0: // и Java-имя без ключа в type-map
 		col, typ = daoFields[0].columnName, daoFields[0].renderedType
 	}
-	return NewFieldInfo(c.dtoMode, typ, col, "returned-value")
+	fi, err := NewFieldInfo(c.dtoMode, typ, col, "returned-value")
+	if err == nil && c.tm.Unmapped(typ) { // Java-имя без ключа и без колонок: словами драйвера
+		fi = fi.WithRaw(c.tm.RawOfJava(typ))
+	}
+	return fi, err
 }
 
 // refineDaoFieldsByDtoFields — DAO-поля, которые есть в DTO, с его типами; остальные исключаются.

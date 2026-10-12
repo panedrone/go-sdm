@@ -308,6 +308,8 @@ func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor st
 				return ParamInfo{}, err
 			}
 		}
+	} else if tm.Unmapped(typ) { // Java-имя без ключа: словами драйвера
+		target = tm.TargetRaw(typ, tm.RawOfJava(typ))
 	} else {
 		target = tm.Target(typ)
 	}

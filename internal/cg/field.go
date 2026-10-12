@@ -221,3 +221,11 @@ func (p ParamInfo) WithType(t string) ParamInfo {
 func (p ParamInfo) Name() string           { return p.name }
 func (p ParamInfo) LowerCamelName() string { return p.lowerCamel }
 func (p ParamInfo) Type() string           { return p.renderedType }
+
+// withModel — модель класса ("gorm"), если тип её не несёт: для полей, объявленных только в XML.
+func (f FieldInfo) withModel(m string) FieldInfo {
+	if f.model == "" {
+		f.model = m
+	}
+	return f
+}

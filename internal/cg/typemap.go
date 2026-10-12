@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/panedrone/go-sdm/internal/meta"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
@@ -27,6 +28,17 @@ func SplitTargetType(target string) (typ, assign string, ok bool) {
 type TypeMap struct {
 	detected    map[string]string
 	defaultType string
+	rawOfJava   func(string) string // meta.Metadata.RawOfJava; nil — не известно
+}
+
+// RawOfJava — Java-имя словами драйвера базы; meta.RawUnknown, если базе оно не известно.
+func (m *TypeMap) RawOfJava(javaType string) string {
+	if m.rawOfJava != nil {
+		if raw := m.rawOfJava(javaType); raw != "" {
+			return raw
+		}
+	}
+	return meta.RawUnknown
 }
 
 func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
@@ -38,10 +50,11 @@ func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
 }
 
 // Unmapped — тип, объявленный в XML Java-именем плагина (java.lang.Integer), для которого
-// в type-map нет ключа: вместо него берётся тип колонки из метаданных.
+// в type-map нет ключа: вместо него — тип колонки из метаданных, а без метаданных — то же
+// Java-имя словами драйвера (RawOfJava).
 func (m *TypeMap) Unmapped(typ string) bool {
 	typ = strings.TrimSpace(typ)
-	if !strings.HasPrefix(typ, "java.") {
+	if !strings.HasPrefix(typ, "java.") && typ != "byte[]" {
 		return false
 	}
 	_, ok := m.detected[typ]
@@ -58,6 +71,11 @@ func (m *TypeMap) Target(detected string) string {
 func (m *TypeMap) TargetRaw(detected, raw string) string {
 	if len(m.detected) == 0 {
 		if raw != "" {
+			// без модели: "gorm-INT" -> "INT" (в коде — имя драйвера, а не ключ type-map)
+			// (в именах драйверов '-' нет)
+			if i := strings.IndexByte(raw, '-'); i > 0 {
+				return raw[i+1:]
+			}
 			return raw
 		}
 		return detected // нет переопределений — как есть, независимо от default
@@ -236,5 +254,12 @@ func findMacroCalls(s string) []string {
 			inside, start = false, -1
 		}
 	}
+	return res
+}
+
+// newTypeMapFor — type-map и словарь Java-имён базы md.
+func newTypeMapFor(md meta.Metadata, tm sdmxml.TypeMap) *TypeMap {
+	res := NewTypeMap(tm)
+	res.rawOfJava = md.RawOfJava
 	return res
 }

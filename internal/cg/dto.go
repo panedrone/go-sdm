@@ -23,7 +23,7 @@ type Core struct {
 func NewCore(md meta.Metadata, s *sdmxml.Settings, dtoMode, paramMode FieldNamesMode, sqlRoot string) *Core {
 	return &Core{
 		md:        md,
-		tm:        NewTypeMap(s.TypeMap),
+		tm:        newTypeMapFor(md, s.TypeMap),
 		mc:        NewMacros(s.Macros),
 		dtoMode:   dtoMode,
 		paramMode: paramMode,
@@ -49,7 +49,7 @@ func (c *Core) DtoFields(dto *sdmxml.DtoClass) ([]FieldInfo, error) {
 func (c *Core) dtoFields(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo, error) {
 	fields, err := c.fieldsByRef(ignoreModel, dto)
 	if err == nil {
-		fields, err = c.refineByFieldXML(dto, fields)
+		fields, err = c.refineByFieldXML(ignoreModel, dto, fields)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("<dto-class name=\"%s\"... Error: %s", dto.Name, err.Error())
@@ -117,7 +117,7 @@ func (c *Core) fieldsByRef(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo,
 	return res, nil
 }
 
-func (c *Core) refineByFieldXML(dto *sdmxml.DtoClass, fields []FieldInfo) ([]FieldInfo, error) {
+func (c *Core) refineByFieldXML(ignoreModel bool, dto *sdmxml.DtoClass, fields []FieldInfo) ([]FieldInfo, error) {
 	res := append([]FieldInfo(nil), fields...)
 	// колонка уточняется там, где встретилась последней (если SQL вернул её дважды)
 	index := map[string]int{}
@@ -130,12 +130,15 @@ func (c *Core) refineByFieldXML(dto *sdmxml.DtoClass, fields []FieldInfo) ([]Fie
 		xt := xf.Type
 		i, ok := index[xf.Column]
 		if !ok { // объявлено в XML, но SQL такого не вернул
-			if c.tm.Unmapped(xt) {
-				xt = meta.JavaObject // Java-имя без ключа и без метаданных: unknown
-			}
 			fi, err := NewFieldInfo(c.dtoMode, xt, xf.Column, "xml("+xf.Column+")")
 			if err != nil {
 				return nil, err
+			}
+			if c.tm.Unmapped(xt) { // Java-имя без ключа и без метаданных: словами драйвера
+				fi = fi.WithRaw(c.tm.RawOfJava(xt))
+				if !ignoreModel {
+					fi = fi.withModel(Model(dto.Name))
+				}
 			}
 			res = append(res, fi)
 			i = len(res) - 1

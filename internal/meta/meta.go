@@ -22,6 +22,10 @@ type Metadata interface {
 	// SQLParams — параметры jdbcSQL; типы читаются для индексов 0..typeCount-1.
 	SQLParams(jdbcSQL string, typeCount int) (*Params, error)
 
+	// RawOfJava — Java-имя типа из XML плагина (java.lang.Integer) словами драйвера этой базы
+	// (pg: int4, MySQL: INT, SQLite: INTEGER); "" — не известно.
+	RawOfJava(javaType string) string
+
 	Close() error
 }
 
