@@ -17,9 +17,11 @@ It works like the [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.n
 <dto-class name="Test" ref="tests"/>
 
 <dao-class name="TestsDao">
-<crud dto="Test" table="tests"/>
-<query-dto-list method="GetTestsByRating(t_rating)" dto="Test" ref="select * from get_tests_by_rating(?)"/>
-<exec-dml method="SetTestRating(t_id, t_rating)" ref="call set_test_rating(?, ?)"/>
+  <crud dto="Test" table="tests"/>
+  <query-dto-list method="GetTestsByRating(t_rating)" dto="Test" 
+                  ref="select * from get_tests_by_rating(?)"/>
+  <exec-dml method="SetTestRating(t_id, t_rating)" 
+            ref="call set_test_rating(?, ?)"/>
 </dao-class>
 ```
 
