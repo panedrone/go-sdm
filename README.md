@@ -200,6 +200,7 @@ GoLand out of the box, VS Code with the "XML" extension by Red Hat.
 ## CRUD and Raw-SQL
 
 [https://sqldalmaker.sourceforge.net/dto-models.html](https://sqldalmaker.sourceforge.net/dto-models.html)
+
 [https://sqldalmaker.sourceforge.net/dao.html](https://sqldalmaker.sourceforge.net/dao.html)
 
 ## Stored Procedures and User-Defined Functions
