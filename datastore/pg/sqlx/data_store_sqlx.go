@@ -13,12 +13,13 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
 	"io"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 )
 
 var DS func(context context.Context) DataStore
