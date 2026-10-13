@@ -1,8 +1,8 @@
-// Package cg — языконезависимое ядро генератора: порт com.sqldalmaker.cg Java-плагина.
+// Package cg is the language-independent core of the generator: a port of com.sqldalmaker.cg of the Java plug-in.
 //
-// Порт намеренно близок к оригиналу (те же имена, те же развилки, те же сообщения об
-// ошибках): вывод сверяется с плагином побайтово, и расхождение проще найти, когда
-// код можно положить рядом с Java-исходником.
+// The port is deliberately close to the original (the same names, the same branches, the same error
+// messages): the output is compared with the plug-in byte for byte, and a divergence is easier to find when
+// the code can be put next to the Java source.
 package cg
 
 import (
@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// jsplit — String.split(regex) из Java: без совпадений — {s}, пустые строки в конце
-// отбрасываются (и результат может стать пустым: ",".split(",") == {}).
+// jsplit is String.split(regex) of Java: no matches give {s}, trailing empty strings
+// are dropped (and the result may become empty: ",".split(",") == {}).
 func jsplit(s string, re *regexp.Regexp) []string {
 	if !re.MatchString(s) {
 		return []string{s}
@@ -24,7 +24,7 @@ func jsplit(s string, re *regexp.Regexp) []string {
 	return parts[:n]
 }
 
-// jsplitLit — то же для разделителя-строки.
+// jsplitLit is the same for a string separator.
 func jsplitLit(s, sep string) []string {
 	if !strings.Contains(s, sep) {
 		return []string{s}

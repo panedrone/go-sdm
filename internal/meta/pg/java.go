@@ -2,7 +2,7 @@ package pg
 
 import "strings"
 
-// javaRaw — Java-имена плагина словами pg_type.
+// javaRaw maps the plug-in's Java names to pg_type names.
 var javaRaw = map[string]string{
 	"java.lang.Short":         "int2",
 	"java.lang.Integer":       "int4",

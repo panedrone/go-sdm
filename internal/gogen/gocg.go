@@ -26,7 +26,7 @@ func render(name string, data any) (string, error) {
 	return b.String(), nil
 }
 
-// Settings — то, что генератору нужно из settings.xml.
+// Settings is what the generator needs from settings.xml.
 func checkNoVelocity(s *sdmxml.Settings) error {
 	if strings.TrimSpace(s.Dto.Macro) != "" || strings.TrimSpace(s.Dao.Macro) != "" {
 		return errors.New("custom Velocity templates (<dto macro=...>, <dao macro=...>) are not supported by go-sdm")
@@ -71,7 +71,7 @@ func (g *DTO) Translate(className string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	formatted, fields, err := formatFields(dto, fields) // до импортов: <custom> добавляет поля
+	formatted, fields, err := formatFields(dto, fields) // before imports: <custom> adds fields
 	if err != nil {
 		return "", err
 	}
@@ -241,7 +241,7 @@ func (g *DAO) processDtoClassName(string) {
 	g.imports[imp] = true
 }
 
-// stripImportsAndTags — типы параметров рисуются без импортов и тегов, импорты уходят в 'imports'.
+// stripImportsAndTags: parameter types are rendered without imports and tags, imports go to 'imports'.
 func (g *DAO) stripImportsAndTags(params []cg.ParamInfo) {
 	for i, p := range params {
 		if imp := typeImport(p.Type()); imp != "" {
@@ -280,7 +280,7 @@ func (g *DAO) renderQuery(m cg.DaoMethod) (string, error) {
 	return g.renderQuerySQL(q, m.ExternalSQL, m.DtoOrReturnType, m.ReturnTypeIsDto, m.FetchList, m.MethodName, "")
 }
 
-// renderQuerySQL — и для <query...>, и для CRUD read.
+// renderQuerySQL is for both <query...> and CRUD read.
 func (g *DAO) renderQuerySQL(q *cg.DaoSqlInfo, external bool, dtoOrScalar string, isDto, list bool, method, crudTable string) (string, error) {
 	if !q.HasSQL {
 		return noPKWarning(method), nil
@@ -362,7 +362,7 @@ func (g *DAO) renderExecDml(m cg.DaoMethod) (string, error) {
 				methodParams = append(methodParams, cg.NewParamInfo(cg.LowerCamelCase, "func(*"+mp.DtoClassName+")", mp.MethodParamName))
 				elements = append(elements, mp.ExecDmlParamName)
 			}
-			// без каста "(Object) ": variadic-параметр Go и так принимает срез одним аргументом
+			// no "(Object) " cast: a Go variadic parameter takes a slice as one argument anyway
 			d.Params2 = append(d.Params2, cg.NewParamInfo(cg.AsIs, "[]", "[]interface{}{"+strings.Join(elements, ", ")+"}"))
 		case cg.Mapped:
 			p := params[slot.Index]

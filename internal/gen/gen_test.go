@@ -10,12 +10,12 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
 
-// TestGolden — полный цикл на SQLite в памяти: схема (только DDL — метаданным данные не
-// нужны), sdm.xml/settings.xml/SQL реальных демо-проектов, генерация, побайтовое сравнение
-// с тем, что на тех же проектах сгенерировал Java-плагин (sdm-plugins/harness, HarnessMain).
+// TestGolden is a full cycle on in-memory SQLite: the schema (DDL only, metadata needs no
+// data), sdm.xml/settings.xml/SQL of real demo projects, generation, byte-for-byte comparison
+// with what the Java plug-in generated on the same projects (sdm-plugins/harness, HarnessMain).
 //
-// Эталон переснимается в sdm-plugins: harness с этими проектами, затем вывод
-// build/<out>/<label>/ копируется в testdata/golden/<label>/.
+// The reference is retaken in sdm-plugins: harness with these projects, then the output
+// build/<out>/<label>/ is copied to testdata/golden/<label>/.
 var goldenCases = []struct {
 	label, project, sdm string
 }{
@@ -37,7 +37,7 @@ func TestGolden(t *testing.T) {
 	}
 }
 
-// runGolden — генерация на SQLite в памяти и сравнение с эталоном плагина.
+// runGolden generates on in-memory SQLite and compares with the plug-in reference.
 func runGolden(t *testing.T, label, project, sdmDir string) {
 	t.Helper()
 	schema, err := os.ReadFile(filepath.Join(project, "schema.sql"))

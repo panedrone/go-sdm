@@ -1,13 +1,13 @@
-// metadump — design-time сверка слоя метаданных с Java-плагином на живой базе.
+// metadump is a design-time comparison of the metadata layer with the Java plug-in on a live database.
 //
-// Печатает meta.Metadata в формате MetaDump.java (sdm-plugins/src_harness), чтобы два
-// вывода сравнивались обычным diff. Пароль — из SDM_PWD.
+// It prints meta.Metadata in the format of MetaDump.java (sdm-plugins/src_harness), so that the two
+// outputs can be compared by plain diff. The password comes from SDM_PWD.
 //
 //	go run ./cli/metadump -url jdbc:postgresql://host:5432/db -user postgres cli/metadump/my_tests_pg.txt
 //	go run ./cli/metadump -url sqlite::memory: internal/meta/testdata/sqlite.txt
 //	go run ./cli/metadump -url jdbc:mysql://localhost/go_sdm_probe -user root cli/metadump/mysql.txt
 //
-// SQLite сверяется и в go test (internal/meta/sqlite) — эта утилита нужна для PostgreSQL.
+// SQLite is also verified in go test (internal/meta/sqlite); this tool is for PostgreSQL.
 package main
 
 import (

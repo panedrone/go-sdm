@@ -8,10 +8,10 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta/metadump"
 )
 
-// TestGolden — полный прогон на SQLite в памяти: схема и запросы из testdata/sqlite.txt,
-// ожидаемое — вывод MetaDump.java (xerial sqlite-jdbc 3.53) на том же файле.
+// TestGolden is a full run on in-memory SQLite: schema and queries from testdata/sqlite.txt,
+// the expected output is that of MetaDump.java (xerial sqlite-jdbc 3.53) on the same file.
 //
-// Переснять эталон (из sdm-plugins, после сборки плагина):
+// To retake the reference (from sdm-plugins, after building the plug-in):
 //
 //	java -cp "<MetaDump classes>;out/production/sqldalmaker-intellij;sqlite-jdbc-3.53.2.1.jar" \
 //	  com.sqldalmaker.cg.MetaDump "jdbc:sqlite::memory:" "" internal/meta/testdata/sqlite.txt
@@ -57,7 +57,7 @@ func TestColumnType(t *testing.T) {
 	}{
 		{"INTEGER", typeInteger, unknownSize, 0},
 		{"BOOLEAN", typeInteger, unknownSize, 0},
-		{"CHARINT", typeInteger, unknownSize, 0}, // INT проверяется раньше CHAR
+		{"CHARINT", typeInteger, unknownSize, 0}, // INT is checked before CHAR
 		{"DOUBLECHAR", typeVarchar, unknownSize, 0},
 		{"BLOB", typeVarchar, unknownSize, 0},
 		{"REAL", typeFloat, unknownSize, 10},

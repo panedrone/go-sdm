@@ -10,7 +10,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
 
-// Сырые имена драйвера в type-map — наравне с Java-именами плагина.
+// Raw driver names in type-map are on a par with the Java names of the plug-in.
 
 const rawSchema = `create table tasks (t_id integer primary key autoincrement, t_subject varchar(64) not null,
 	t_rating real, t_data blob, t_date datetime);`
@@ -68,7 +68,7 @@ func generateRaw(t *testing.T, typeMap string) map[string]string {
 	return out
 }
 
-// Те же цели под Java-ключами и под сырыми ключами SQLite — тот же код байт в байт.
+// The same targets under Java keys and under raw SQLite keys give the same code byte for byte.
 func TestRawKeysSameAsJava(t *testing.T) {
 	java := generateRaw(t, `
 		<type detected="java.lang.Integer" target="int64${json} -> SetInt64"/>
@@ -82,8 +82,8 @@ func TestRawKeysSameAsJava(t *testing.T) {
 		<type detected="VARCHAR" target="string${json} -> SetString"/>
 		<type detected="DATETIME" target="string${json} -> SetString"/>
 		<type detected="REAL" target="float64${json} -> SetFloat64"/>
-		<type detected="BLOB" target="string${json} -> SetString"/> <!-- xerial (плагин) видит BLOB как VARCHAR -->
-		<type detected="java.lang.String" target="string${json} -> SetString"/> <!-- параметры: у SQLite сырого типа нет -->
+		<type detected="BLOB" target="string${json} -> SetString"/> <!-- xerial (the plug-in) sees BLOB as VARCHAR -->
+		<type detected="java.lang.String" target="string${json} -> SetString"/> <!-- parameters: SQLite has no raw type -->
 		<type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
 		<type detected="unknown" target="interface{}${json}"/>`)
 	if len(java) == 0 || len(java) != len(raw) {
@@ -96,7 +96,7 @@ func TestRawKeysSameAsJava(t *testing.T) {
 	}
 }
 
-// Пустой type-map — в коде сырые имена драйвера: видно, какие ключи нужны.
+// An empty type-map gives raw driver names in the code: it shows which keys are needed.
 func TestEmptyTypeMapRendersRaw(t *testing.T) {
 	out := generateRaw(t, "")
 	task := out["task.go"]
@@ -105,7 +105,7 @@ func TestEmptyTypeMapRendersRaw(t *testing.T) {
 			t.Errorf("task.go: %q expected:\n%s", want, task)
 		}
 	}
-	// у выражений SQLite типа не сообщает — ключ unknown
+	// SQLite reports no type for expressions: the key is unknown
 	if c := out["task_count.go"]; !strings.Contains(c, "Cnt         unknown") {
 		t.Errorf("task_count.go: unknown expected:\n%s", c)
 	}

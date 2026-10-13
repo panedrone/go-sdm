@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Варианты в datastore/<db>/<orm>/ — ровно то, что собирается из шаблонов (go run ./cli/dsgen).
+// The variants in datastore/<db>/<orm>/ are exactly what is built from the templates (go run ./cli/dsgen).
 func TestVariantsUpToDate(t *testing.T) {
 	for _, db := range DBs {
 		for _, orm := range Variants {
@@ -28,7 +28,7 @@ func TestVariantsUpToDate(t *testing.T) {
 	}
 }
 
-// Под SQLite и MySQL нет кода курсоров PostgreSQL, под SQLite — и процедур.
+// SQLite and MySQL have no PostgreSQL cursor code, SQLite has no procedure code either.
 func TestSpecific(t *testing.T) {
 	cases := []struct {
 		db, orm string

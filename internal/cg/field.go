@@ -7,15 +7,15 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta"
 )
 
-// FieldInfo — колонка таблицы, колонка результата или поле DTO (FieldInfo.java).
-// Значение копируется, и каждое With... возвращает изменённую копию: держатель
-// FieldInfo уверен, что его никто не поменяет за спиной.
+// FieldInfo is a table column, a result column or a DTO field (FieldInfo.java).
+// It is copied by value, and each With... returns a modified copy: the holder of
+// a FieldInfo can be sure nobody changes it behind its back.
 type FieldInfo struct {
 	name               string // rendered_name
 	lowerCamel         string
 	renderedType       string
 	originalType       string
-	raw                string // тип словами драйвера, без модели; "" — драйвер не сообщил
+	raw                string // the type in the driver's words, without the model; "" means the driver did not report it
 	originalScalarType string
 	scalarType         string
 	model              string
@@ -48,7 +48,7 @@ var renderedNameReplacer = strings.NewReplacer(
 func NewFieldInfo(mode FieldNamesMode, originalType, colName, comment string) (FieldInfo, error) {
 	f := FieldInfo{originalType: originalType, columnName: colName, comment: comment}
 	if strings.TrimSpace(originalType) == "-" {
-		f.originalScalarType = originalType // исключённое поле
+		f.originalScalarType = originalType // an excluded field
 	} else {
 		parts := jsplitLit(originalType, "-")
 		switch len(parts) {
@@ -80,7 +80,7 @@ func NewFieldInfo(mode FieldNamesMode, originalType, colName, comment string) (F
 	return f, nil
 }
 
-// WithRenderedType — "type->assign_func" из type-map: тип и функция присваивания.
+// WithRenderedType takes "type->assign_func" from type-map: the type and the assign function.
 func (f FieldInfo) WithRenderedType(t string) FieldInfo {
 	typ, assign, ok := SplitTargetType(t)
 	f.renderedType = typ
@@ -104,14 +104,14 @@ func (f FieldInfo) WithUnique(b bool) FieldInfo       { f.unique = b; return f }
 func (f FieldInfo) WithColumnSize(n int) FieldInfo    { f.columnSize = n; return f }
 func (f FieldInfo) WithDecimalDigits(n int) FieldInfo { f.decimalDigits = n; return f }
 
-// WithRsMd — ResultSetMetaData колонки: приходят всегда вместе.
+// WithRsMd sets the ResultSetMetaData of the column: they always come together.
 func (f FieldInfo) WithRsMd(precision, scale, displaySize int) FieldInfo {
 	f.precision, f.scale, f.displaySize = precision, scale, displaySize
 	return f
 }
 
-// rawKey — сырое имя как ключ type-map, с моделью класса: "gorm-int4" ("" — нет).
-// Драйвер типа не сообщил (параметры MySQL, выражения SQLite) — meta.RawUnknown.
+// rawKey is the raw name as a type-map key, with the class model: "gorm-int4" ("" if none).
+// When the driver did not report the type (MySQL parameters, SQLite expressions), it is meta.RawUnknown.
 func (f FieldInfo) rawKey(suffix string) string {
 	raw := f.raw
 	if raw == "" {
@@ -126,7 +126,7 @@ func (f FieldInfo) rawKey(suffix string) string {
 	return raw + suffix
 }
 
-// Для шаблонов.
+// For the templates.
 func (f FieldInfo) Name() string           { return f.name }
 func (f FieldInfo) LowerCamelName() string { return f.lowerCamel }
 func (f FieldInfo) Type() string           { return f.renderedType }
@@ -157,7 +157,7 @@ func columnNames(fields []FieldInfo) []string {
 	return res
 }
 
-// byColumnName — "колонка -> поле"; если SQL вернул колонку дважды, побеждает последняя.
+// byColumnName maps "column -> field"; if the SQL returned a column twice, the last one wins.
 func byColumnName(fields []FieldInfo) map[string]FieldInfo {
 	res := make(map[string]FieldInfo, len(fields))
 	for _, f := range fields {
@@ -166,7 +166,7 @@ func byColumnName(fields []FieldInfo) map[string]FieldInfo {
 	return res
 }
 
-// ParamInfo — параметр метода (ParamInfo.java).
+// ParamInfo is a method parameter (ParamInfo.java).
 type ParamInfo struct {
 	name         string
 	lowerCamel   string
@@ -174,7 +174,7 @@ type ParamInfo struct {
 	namePrefix   string
 }
 
-// isRenderedExpression — рендереры неявных курсоров передают выражение вместо имени.
+// isRenderedExpression: renderers of implicit cursors pass an expression instead of a name.
 func isRenderedExpression(name string) bool {
 	return strings.Contains(name, "func(") || strings.Contains(name, "new RowHandler[]")
 }
@@ -199,7 +199,7 @@ func NewParamInfo(mode FieldNamesMode, typ, name string) ParamInfo {
 	return p
 }
 
-// ParamOf — колонка как параметр: то же имя и тип.
+// ParamOf returns a column as a parameter: the same name and type.
 func ParamOf(f FieldInfo) ParamInfo {
 	return ParamInfo{name: f.name, lowerCamel: f.lowerCamel, renderedType: f.renderedType, namePrefix: f.namePrefix}
 }
@@ -212,7 +212,7 @@ func ParamsOf(fields []FieldInfo) []ParamInfo {
 	return res
 }
 
-// WithType — параметру из "type->assign_func" нужен только тип.
+// WithType: a parameter needs only the type from "type->assign_func".
 func (p ParamInfo) WithType(t string) ParamInfo {
 	p.renderedType, _, _ = SplitTargetType(t)
 	return p
@@ -222,7 +222,7 @@ func (p ParamInfo) Name() string           { return p.name }
 func (p ParamInfo) LowerCamelName() string { return p.lowerCamel }
 func (p ParamInfo) Type() string           { return p.renderedType }
 
-// withModel — модель класса ("gorm"), если тип её не несёт: для полей, объявленных только в XML.
+// withModel sets the class model ("gorm") if the type does not carry it: for fields declared in XML only.
 func (f FieldInfo) withModel(m string) FieldInfo {
 	if f.model == "" {
 		f.model = m

@@ -10,7 +10,7 @@ func TestConnString(t *testing.T) {
 		{"jdbc:postgresql://h/db?sslmode=disable", "u", "", "postgres://u@h/db?sslmode=disable"},
 		{"jdbc:postgresql://h/db?currentSchema=s1", "u", "p", "postgres://u:p@h/db?search_path=s1"},
 		{"jdbc:postgresql://h/db", "u", "p@ss:/w", "postgres://u:p%40ss%3A%2Fw@h/db"},
-		{"postgres://x:y@h/db", "u", "p", "postgres://x:y@h/db"}, // свои данные в URL главнее
+		{"postgres://x:y@h/db", "u", "p", "postgres://x:y@h/db"}, // credentials in the URL take precedence
 	}
 	for _, c := range cases {
 		got, err := ConnString(c.url, c.user, c.pwd)

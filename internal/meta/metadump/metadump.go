@@ -1,8 +1,8 @@
-// Package metadump печатает meta.Metadata в текстовом формате MetaDump.java
-// (sdm-plugins/src_harness), чтобы сверять вывод с Java-плагином обычным diff.
+// Package metadump prints meta.Metadata in the text format of MetaDump.java
+// (sdm-plugins/src_harness), to compare the output with the Java plug-in by plain diff.
 //
-// Строки входа: "exec<TAB>sql" (подготовка, ничего не печатает), "sql<TAB>jdbc-sql",
-// "params<TAB>n<TAB>jdbc-sql", "table<TAB>name", "pk<TAB>name"; '#' — комментарий.
+// Input lines: "exec<TAB>sql" (setup, prints nothing), "sql<TAB>jdbc-sql",
+// "params<TAB>n<TAB>jdbc-sql", "table<TAB>name", "pk<TAB>name"; '#' is a comment.
 package metadump
 
 import (
@@ -16,7 +16,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta"
 )
 
-// Execer — реализации, которые умеют выполнить SQL для подготовки схемы.
+// Execer is implemented by those that can execute SQL to set up the schema.
 type Execer interface {
 	Exec(sql string) error
 }
@@ -101,7 +101,7 @@ func col(c meta.Column) string {
 		c.Name, c.JavaType, c.IsAI, c.Scale, c.Precision, c.DisplaySize)
 }
 
-// ptr печатает nil так же, как Java печатает null.
+// ptr prints nil the same way Java prints null.
 func ptr[T any](v *T) string {
 	if v == nil {
 		return "null"

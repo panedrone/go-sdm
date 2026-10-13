@@ -1,8 +1,8 @@
-// Package skeleton — то, что `sdm init` выкладывает в проект.
+// Package skeleton is what `sdm init` puts into a project.
 //
-// Init ничего не перезаписывает: если хоть один из его файлов уже есть, это ошибка,
-// и не создаётся ничего (запуск по ошибке в готовом проекте безвреден). XSD принадлежат
-// версии sdm, их обновляет RefreshXSD при каждой генерации.
+// Init overwrites nothing: if any of its files already exists, it is an error,
+// and nothing is created (running it by mistake in a ready project is harmless). The XSD belong
+// to the sdm version, RefreshXSD updates them on every generation.
 package skeleton
 
 import (
@@ -24,19 +24,19 @@ import (
 var files embed.FS
 
 type Options struct {
-	ProjectDir string // папка go.mod
-	SdmDir     string // относительно ProjectDir, с '/'
-	DaoDir     string // относительно ProjectDir, с '/'; модели — в DaoDir/models
-	ORM        string // data store: datastore.Variants, "" — первый
-	DB         string // type-map и url: pg, mysql, sqlite; "" — pg
+	ProjectDir string // the folder of go.mod
+	SdmDir     string // relative to ProjectDir, with '/'
+	DaoDir     string // relative to ProjectDir, with '/'; models go to DaoDir/models
+	ORM        string // data store: datastore.Variants, "" means the first
+	DB         string // type-map and url: pg, mysql, sqlite; "" means pg
 }
 
 var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
 
-// DBs — значения sdm init -db, первое — по умолчанию.
+// DBs are the values of sdm init -db, the first is the default.
 var DBs = datastore.DBs
 
-// dbConf — <go-db> и <jdbc> плагина: один settings.xml и для sdm, и для IDE.
+// dbConf holds <go-db> and the plug-in's <jdbc>: one settings.xml for both sdm and the IDE.
 var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 	"pg": {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres",
 		"postgresql-42.7.3.jar", "org.postgresql.Driver", "jdbc:postgresql://localhost:5432/postgres"},
@@ -46,7 +46,7 @@ var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 		"sqlite-jdbc-3.51.1.0.jar", "org.sqlite.JDBC", "jdbc:sqlite:$PROJECT_DIR$/app.sqlite3"},
 }
 
-// Init создаёт конфигурацию и data store. Возвращает созданные файлы.
+// Init creates the configuration and the data store. It returns the created files.
 func Init(o Options) ([]string, error) {
 	module, err := readModule(filepath.Join(o.ProjectDir, "go.mod"))
 	if err != nil {
@@ -68,7 +68,7 @@ func Init(o Options) ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown database %q, expected one of: %s", db, strings.Join(DBs, ", "))
 	}
-	ds, err := datastore.Files(orm, db, pkg) // data store под базу
+	ds, err := datastore.Files(orm, db, pkg) // the data store for the database
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func Init(o Options) ([]string, error) {
 	)
 	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))
 	daoDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.DaoDir))
-	// src — файл скелета, text — готовый текст (data store)
+	// src is a skeleton file, text is ready text (data store)
 	type step struct{ src, text, dst string }
 	steps := []step{
 		{src: "sdm.xml", dst: filepath.Join(sdmDir, "sdm.xml")},
@@ -108,7 +108,7 @@ func Init(o Options) ([]string, error) {
 	for _, x := range xsds {
 		steps = append(steps, step{src: x, dst: filepath.Join(sdmDir, x)})
 	}
-	// сначала проверка всего: либо создаётся всё, либо ничего
+	// check everything first: either everything is created, or nothing
 	var existing []string
 	for _, s := range steps {
 		if _, err := os.Stat(s.dst); err == nil {
@@ -143,8 +143,8 @@ func Init(o Options) ([]string, error) {
 	return written, nil
 }
 
-// RefreshXSD — XSD этой версии sdm: подсказки в IDE должны соответствовать генератору.
-// Возвращает обновлённые (созданные) файлы; совпадающие не трогает.
+// RefreshXSD writes the XSD of this sdm version: IDE hints must match the generator.
+// It returns the updated (created) files; it does not touch the matching ones.
 func RefreshXSD(projectDir, sdmDir string) ([]string, error) {
 	dir := filepath.Join(projectDir, filepath.FromSlash(sdmDir))
 	var res []string
@@ -165,7 +165,7 @@ func RefreshXSD(projectDir, sdmDir string) ([]string, error) {
 	return res, nil
 }
 
-// readModule — значение "module" из go.mod.
+// readModule returns the "module" value of go.mod.
 func readModule(goMod string) (string, error) {
 	data, err := os.ReadFile(goMod)
 	if errors.Is(err, os.ErrNotExist) {

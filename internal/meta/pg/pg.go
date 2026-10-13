@@ -1,6 +1,6 @@
-// Package pg — meta.Metadata поверх pgx. Запросы не выполняются: колонки и параметры
-// берутся из Prepare (описание statement-а), остальное — из pg_catalog по тем же правилам,
-// что у pgjdbc в DatabaseMetaData, чтобы совпадать с Java-плагином.
+// Package pg is meta.Metadata on top of pgx. Queries are not executed: columns and parameters
+// come from Prepare (the statement description), the rest from pg_catalog by the same rules
+// as pgjdbc's DatabaseMetaData, to match the Java plug-in.
 package pg
 
 import (
@@ -23,7 +23,7 @@ type pgType struct {
 type DB struct {
 	ctx   context.Context
 	conn  *pgx.Conn
-	types map[uint32]pgType // pg_type по OID
+	types map[uint32]pgType // pg_type by OID
 }
 
 var _ meta.Metadata = (*DB)(nil)
@@ -52,7 +52,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		return nil, err
 	}
 	if len(sd.Fields) == 0 {
-		// так это выглядит в Java: ResultSetMetaData == null у statement-а без строк
+		// this is how it looks in Java: ResultSetMetaData == null for a statement without rows
 		return nil, errors.New("Cannot detect Prepared Statement MetaData")
 	}
 	res := make([]meta.Column, 0, len(sd.Fields))
@@ -119,8 +119,8 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	return res, nil
 }
 
-// resolve — Java-тип и OID, по которому считаются precision/scale/display
-// (у массива — OID элемента).
+// resolve returns the Java type and the OID that precision/scale/display are computed by
+// (the element OID for an array).
 func (db *DB) resolve(oid uint32) (string, uint32, error) {
 	if t, ok := javaTypes[oid]; ok {
 		return t, oid, nil
@@ -184,7 +184,7 @@ func (db *DB) Table(tableRef string) (*meta.Table, error) {
 	return &meta.Table{Columns: columns, TableColumns: tableColumns}, nil
 }
 
-// splitSchema — "schema.table" ровно из двух частей, как getTables/getPrimaryKeys в Java.
+// splitSchema splits "schema.table" of exactly two parts, as getTables/getPrimaryKeys in Java.
 func splitSchema(tableRef string) (schema, table string, err error) {
 	if !strings.Contains(tableRef, ".") {
 		return "", tableRef, nil
@@ -201,7 +201,7 @@ func (db *DB) validateTableName(tableRef string) error {
 	if err != nil {
 		return err
 	}
-	// getTables(TABLE, VIEW): шаблоны LIKE, системные схемы — не TABLE
+	// getTables(TABLE, VIEW): LIKE patterns, system schemas are not TABLE
 	var found bool
 	err = db.conn.QueryRow(db.ctx, `select exists(
 		select 1 from pg_catalog.pg_class c
@@ -220,13 +220,13 @@ func (db *DB) validateTableName(tableRef string) error {
 }
 
 func (db *DB) tableColumns(tableRef string) ([]meta.TableColumn, error) {
-	// как _read_table_columns в Java: схема — всё до последней точки
+	// as _read_table_columns in Java: the schema is everything before the last dot
 	schema, table := "", tableRef
 	if i := strings.LastIndexByte(tableRef, '.'); i >= 0 {
 		schema, table = tableRef[:i], tableRef[i+1:]
 	}
-	// Java передаёт в getIndexInfo/getImportedKeys полное имя (со схемой), и для
-	// "schema.table" индексы и FK не находятся. Повторено ради побайтового совпадения.
+	// Java passes the full name (with the schema) to getIndexInfo/getImportedKeys, and for
+	// "schema.table" indexes and FKs are not found. Repeated for a byte-for-byte match.
 	unique, err := db.indexedColumns(schema, tableRef, true)
 	if err != nil {
 		return nil, err
@@ -304,7 +304,7 @@ func (db *DB) tableColumns(tableRef string) ([]meta.TableColumn, error) {
 	return res, nil
 }
 
-// indexedColumns — getIndexInfo: имена колонок в нижнем регистре; table сравнивается точно.
+// indexedColumns is getIndexInfo: column names in lower case; table is compared exactly.
 func (db *DB) indexedColumns(schema, table string, uniqueOnly bool) (map[string]struct{}, error) {
 	rows, err := db.conn.Query(db.ctx, `select a.attname
 		from pg_catalog.pg_index i
@@ -327,7 +327,7 @@ func (db *DB) indexedColumns(schema, table string, uniqueOnly bool) (map[string]
 	return res, nil
 }
 
-// importedKeys — getImportedKeys: FK-колонка в нижнем регистре -> "pk_table.pk_column".
+// importedKeys is getImportedKeys: FK column in lower case -> "pk_table.pk_column".
 func (db *DB) importedKeys(schema, table string) (map[string]string, error) {
 	rows, err := db.conn.Query(db.ctx, `select fa.attname, pc.relname, pa.attname
 		from pg_catalog.pg_constraint con

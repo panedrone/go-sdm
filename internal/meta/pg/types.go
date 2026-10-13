@@ -1,8 +1,8 @@
 package pg
 
-// Типы PostgreSQL так, как их видит pgjdbc (42.2.x) после JavaTypes.refine_java_type_name
-// Java-плагина: ResultSetMetaData.getColumnClassName, getPrecision/getScale/getColumnDisplaySize
-// и DATA_TYPE из DatabaseMetaData.getColumns. Сверено дампом cli/metadump против MetaDump.java.
+// PostgreSQL types as pgjdbc (42.2.x) sees them after JavaTypes.refine_java_type_name
+// of the Java plug-in: ResultSetMetaData.getColumnClassName, getPrecision/getScale/getColumnDisplaySize
+// and DATA_TYPE from DatabaseMetaData.getColumns. Verified by a cli/metadump dump against MetaDump.java.
 
 const (
 	oidBool        = 16
@@ -47,7 +47,7 @@ const (
 	unknownLength  = 2147483647
 	sqlTypeArray   = 2003
 	sqlTypeOther   = 1111
-	numericNoLimit = 131089 // display size numeric без typmod
+	numericNoLimit = 131089 // display size of numeric without typmod
 )
 
 var javaTypes = map[uint32]string{
@@ -74,7 +74,7 @@ var javaTypes = map[uint32]string{
 	oidTimestamptz: "java.util.Date",
 	oidBytea:       "byte[]",
 	oidUUID:        "java.util.UUID",
-	oidJSON:        "org.postgresql.util.PGobject", // а jsonb у pgjdbc 42.2 — java.lang.Object
+	oidJSON:        "org.postgresql.util.PGobject", // while jsonb is java.lang.Object in pgjdbc 42.2
 	oidXML:         "java.sql.SQLXML",
 	oidInterval:    "org.postgresql.util.PGInterval",
 	oidPoint:       "org.postgresql.geometric.PGpoint",
@@ -113,7 +113,7 @@ var sqlTypes = map[uint32]int{
 	oidXML:         2009, // SQLXML
 }
 
-// javaType — имя Java-класса для типа, который не массив.
+// javaType is the Java class name for a type that is not an array.
 func javaType(oid uint32) string {
 	if t, ok := javaTypes[oid]; ok {
 		return t
@@ -128,7 +128,7 @@ func sqlType(oid uint32) int {
 	return sqlTypeOther
 }
 
-// secondSize — доля секунды в display size типов времени (как в pgjdbc).
+// secondSize is the fraction of a second in the display size of time types (as in pgjdbc).
 func secondSize(typmod int32) int {
 	switch typmod {
 	case -1:
@@ -136,7 +136,7 @@ func secondSize(typmod int32) int {
 	case 0:
 		return 0
 	case 1:
-		return 2 + 1 // SELECT '0:0:0.1'::time(1) возвращает две цифры
+		return 2 + 1 // SELECT '0:0:0.1'::time(1) returns two digits
 	default:
 		return int(typmod) + 1
 	}
@@ -196,7 +196,7 @@ func displaySize(oid uint32, typmod int32) int {
 		p := numericPrecision(typmod)
 		s := numericScale(typmod)
 		if s != 0 {
-			return p + 1 + 1 // знак и точка
+			return p + 1 + 1 // sign and point
 		}
 		return p + 1
 	case oidBit:

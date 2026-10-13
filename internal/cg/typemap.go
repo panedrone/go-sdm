@@ -10,7 +10,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
-// SplitTargetType — "type->assign_func" из type-map. ok == false, если функции нет.
+// SplitTargetType splits "type->assign_func" of type-map. ok == false if there is no function.
 func SplitTargetType(target string) (typ, assign string, ok bool) {
 	parts := jsplitLit(target, "->")
 	if len(parts) > 1 {
@@ -21,17 +21,17 @@ func SplitTargetType(target string) (typ, assign string, ok bool) {
 
 // TypeMap — <type-map> (JaxbTypeMap.java).
 //
-// <type detected="..."> — два словаря наравне: Java-имена, как у IDE-плагина
-// (java.lang.Integer), и сырые имена драйвера (pg: int4, MySQL: INT, SQLite: INTEGER).
-// Ключи — одна карта, как у плагина. Сырое имя метаданных подставляется только на первом
-// проходе (TargetRaw); на повторном проходе ядра ищется сама строка типа, как в Java.
+// <type detected="...">: two vocabularies on a par: Java names, as in the IDE plug-in
+// (java.lang.Integer), and raw driver names (pg: int4, MySQL: INT, SQLite: INTEGER).
+// The keys are one map, as in the plug-in. The raw metadata name is used only on the first
+// pass (TargetRaw); on a repeated pass of the core the type string itself is looked up, as in Java.
 type TypeMap struct {
 	detected    map[string]string
 	defaultType string
-	rawOfJava   func(string) string // meta.Metadata.RawOfJava; nil — не известно
+	rawOfJava   func(string) string // meta.Metadata.RawOfJava; nil means unknown
 }
 
-// RawOfJava — Java-имя словами драйвера базы; meta.RawUnknown, если базе оно не известно.
+// RawOfJava returns a Java name in the words of the database driver; meta.RawUnknown if the database does not know it.
 func (m *TypeMap) RawOfJava(javaType string) string {
 	if m.rawOfJava != nil {
 		if raw := m.rawOfJava(javaType); raw != "" {
@@ -49,9 +49,9 @@ func NewTypeMap(tm sdmxml.TypeMap) *TypeMap {
 	return res
 }
 
-// Unmapped — тип, объявленный в XML Java-именем плагина (java.lang.Integer), для которого
-// в type-map нет ключа: вместо него — тип колонки из метаданных, а без метаданных — то же
-// Java-имя словами драйвера (RawOfJava).
+// Unmapped reports a type declared in XML by a Java name of the plug-in (java.lang.Integer) that has
+// no key in type-map: the column type from metadata is used instead, and without metadata the same
+// Java name in the driver's words (RawOfJava).
 func (m *TypeMap) Unmapped(typ string) bool {
 	typ = strings.TrimSpace(typ)
 	if !strings.HasPrefix(typ, "java.") && typ != "byte[]" {
@@ -61,24 +61,24 @@ func (m *TypeMap) Unmapped(typ string) bool {
 	return !ok
 }
 
-// Target — detected — уже отображённый тип или явно объявленный в XML.
+// Target: detected is an already mapped type or one declared explicitly in XML.
 func (m *TypeMap) Target(detected string) string {
 	return m.TargetRaw(detected, "")
 }
 
-// TargetRaw — тип из метаданных: Java-имя detected и сырое имя драйвера raw ("" — нет).
-// Пустой type-map — сырое имя как есть: видно, какие ключи нужны (misc.html#type-map).
+// TargetRaw maps a type from metadata: the Java name detected and the raw driver name raw ("" if none).
+// An empty type-map gives the raw name as is: it shows which keys are needed (misc.html#type-map).
 func (m *TypeMap) TargetRaw(detected, raw string) string {
 	if len(m.detected) == 0 {
 		if raw != "" {
-			// без модели: "gorm-INT" -> "INT" (в коде — имя драйвера, а не ключ type-map)
-			// (в именах драйверов '-' нет)
+			// without the model: "gorm-INT" -> "INT" (the code gets the driver name, not a type-map key)
+			// (driver names have no '-')
 			if i := strings.IndexByte(raw, '-'); i > 0 {
 				return raw[i+1:]
 			}
 			return raw
 		}
-		return detected // нет переопределений — как есть, независимо от default
+		return detected // no overrides: as is, regardless of default
 	}
 	if t, ok := m.detected[detected]; ok {
 		return t
@@ -90,20 +90,20 @@ func (m *TypeMap) TargetRaw(detected, raw string) string {
 		return m.defaultType
 	}
 	if raw != "" {
-		return raw // ключа нет — как есть, имя драйвера, а не Java
+		return raw // no key: as is, the driver name, not the Java one
 	}
 	return detected
 }
 
-// Macros — <macros> (JaxbMacros.java). <vm-xml> исполняется (vmxml.go), текстового
-// Velocity (<vm>) в Go-версии нет.
+// Macros are <macros> (JaxbMacros.java). <vm-xml> is executed (vmxml.go), text
+// Velocity (<vm>) is not in the Go version.
 type Macros struct {
 	custom  map[string]string
-	names   []string // custom по порядку: в Java HashMap, результат от порядка не зависит
+	names   []string // custom in order: a HashMap in Java, the result does not depend on the order
 	vmXML   map[string][]vmNode
 	vmNames []string
 	vmText  map[string]bool
-	vmErr   map[string]error // <vm-xml>, который не разобрался: ошибка — при использовании
+	vmErr   map[string]error // a <vm-xml> that failed to parse: the error comes on use
 }
 
 func NewMacros(list []sdmxml.Macro) *Macros {
@@ -136,7 +136,7 @@ func NewMacros(list []sdmxml.Macro) *Macros {
 	return res
 }
 
-// ParseTargetType — подставляет макросы в целевой тип поля.
+// ParseTargetType substitutes macros into the target type of a field.
 func (m *Macros) ParseTargetType(target string, fi FieldInfo) (string, error) {
 	parsed, err := m.parseRecursive(0, target, fi)
 	if err != nil {
@@ -151,7 +151,7 @@ func (m *Macros) parseRecursive(depth int, target string, fi FieldInfo) (string,
 	}
 	found := false
 	for _, n := range m.names {
-		if strings.Contains(target, n) { // одна замена за проход
+		if strings.Contains(target, n) { // one replacement per pass
 			target = strings.ReplaceAll(target, n, m.custom[n])
 			found = true
 		}
@@ -164,7 +164,7 @@ func (m *Macros) parseRecursive(depth int, target string, fi FieldInfo) (string,
 		if !ok {
 			return target, nil
 		}
-		target = tmp // одна замена за проход
+		target = tmp // one replacement per pass
 	}
 	return m.parseRecursive(depth+1, target, fi)
 }
@@ -214,7 +214,7 @@ func substituteBuiltIn(t string, fi FieldInfo) string {
 	return t
 }
 
-// substituteTypeParams — "type${0}|0:value" -> "typevalue"; неподставленные ${...} убираются.
+// substituteTypeParams: "type${0}|0:value" -> "typevalue"; unsubstituted ${...} are removed.
 func substituteTypeParams(t string) string {
 	if start := strings.IndexByte(t, '|'); start != -1 {
 		params := map[string]string{}
@@ -257,7 +257,7 @@ func findMacroCalls(s string) []string {
 	return res
 }
 
-// newTypeMapFor — type-map и словарь Java-имён базы md.
+// newTypeMapFor returns the type-map and the vocabulary of Java names of database md.
 func newTypeMapFor(md meta.Metadata, tm sdmxml.TypeMap) *TypeMap {
 	res := NewTypeMap(tm)
 	res.rawOfJava = md.RawOfJava

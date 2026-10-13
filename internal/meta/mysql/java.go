@@ -2,7 +2,7 @@ package mysql
 
 import "strings"
 
-// javaRaw — Java-имена плагина словами драйвера MySQL (как rawName).
+// javaRaw maps the plug-in's Java names to the words of the MySQL driver (as rawName).
 var javaRaw = map[string]string{
 	"java.lang.Byte":          "TINYINT",
 	"java.lang.Short":         "SMALLINT",

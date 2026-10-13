@@ -1,13 +1,13 @@
-// Package sqlite — meta.Metadata поверх SQLite (ncruces/go-sqlite3: чистый Go, без cgo).
+// Package sqlite is meta.Metadata on top of SQLite (ncruces/go-sqlite3: pure Go, no cgo).
 //
-// Повторяет то, что видит Java-плагин через xerial sqlite-jdbc (эталон — 3.53):
-//   - колонки запроса до выполнения не имеют типа: java.lang.Object; precision/scale —
-//     из скобок declared type, display — всегда 2147483647;
-//   - настоящие типы приходят из getColumns: классификация declared type по подстрокам;
-//   - getIndexInfo игнорирует флаг unique: unique == indexed;
-//   - автоинкремент — только у колонок с AUTOINCREMENT.
+// It mirrors what the Java plug-in sees through xerial sqlite-jdbc (reference: 3.53):
+//   - query columns have no type before execution: java.lang.Object; precision/scale
+//     from the parentheses of the declared type, display is always 2147483647;
+//   - the real types come from getColumns: the declared type is classified by substrings;
+//   - getIndexInfo ignores the unique flag: unique == indexed;
+//   - auto-increment is only for columns with AUTOINCREMENT.
 //
-// Сверено с MetaDump.java на internal/meta/testdata/sqlite.txt.
+// Verified with MetaDump.java on internal/meta/testdata/sqlite.txt.
 package sqlite
 
 import (
@@ -22,11 +22,11 @@ import (
 
 const (
 	unknownDisplay = 2147483647
-	unknownSize    = 2000000000 // COLUMN_SIZE без скобок у xerial
+	unknownSize    = 2000000000 // COLUMN_SIZE without parentheses in xerial
 	typeInteger    = 4          // java.sql.Types
 	typeFloat      = 6
 	typeVarchar    = 12
-	javaString     = "java.lang.String" // ParameterMetaData xerial: всегда String
+	javaString     = "java.lang.String" // xerial ParameterMetaData: always String
 )
 
 type DB struct {
@@ -35,7 +35,7 @@ type DB struct {
 
 var _ meta.Metadata = (*DB)(nil)
 
-// Open — путь к файлу или ":memory:".
+// Open opens a file path or ":memory:".
 func Open(filename string) (*DB, error) {
 	conn, err := sqlite3.Open(filename)
 	if err != nil {
@@ -44,7 +44,7 @@ func Open(filename string) (*DB, error) {
 	return newDB(conn)
 }
 
-// OpenReadOnly — файл базы проекта: генерация ничего не пишет и не создаёт пустую базу по опечатке в пути.
+// OpenReadOnly opens the project database file: generation writes nothing and does not create an empty database on a typo in the path.
 func OpenReadOnly(filename string) (*DB, error) {
 	conn, err := sqlite3.OpenFlags(filename, sqlite3.OPEN_READONLY|sqlite3.OPEN_URI)
 	if err != nil {
@@ -53,8 +53,8 @@ func OpenReadOnly(filename string) (*DB, error) {
 	return newDB(conn)
 }
 
-// newDB — строки в двойных кавычках как литералы (DQS), как у xerial: старые схемы и SQL
-// на них рассчитывают, а современная сборка SQLite их по умолчанию запрещает.
+// newDB: strings in double quotes are literals (DQS), as in xerial: old schemas and SQL
+// rely on it, while a modern SQLite build forbids it by default.
 func newDB(conn *sqlite3.Conn) (*DB, error) {
 	for _, op := range []sqlite3.DBConfig{sqlite3.DBCONFIG_DQS_DML, sqlite3.DBCONFIG_DQS_DDL} {
 		if _, err := conn.Config(op, true); err != nil {
@@ -69,7 +69,7 @@ func (db *DB) Close() error {
 	return db.conn.Close()
 }
 
-// Exec — для подготовки схемы в тестах и дампах.
+// Exec is for setting up the schema in tests and dumps.
 func (db *DB) Exec(sql string) error {
 	return xerialError(db.conn.Exec(sql))
 }
@@ -95,7 +95,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 	defer stmt.Close()
 	n := stmt.ColumnCount()
 	if n == 0 {
-		// дословно как в Java: xerial бросает это из getColumnCount()
+		// verbatim as in Java: xerial throws this from getColumnCount()
 		return nil, errors.New("Exception in getColumnCount(): column 1 out of bounds [1,0]")
 	}
 	res := make([]meta.Column, 0, n)
@@ -134,8 +134,8 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	defer stmt.Close()
 	res := &meta.Params{Count: stmt.BindCount(), JavaTypes: make([]string, typeCount), RawTypes: make([]string, typeCount)}
 	for i := range res.JavaTypes {
-		res.JavaTypes[i] = javaString     // и за пределами Count: xerial не бросает
-		res.RawTypes[i] = meta.RawUnknown // типов параметров у SQLite нет; "String" — выдумка xerial
+		res.JavaTypes[i] = javaString     // beyond Count too: xerial does not throw
+		res.RawTypes[i] = meta.RawUnknown // SQLite has no parameter types; "String" is made up by xerial
 	}
 	return res, nil
 }
@@ -183,7 +183,7 @@ func master(schema string) string {
 	return `"` + strings.ReplaceAll(schema, `"`, `""`) + `".sqlite_master`
 }
 
-// exists — getTables(TABLE, VIEW): LIKE, как у xerial.
+// exists is getTables(TABLE, VIEW): LIKE, as in xerial.
 func (db *DB) exists(schema, table string) (bool, error) {
 	found := false
 	err := db.query(`select 1 from `+master(schema)+` where type in ('table', 'view') and name like ?`,
@@ -204,7 +204,7 @@ func (db *DB) tableColumns(schema, table string) ([]meta.TableColumn, error) {
 	err = db.query(`select name, type, "notnull" from pragma_table_info(?, nullif(?, '')) order by cid`,
 		[]string{table, schema}, func(s *sqlite3.Stmt) {
 			name, declType, notNull := s.ColumnText(0), s.ColumnText(1), s.ColumnInt(2) != 0
-			// у колонок вьюхи метаданных нет (no such table column), и автоинкремента тоже
+			// view columns have no metadata (no such table column), and no auto-increment either
 			_, _, _, _, ai, err := db.conn.TableColumnMetadata(schema, table, name)
 			if err != nil {
 				ai = false
@@ -223,7 +223,7 @@ func (db *DB) tableColumns(schema, table string) ([]meta.TableColumn, error) {
 				IsNullable:    &nullable,
 				FK:            fk[lo],
 				IsIndexed:     isIndexed,
-				IsUnique:      isIndexed, // xerial getIndexInfo не фильтрует по unique
+				IsUnique:      isIndexed, // xerial getIndexInfo does not filter by unique
 			})
 		})
 	return res, err
@@ -276,10 +276,10 @@ func (db *DB) query(sql string, args []string, onRow func(*sqlite3.Stmt)) error 
 	return xerialError(stmt.Err())
 }
 
-// Типы ------------------------------------------------------------
+// Types ------------------------------------------------------------
 
-// columnType — DATA_TYPE, COLUMN_SIZE, DECIMAL_DIGITS из declared type, как getColumns у xerial:
-// подстроки проверяются в этом порядке, размер — из скобок (COLUMN_SIZE = p + s).
+// columnType returns DATA_TYPE, COLUMN_SIZE, DECIMAL_DIGITS from the declared type, as getColumns of xerial:
+// substrings are checked in this order, the size comes from the parentheses (COLUMN_SIZE = p + s).
 func columnType(declType string) (dataType, size, digits int) {
 	t := strings.ToUpper(declType)
 	switch {
@@ -300,7 +300,7 @@ func columnType(declType string) (dataType, size, digits int) {
 	return
 }
 
-// sizeInParens — "(p)" или "(p, s)" в declared type; пробелы допускаются.
+// sizeInParens finds "(p)" or "(p, s)" in the declared type; spaces are allowed.
 func sizeInParens(declType string) (p, s int, ok bool) {
 	open := strings.IndexByte(declType, '(')
 	if open < 0 {
@@ -323,7 +323,7 @@ func sizeInParens(declType string) (p, s int, ok bool) {
 	return p, s, true
 }
 
-// xerialError — SQLITE_ERROR в формате xerial: "[SQLITE_ERROR] SQL error or missing database (msg)".
+// xerialError is SQLITE_ERROR in the xerial format: "[SQLITE_ERROR] SQL error or missing database (msg)".
 func xerialError(err error) error {
 	var e *sqlite3.Error
 	if err == nil || !errors.As(err, &e) || e.Code() != sqlite3.ERROR {
@@ -333,7 +333,7 @@ func xerialError(err error) error {
 	return errors.New("[SQLITE_ERROR] SQL error or missing database (" + msg + ")")
 }
 
-// rawName — объявленный тип словами драйвера: "varchar(50)" -> "VARCHAR"; "" — не объявлен.
+// rawName is the declared type in the driver's words: "varchar(50)" -> "VARCHAR"; "" means not declared.
 func rawName(declType string) string {
 	if i := strings.IndexByte(declType, '('); i >= 0 {
 		declType = declType[:i]

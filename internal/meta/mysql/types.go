@@ -4,10 +4,10 @@ import (
 	"strings"
 )
 
-// Типы MySQL так, как их видит Connector/J 8.4 (после JavaTypes.refine_java_type_name
-// Java-плагина). Сверено дампом cli/metadump против MetaDump.java (cli/metadump/mysql.txt).
+// MySQL types as Connector/J 8.4 sees them (after JavaTypes.refine_java_type_name
+// of the Java plug-in). Verified by a cli/metadump dump against MetaDump.java (cli/metadump/mysql.txt).
 
-// Типы полей протокола.
+// Protocol field types.
 const (
 	tDecimal    = 0
 	tTiny       = 1
@@ -109,7 +109,7 @@ func (f field) javaType() string {
 	return "java.lang.Object" // NULL
 }
 
-// Точность целых у Connector/J — по типу, а не по длине поля (у литерала 1 — 19).
+// Connector/J takes the precision of integers from the type, not from the field length (19 for literal 1).
 var intPrecision = map[uint8][2]int{ // signed, unsigned
 	tTiny:     {3, 3},
 	tShort:    {5, 5},
@@ -118,7 +118,7 @@ var intPrecision = map[uint8][2]int{ // signed, unsigned
 	tLongLong: {19, 20},
 }
 
-// precision — getPrecision (и getColumnDisplaySize: у Connector/J они совпадают).
+// precision is getPrecision (and getColumnDisplaySize: they are the same in Connector/J).
 func (f field) precision(mbMaxLen func(uint16) int) int {
 	length := int(f.length)
 	if f.length > maxInt {
@@ -155,8 +155,8 @@ func (f field) precision(mbMaxLen func(uint16) int) int {
 		return length
 	}
 	switch f.typ {
-	case tTinyBlob, tBlob, tMediumBlob, tLongBlob: // TEXT: Connector/J делит длину дважды,
-		if f.length <= maxInt { // если она не упёрлась в Integer.MAX_VALUE (longtext)
+	case tTinyBlob, tBlob, tMediumBlob, tLongBlob: // TEXT: Connector/J divides the length twice,
+		if f.length <= maxInt { // unless it hit Integer.MAX_VALUE (longtext)
 			length /= m
 		}
 	}
@@ -170,7 +170,7 @@ func (f field) scale() int {
 	return 0
 }
 
-// Колонки таблиц: DatabaseMetaData.getColumns по information_schema.COLUMNS.
+// Table columns: DatabaseMetaData.getColumns from information_schema.COLUMNS.
 
 type column struct {
 	dataType   string // DATA_TYPE
@@ -268,7 +268,7 @@ func (c column) columnSize() int {
 	return clamp(c.charLen)
 }
 
-// decimalDigits — DECIMAL_DIGITS: только у decimal.
+// decimalDigits is DECIMAL_DIGITS: decimal only.
 func (c column) decimalDigits() int {
 	if c.dataType == "decimal" || c.dataType == "numeric" {
 		return clamp(c.numScale)
@@ -276,7 +276,7 @@ func (c column) decimalDigits() int {
 	return 0
 }
 
-// paramJavaType — тип параметра процедуры (information_schema.PARAMETERS).
+// paramJavaType is the type of a procedure parameter (information_schema.PARAMETERS).
 func paramJavaType(dataType, dtd string) string {
 	unsigned := strings.Contains(dtd, "unsigned")
 	switch dataType {
@@ -317,7 +317,7 @@ func paramJavaType(dataType, dtd string) string {
 	return "java.lang.Object"
 }
 
-// rawName — тип словами драйвера, как DatabaseTypeName у go-sql-driver/mysql.
+// rawName is the type in the driver's words, as DatabaseTypeName of go-sql-driver/mysql.
 func (f field) rawName() string {
 	unsigned := ""
 	if f.unsigned() {
@@ -408,7 +408,7 @@ func (f field) rawName() string {
 	return ""
 }
 
-// paramRawName — тип параметра процедуры словами драйвера.
+// paramRawName is the type of a procedure parameter in the driver's words.
 func paramRawName(dataType, dtd string) string {
 	if strings.Contains(dtd, "unsigned") {
 		return "UNSIGNED " + strings.ToUpper(dataType)

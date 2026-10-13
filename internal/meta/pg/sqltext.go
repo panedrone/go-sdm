@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-// toNative переводит JDBC-SQL в то, что понимает PostgreSQL, как это делает pgjdbc:
+// toNative turns JDBC SQL into what PostgreSQL understands, as pgjdbc does:
 //   - '{call f(...)}' -> 'select * from f(...) as result';
-//   - '?' -> '$1', '$2', ... вне строк, идентификаторов в кавычках, $$-строк и комментариев;
-//   - '??' -> '?' (так в JDBC пишут jsonb-операторы '?', '?|', '?&').
+//   - '?' -> '$1', '$2', ... outside strings, quoted identifiers, $$-strings and comments;
+//   - '??' -> '?' (this is how jsonb operators '?', '?|', '?&' are written in JDBC).
 //
-// Возвращает и число параметров.
+// It also returns the number of parameters.
 func toNative(jdbcSQL string) (string, int, error) {
 	sql, err := unescapeCall(jdbcSQL)
 	if err != nil {
@@ -41,7 +41,7 @@ func placeholders(sql string) (string, int, error) {
 		c := sql[i]
 		switch {
 		case c == '\'':
-			// E'...' понимает обратный слэш, обычная строка — только ''
+			// E'...' understands backslash, a plain string only ''
 			backslash := i > 0 && (sql[i-1] == 'E' || sql[i-1] == 'e') && (i < 2 || !isIdent(sql[i-2]))
 			end := skipQuoted(sql, i, '\'', backslash)
 			if end < 0 {
@@ -59,7 +59,7 @@ func placeholders(sql string) (string, int, error) {
 		case c == '$' && (i == 0 || !isIdent(sql[i-1])):
 			end := skipDollarQuoted(sql, i)
 			if end < 0 {
-				b.WriteByte(c) // не $-строка: $1, $tag без пары и т.п.
+				b.WriteByte(c) // not a $-string: $1, $tag without a pair, etc.
 				i++
 				continue
 			}
@@ -103,7 +103,7 @@ func isIdent(c byte) bool {
 	return c == '_' || c == '$' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c >= 0x80
 }
 
-// skipQuoted — индекс после закрывающей кавычки или -1.
+// skipQuoted returns the index after the closing quote or -1.
 func skipQuoted(sql string, start int, q byte, backslash bool) int {
 	for i := start + 1; i < len(sql); i++ {
 		switch sql[i] {
@@ -113,7 +113,7 @@ func skipQuoted(sql string, start int, q byte, backslash bool) int {
 			}
 		case q:
 			if i+1 < len(sql) && sql[i+1] == q {
-				i++ // удвоенная кавычка
+				i++ // doubled quote
 				continue
 			}
 			return i + 1
@@ -122,11 +122,11 @@ func skipQuoted(sql string, start int, q byte, backslash bool) int {
 	return -1
 }
 
-// skipDollarQuoted — индекс после закрывающего $tag$ или -1, если с start не начинается $-строка.
+// skipDollarQuoted returns the index after the closing $tag$, or -1 if no $-string starts at start.
 func skipDollarQuoted(sql string, start int) int {
 	j := start + 1
 	if j < len(sql) && '0' <= sql[j] && sql[j] <= '9' {
-		return -1 // $1 — параметр, а не тег
+		return -1 // $1 is a parameter, not a tag
 	}
 	for j < len(sql) && sql[j] != '$' {
 		if !isIdent(sql[j]) {
@@ -145,7 +145,7 @@ func skipDollarQuoted(sql string, start int) int {
 	return j + 1 + end + len(tag)
 }
 
-// skipBlockComment — комментарии /* */ в PostgreSQL вкладываются.
+// skipBlockComment: /* */ comments nest in PostgreSQL.
 func skipBlockComment(sql string, start int) int {
 	depth := 0
 	for i := start; i+1 < len(sql); i++ {

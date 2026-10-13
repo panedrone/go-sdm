@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-// Change — файл, который generate запишет (или validate считает устаревшим).
+// Change is a file that generate will write (or validate considers out of date).
 type Change struct {
-	Path    string // относительно проекта, с '/'
-	Missing bool   // файла ещё нет
+	Path    string // relative to the project, with '/'
+	Missing bool   // no file yet
 }
 
-// Sync — сравнивает результат с файлами проекта и, если write, записывает изменившиеся.
-// Концы строк не сравниваются: после git с autocrlf файл на Windows может быть в CRLF.
+// Sync compares the result with the project files and, if write, writes the changed ones.
+// Line endings are not compared: after git with autocrlf a file on Windows may be in CRLF.
 func Sync(projectDir string, res *Result, write bool) ([]Change, error) {
 	var changes []Change
 	var errs []error

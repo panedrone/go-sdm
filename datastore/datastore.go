@@ -1,15 +1,15 @@
-// Package datastore — исходники data store, на которые опираются сгенерированные DAO:
-// по варианту на базу (pg, mysql, sqlite) и фреймворк (no_orm, sqlx, gorm), datastore/<db>/<orm>/.
-// Лежат в репозитории как есть, чтобы их можно было скачать руками; sdm init берёт их отсюда же.
-// Под "//go:build ignore": модулю go-sdm драйверы, sqlx и gorm не нужны.
+// Package datastore holds the data store sources the generated DAO rely on:
+// one variant per database (pg, mysql, sqlite) and framework (no_orm, sqlx, gorm), datastore/<db>/<orm>/.
+// They are in the repository as is, so that they can be downloaded by hand; sdm init takes them from here too.
+// Under "//go:build ignore": the go-sdm module needs no drivers, sqlx or gorm.
 //
-// Варианты собираются из общих шаблонов templates/*.go.txt (Generate, cli/dsgen):
-// строки между "//sdm:if pg mysql" и "//sdm:end" остаются только для перечисленных баз,
-// "//sdm:else" — для остальных. Правится шаблон, варианты — перегенерируются; тест следит,
-// чтобы они не разошлись.
+// The variants are built from the shared templates templates/*.go.txt (Generate, cli/dsgen):
+// lines between "//sdm:if pg mysql" and "//sdm:end" stay only for the listed databases,
+// "//sdm:else" is for the rest. The template is edited, the variants are regenerated; a test makes sure
+// they do not diverge.
 //
-// templates/data_store_no_orm.go.txt — от src/resources/data_store_no_orm.go из sdm-plugins
-// (без Oracle и SQL Server).
+// templates/data_store_no_orm.go.txt comes from src/resources/data_store_no_orm.go of sdm-plugins
+// (without Oracle and SQL Server).
 package datastore
 
 import (
@@ -23,10 +23,10 @@ import (
 //go:embed templates/*.go.txt pg/*/*.go mysql/*/*.go sqlite/*/*.go
 var fs embed.FS
 
-// Variants — значения sdm init -orm, первое — по умолчанию.
+// Variants are the values of sdm init -orm, the first is the default.
 var Variants = []string{"no_orm", "sqlx", "gorm"}
 
-// DBs — базы, первая — по умолчанию.
+// DBs are the databases, the first is the default.
 var DBs = []string{"pg", "mysql", "sqlite"}
 
 var dbNames = map[string]string{"pg": "PostgreSQL", "mysql": "MySQL", "sqlite": "SQLite"}
@@ -47,7 +47,7 @@ func fileNames(variant string) []string {
 	return []string{"data_store_" + variant + ".go", "data_store_" + variant + "_ex.go"}
 }
 
-// Files — имя файла -> текст для папки DAO с пакетом pkg: без "//go:build ignore" и шапки.
+// Files maps a file name to its text for the DAO folder with package pkg: without "//go:build ignore" and the header.
 func Files(variant, db, pkg string) (map[string]string, error) {
 	if err := check(variant, db); err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func Files(variant, db, pkg string) (map[string]string, error) {
 	return res, nil
 }
 
-// Generate — файлы варианта db/variant из шаблонов: имя файла -> текст.
+// Generate returns the files of variant db/variant from the templates: file name -> text.
 func Generate(variant, db string) (map[string][]byte, error) {
 	if err := check(variant, db); err != nil {
 		return nil, err
@@ -92,10 +92,10 @@ func Generate(variant, db string) (map[string][]byte, error) {
 	return res, nil
 }
 
-// specialize — оставляет строки блоков "//sdm:if ..." для db, маркеры убирает. Блоки вкладываются.
+// specialize keeps the lines of "//sdm:if ..." blocks for db and removes the markers. Blocks nest.
 func specialize(tmpl, db string) (string, error) {
 	var out strings.Builder
-	var stack []bool // для каждого открытого блока: его строки — для db
+	var stack []bool // for each open block: whether its lines are for db
 	keep := func() bool {
 		for _, k := range stack {
 			if !k {

@@ -11,17 +11,17 @@ import (
 	"unicode"
 )
 
-// <vm-xml> — макрос type-map в виде XML (Xml2Vm.java переводит его в Velocity, здесь он
-// исполняется напрямую). Поддержано то, что встречается в пресетах и проектах: <if>,
-// <elseif>, <else>, <print>, <br/>. Выражения — как в Velocity: $fi.Prop, литералы,
-// ! && || == != > < >= <=, скобки. Неизвестные $-ссылки в <print> остаются как есть,
-// как их оставляет Velocity (${column}, ${0} подставит уже type-map).
+// <vm-xml> is a type-map macro in XML form (Xml2Vm.java translates it to Velocity, here it
+// is executed directly). Supported is what occurs in presets and projects: <if>,
+// <elseif>, <else>, <print>, <br/>. Expressions are as in Velocity: $fi.Prop, literals,
+// ! && || == != > < >= <=, parentheses. Unknown $-references in <print> stay as they are,
+// as Velocity leaves them (${column}, ${0} will be substituted by type-map).
 
 type vmNode struct {
 	kind     string // if, elseif, else, print, br
 	expr     string // if/elseif: var; print: var
 	children []vmNode
-	branches []vmNode // if: elseif/else по порядку
+	branches []vmNode // if: elseif/else in order
 }
 
 func parseVMXML(inner string) ([]vmNode, error) {
@@ -61,7 +61,7 @@ func parseVMChildren(d *xml.Decoder, parent string) ([]vmNode, error) {
 			if err != nil {
 				return nil, err
 			}
-			if n.kind == "if" { // <elseif>/<else> — дети <if>, но в ветки
+			if n.kind == "if" { // <elseif>/<else> are children of <if>, but go to branches
 				for _, c := range children {
 					if c.kind == "elseif" || c.kind == "else" {
 						n.branches = append(n.branches, c)
@@ -113,14 +113,14 @@ func execVM(nodes []vmNode, fi FieldInfo, out *strings.Builder) error {
 					break
 				}
 			}
-		default: // elseif/else вне <if>
+		default: // elseif/else outside <if>
 			return fmt.Errorf("<vm-xml>: unexpected <%s>", n.kind)
 		}
 	}
 	return nil
 }
 
-// Свойства FieldInfo так, как их видит Velocity: $fi.PK -> isPK(), $fi.ColumnSize -> getColumnSize().
+// FieldInfo properties as Velocity sees them: $fi.PK -> isPK(), $fi.ColumnSize -> getColumnSize().
 var vmProps = map[string]func(FieldInfo) any{
 	"PK":                 func(f FieldInfo) any { return f.pk },
 	"AI":                 func(f FieldInfo) any { return f.ai },
@@ -169,20 +169,20 @@ func interpolate(text string, fi FieldInfo) string {
 		m := reVMRef.FindStringSubmatch(ref)
 		braced := strings.Contains(ref, "{")
 		if braced != strings.HasSuffix(ref, "}") {
-			return ref // "${fi.X" без "}" — не ссылка
+			return ref // "${fi.X" without "}" is not a reference
 		}
 		v := vmProp(m[1], fi)
 		if v == nil {
 			if strings.HasPrefix(ref, "$!") {
 				return ""
 			}
-			return ref // Velocity печатает неопределённую ссылку как есть
+			return ref // Velocity prints an undefined reference as is
 		}
 		return fmt.Sprint(v)
 	})
 }
 
-// Выражения <if var="..."> ------------------------------------------
+// Expressions of <if var="..."> ------------------------------------------
 
 type vmParser struct {
 	toks []string
@@ -342,7 +342,7 @@ func truthy(v any) bool {
 	case bool:
 		return x
 	}
-	return true // Velocity 1.7: не-null — истина
+	return true // Velocity 1.7: non-null is true
 }
 
 func compare(op string, l, r any) bool {
@@ -371,5 +371,5 @@ func compare(op string, l, r any) bool {
 	case "!=", "ne":
 		return !(l != nil && r != nil && ls == rs || l == nil && r == nil)
 	}
-	return false // > < у не-чисел Velocity не сравнивает
+	return false // Velocity does not compare non-numbers with > <
 }

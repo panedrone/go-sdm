@@ -9,14 +9,14 @@ import (
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
-// DaoSqlInfo — SQL метода, возвращаемые поля и параметры (JdbcUtils.DaoSqlInfo).
-// HasSQL == false: метод не рисуется, вместо него — комментарий-предупреждение.
+// DaoSqlInfo is the SQL of a method, the returned fields and the parameters (JdbcUtils.DaoSqlInfo).
+// HasSQL == false: the method is not rendered, a warning comment is rendered instead.
 type DaoSqlInfo struct {
 	SQL       string
 	HasSQL    bool
-	Fields    []FieldInfo // query, CRUD read: колонки результата; CRUD create/update: присваиваемые
-	Params    []ParamInfo // query: параметры; create: значения; read/update/delete: PK
-	Generated []FieldInfo // CRUD create: генерируемые колонки
+	Fields    []FieldInfo // query, CRUD read: result columns; CRUD create/update: assigned ones
+	Params    []ParamInfo // query: parameters; create: values; read/update/delete: PK
+	Generated []FieldInfo // CRUD create: generated columns
 }
 
 func findDto(name string, dtos []sdmxml.DtoClass) (*sdmxml.DtoClass, error) {
@@ -31,7 +31,7 @@ func findDto(name string, dtos []sdmxml.DtoClass) (*sdmxml.DtoClass, error) {
 	return nil, errors.New("XML element not found <dto-class name=\"" + name + "\"")
 }
 
-// FindDto — для генераторов.
+// FindDto is for the generators.
 func FindDto(name string, dtos []sdmxml.DtoClass) (*sdmxml.DtoClass, error) {
 	return findDto(name, dtos)
 }
@@ -51,7 +51,7 @@ func (c *Core) QueryInfo(ref string, descriptors []string, dtoOrReturnType strin
 	if err != nil {
 		return nil, err
 	}
-	paramMode := AsIs // dto_param_type в Go всегда пустой
+	paramMode := AsIs // dto_param_type is always empty in Go
 	var fields []FieldInfo
 	var params []ParamInfo
 	if IsSQLShortcutRef(ref) {
@@ -85,7 +85,7 @@ func (c *Core) QueryInfo(ref string, descriptors []string, dtoOrReturnType strin
 	}
 	res := make([]FieldInfo, len(fields))
 	for i, fi := range fields {
-		raw := "" // сырое имя — только к ещё не отображённому типу
+		raw := "" // the raw name goes only to a type not mapped yet
 		if fi.renderedType == fi.originalType {
 			raw = fi.rawKey("")
 		}
@@ -120,17 +120,17 @@ func (c *Core) returnedFieldInfo(explicitRetType string, daoFields []FieldInfo) 
 	switch {
 	case strings.TrimSpace(explicitRetType) != "" && !(c.tm.Unmapped(explicitRetType) && len(daoFields) > 0):
 		typ = explicitRetType
-	case len(daoFields) > 0: // и Java-имя без ключа в type-map
+	case len(daoFields) > 0: // and a Java name without a key in type-map
 		col, typ = daoFields[0].columnName, daoFields[0].renderedType
 	}
 	fi, err := NewFieldInfo(c.dtoMode, typ, col, "returned-value")
-	if err == nil && c.tm.Unmapped(typ) { // Java-имя без ключа и без колонок: словами драйвера
+	if err == nil && c.tm.Unmapped(typ) { // a Java name without a key and without columns: in the driver's words
 		fi = fi.WithRaw(c.tm.RawOfJava(typ))
 	}
 	return fi, err
 }
 
-// refineDaoFieldsByDtoFields — DAO-поля, которые есть в DTO, с его типами; остальные исключаются.
+// refineDaoFieldsByDtoFields keeps the DAO fields that the DTO has, with its types; the rest are excluded.
 func (c *Core) refineDaoFieldsByDtoFields(dto *sdmxml.DtoClass, daoFields []FieldInfo) ([]FieldInfo, error) {
 	list, err := c.dtoFields(true, dto)
 	if err != nil {
@@ -145,7 +145,7 @@ func (c *Core) refineDaoFieldsByDtoFields(dto *sdmxml.DtoClass, daoFields []Fiel
 			continue
 		}
 		fi := daoFi
-		// тип поля DTO главнее, если он не Object или его целевой тип не "object"
+		// the DTO field type takes precedence if it is not Object or its target type is not "object"
 		if dtoFi.originalType != meta.JavaObject || (objectTarget != "" && objectTarget != dtoFi.renderedType) {
 			fi = fi.WithRenderedType(dtoFi.renderedType).WithAssignFunc(dtoFi.assignFunc)
 		}
@@ -177,7 +177,7 @@ func (c *Core) shortcutParams(shc sqlShortcut, mode FieldNamesMode, descriptors 
 		}
 		byFilter = append(byFilter, fi)
 	}
-	// типы параметров — из таблицы, без уточнения по DTO
+	// parameter types come from the table, not refined by the DTO
 	if len(descriptors) != len(byFilter) {
 		return nil, fmt.Errorf("Invalid SQL-shortcut: method params declared: %d, but SQL params expected: %d",
 			len(descriptors), len(byFilter))
@@ -217,7 +217,7 @@ func (c *Core) shortcutFields(shc sqlShortcut, dto *sdmxml.DtoClass, returnType 
 		if res, err = c.refineDaoFieldsByDtoFields(dto, res); err != nil {
 			return nil, err
 		}
-	} else { // скалярный результат: имени DTO нет
+	} else { // scalar result: no DTO name
 		fi, err := c.returnedFieldInfo(returnType, tableFields)
 		if err != nil {
 			return nil, err
@@ -238,7 +238,7 @@ func (c *Core) customSQLFields(jdbcSQL, dtoOrReturnType string, returnTypeIsDto 
 	func() {
 		cols, err := c.md.SQLColumns(jdbcSQL)
 		if err == nil {
-			daoFields, err = columnFields(cols, "", c.dtoMode, "") // без модели
+			daoFields, err = columnFields(cols, "", c.dtoMode, "") // no model
 		}
 		for i := 0; err == nil && i < len(daoFields); i++ {
 			var t string
@@ -259,7 +259,7 @@ func (c *Core) customSQLFields(jdbcSQL, dtoOrReturnType string, returnTypeIsDto 
 		}
 		return []FieldInfo{fi}, nil
 	}
-	// не только таблицы — поэтому поля DTO, а не таблицы
+	// not only tables, hence the DTO fields, not the table ones
 	dto, err := findDto(dtoOrReturnType, dtos)
 	if err != nil {
 		return nil, err
@@ -271,14 +271,14 @@ func (c *Core) customSQLFields(jdbcSQL, dtoOrReturnType string, returnTypeIsDto 
 	var res []FieldInfo
 	switch {
 	case len(daoFields) == 0:
-		// SQL полей не дал (например, CALL): берутся поля DTO
+		// the SQL gave no fields (CALL, for example): the DTO fields are taken
 		res = append(res, dtoFields...)
 		if errText != "" && len(res) > 0 {
 			res[0] = res[0].WithComment(res[0].comment + " [INFO] " +
 				strings.TrimSpace(strings.NewReplacer("\r", " ", "\n", " ").Replace(strings.TrimSpace(errText))))
 		}
 	case daoFields[0].renderedType == "java.sql.ResultSet":
-		// PostgreSQL: 'select * from get_tests_by_rating_rc(?)' (UDF, возвращающая REF_CURSOR)
+		// PostgreSQL: 'select * from get_tests_by_rating_rc(?)' (a UDF returning REF_CURSOR)
 		res = append(res, dtoFields...)
 		comment := " [INFO] Column 0 is of type ResultSet"
 		if errText != "" {
@@ -324,7 +324,7 @@ func (c *Core) CrudCreateInfo(table string, dto *sdmxml.DtoClass, generated stri
 	for _, fi := range t.all {
 		lo := strings.ToLower(fi.columnName)
 		switch {
-		case auto[lo]: // в конце должно опустеть
+		case auto[lo]: // must be empty in the end
 			delete(auto, lo)
 			gen = append(gen, fi.WithAI(true))
 		case fi.ai:
@@ -396,7 +396,7 @@ func (c *Core) crudTable(dto *sdmxml.DtoClass, table, explicitPK string) (*table
 	if err != nil {
 		return nil, err
 	}
-	// колонки, которых нет в DTO, исключаются только из all: pk и notPK остаются как есть
+	// columns missing from the DTO are excluded from all only: pk and notPK stay as they are
 	refined := byColumnName(all)
 	take := func(fields []FieldInfo) []FieldInfo {
 		res := make([]FieldInfo, len(fields))

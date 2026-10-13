@@ -8,16 +8,16 @@ import (
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
-// Core — то, что Java-плагин держит в JdbcUtils на один прогон генерации:
-// метаданные, type-map, макросы и режим имён полей DTO.
+// Core is what the Java plug-in keeps in JdbcUtils for one generation run:
+// metadata, type-map, macros and the naming mode of DTO fields.
 type Core struct {
 	md        meta.Metadata
 	tm        *TypeMap
 	mc        *Macros
-	dtoMode   FieldNamesMode // имена полей DTO
-	paramMode FieldNamesMode // имена параметров методов exec-dml
+	dtoMode   FieldNamesMode // names of DTO fields
+	paramMode FieldNamesMode // names of exec-dml method parameters
 	sqlRoot   string
-	crud      map[string]*tableFields // read/update/delete одного <crud> спрашивают одну таблицу
+	crud      map[string]*tableFields // read/update/delete of one <crud> ask about one table
 }
 
 func NewCore(md meta.Metadata, s *sdmxml.Settings, dtoMode, paramMode FieldNamesMode, sqlRoot string) *Core {
@@ -35,13 +35,13 @@ func NewCore(md meta.Metadata, s *sdmxml.Settings, dtoMode, paramMode FieldNames
 func (c *Core) DtoFieldNamesMode() FieldNamesMode { return c.dtoMode }
 func (c *Core) SQLRoot() string                   { return c.sqlRoot }
 
-// TargetTypeByTypeMap — тип без функции присваивания.
+// TargetTypeByTypeMap returns the type without the assign function.
 func (c *Core) TargetTypeByTypeMap(detected string) string {
 	t, _, _ := SplitTargetType(c.tm.Target(detected))
 	return t
 }
 
-// DtoFields — поля DTO-класса.
+// DtoFields returns the fields of a DTO class.
 func (c *Core) DtoFields(dto *sdmxml.DtoClass) ([]FieldInfo, error) {
 	return c.dtoFields(false, dto)
 }
@@ -52,7 +52,7 @@ func (c *Core) dtoFields(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo, e
 		fields, err = c.refineByFieldXML(ignoreModel, dto, fields)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("<dto-class name=\"%s\"... Error: %s", dto.Name, err.Error())
+		return nil, fmt.Errorf("<dto-class name=\"%s\">: %w", dto.Name, err)
 	}
 	res := make([]FieldInfo, len(fields))
 	for i, fi := range fields {
@@ -67,7 +67,7 @@ func (c *Core) fieldsByRef(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo,
 		model = Model(dto.Name)
 	}
 	if model != "" {
-		model += "-" // префикс имён типов: "sa-int"
+		model += "-" // prefix of type names: "sa-int"
 	}
 	ref := dto.Ref
 	if IsEmptyRef(ref) {
@@ -77,7 +77,7 @@ func (c *Core) fieldsByRef(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo,
 	if err != nil {
 		return nil, err
 	}
-	// сначала поля из SQL: невидимые и специфичные для базы колонки не попадут
+	// fields from SQL first: invisible and database-specific columns will not get in
 	cols, err := c.md.SQLColumns(jdbcSQL)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (c *Core) fieldsByRef(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo,
 	default:
 		return sqlFields, nil
 	}
-	// колонки таблицы, которые возвращает SQL, но с метаданными таблицы
+	// table columns returned by the SQL, but with the table metadata
 	sqlCols := map[string]bool{}
 	for _, n := range columnNames(sqlFields) {
 		sqlCols[n] = true
@@ -119,7 +119,7 @@ func (c *Core) fieldsByRef(ignoreModel bool, dto *sdmxml.DtoClass) ([]FieldInfo,
 
 func (c *Core) refineByFieldXML(ignoreModel bool, dto *sdmxml.DtoClass, fields []FieldInfo) ([]FieldInfo, error) {
 	res := append([]FieldInfo(nil), fields...)
-	// колонка уточняется там, где встретилась последней (если SQL вернул её дважды)
+	// a column is refined where it was met last (if the SQL returned it twice)
 	index := map[string]int{}
 	for i, fi := range res {
 		index[fi.columnName] = i
@@ -129,12 +129,12 @@ func (c *Core) refineByFieldXML(ignoreModel bool, dto *sdmxml.DtoClass, fields [
 	for _, xf := range dto.Fields {
 		xt := xf.Type
 		i, ok := index[xf.Column]
-		if !ok { // объявлено в XML, но SQL такого не вернул
+		if !ok { // declared in XML, but the SQL did not return it
 			fi, err := NewFieldInfo(c.dtoMode, xt, xf.Column, "xml("+xf.Column+")")
 			if err != nil {
 				return nil, err
 			}
-			if c.tm.Unmapped(xt) { // Java-имя без ключа и без метаданных: словами драйвера
+			if c.tm.Unmapped(xt) { // a Java name without a key and without metadata: in the driver's words
 				fi = fi.WithRaw(c.tm.RawOfJava(xt))
 				if !ignoreModel {
 					fi = fi.withModel(Model(dto.Name))
@@ -148,7 +148,7 @@ func (c *Core) refineByFieldXML(ignoreModel bool, dto *sdmxml.DtoClass, fields [
 			excluded[i] = true
 		}
 		if ok && c.tm.Unmapped(xt) {
-			xt = res[i].originalType // Java-имя без ключа: тип колонки из метаданных
+			xt = res[i].originalType // a Java name without a key: the column type from metadata
 		}
 		fi, err := c.refineByTypeMapAndMacros(res[i], xt)
 		if err != nil {
@@ -164,7 +164,7 @@ func (c *Core) refineByFieldXML(ignoreModel bool, dto *sdmxml.DtoClass, fields [
 		}
 		if !refined[fi.columnName] {
 			var err error
-			// именно Type(), а не OriginalType()
+			// Type() exactly, not OriginalType()
 			if fi, err = c.refineByTypeMapAndMacros(fi, strings.TrimSpace(fi.renderedType)); err != nil {
 				return nil, err
 			}
@@ -179,13 +179,13 @@ func (c *Core) refineByTypeMapAndMacros(fi FieldInfo, typeName string) (FieldInf
 	var target string
 	var err error
 	switch start := strings.IndexByte(typeName, '|'); {
-	case start == -1: // только тип: "int64"
+	case start == -1: // type only: "int64"
 		mapped := c.tm.Target(typeName)
-		if typeName == strings.TrimSpace(fi.originalType) { // первый проход: тип из метаданных
+		if typeName == strings.TrimSpace(fi.originalType) { // first pass: the type from metadata
 			mapped = c.tm.TargetRaw(typeName, fi.rawKey(""))
 		}
 		target, err = c.mc.ParseTargetType(mapped, fi)
-	case start == 0: // "|0: hello0|1:hello1" — к типу из метаданных
+	case start == 0: // "|0: hello0|1:hello1": to the type from metadata
 		target, err = c.mc.ParseTargetType(c.tm.TargetRaw(fi.originalType, fi.rawKey(""))+typeName, fi)
 	default: // "{type}|0:Integer|1:hello1"
 		target, err = c.mc.ParseTargetType(typeName, fi)

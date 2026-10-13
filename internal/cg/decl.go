@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-// Грамматика 'method' (MethodDeclarations.java, ExecDmlParams.java).
+// The grammar of 'method' (MethodDeclarations.java, ExecDmlParams.java).
 
 func parseMethodParams(src string) (before, inside string, err error) {
 	src = strings.TrimSpace(src)
@@ -36,7 +36,7 @@ func ParseMethodDeclaration(text string) (name, params string, err error) {
 	return name, params, nil
 }
 
-// SplitMappedParam — "on_dto:Dto" или "on_dto~Dto" -> {"on_dto", "Dto"}; nil — обычный параметр.
+// SplitMappedParam: "on_dto:Dto" or "on_dto~Dto" -> {"on_dto", "Dto"}; nil for a plain parameter.
 func SplitMappedParam(pd string) []string {
 	var parts []string
 	if strings.Contains(pd, "~") {
@@ -48,7 +48,7 @@ func SplitMappedParam(pd string) []string {
 	return parts
 }
 
-// ListedItems — "a, b, [x:X, y:Y]" -> {"a", "b", "[x:X, y:Y]"} с проверкой имён.
+// ListedItems: "a, b, [x:X, y:Y]" -> {"a", "b", "[x:X, y:Y]"} with a check of names.
 func ListedItems(list string, allowColon bool) ([]string, error) {
 	list = strings.TrimSpace(list)
 	if list == "" {
@@ -108,7 +108,7 @@ func checkItem(name string, allowColon bool) error {
 	return nil
 }
 
-// splitParamTypeAndName — "java.lang.Integer p_id" -> "java.lang.Integer", "p_id"; тип "" если нет.
+// splitParamTypeAndName: "java.lang.Integer p_id" -> "java.lang.Integer", "p_id"; type "" if none.
 func splitParamTypeAndName(pd string) (typ, name string, hasType bool) {
 	parts := jsplit(pd, reWS)
 	if len(parts) > 1 {
@@ -136,19 +136,19 @@ func checkRequiredAttr(node, method string) error {
 	return nil
 }
 
-// ExecDmlSlot — один параметр exec-dml (ExecDmlParamSlot.java).
+// ExecDmlSlot is one exec-dml parameter (ExecDmlParamSlot.java).
 type ExecDmlSlot struct {
 	Kind           ExecDmlKind
-	Index          int        // позиция в объявлении
+	Index          int        // position in the declaration
 	Mapping        []string   // Mapped: {"on_dto", "Dto"}
-	CursorMappings [][]string // CursorArray: то же для каждого элемента
+	CursorMappings [][]string // CursorArray: the same for each element
 }
 
 type ExecDmlKind int
 
 const (
 	Plain       ExecDmlKind = iota // "p_id"
-	Mapped                         // "on_dto:Dto" или "on_dto~Dto" — один неявный курсор
+	Mapped                         // "on_dto:Dto" or "on_dto~Dto": one implicit cursor
 	CursorArray                    // "[on_dto_1:Dto1, on_dto_2:Dto2]"
 )
 

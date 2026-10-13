@@ -1,4 +1,4 @@
-{{- /* Порт src/com/sqldalmaker/cg/go/go.vm. Вывод сверяется с Java-плагином побайтово. */ -}}
+{{- /* Port of src/com/sqldalmaker/cg/go/go.vm. The output is compared with the Java plug-in byte for byte. */ -}}
 
 {{define "param_decls"}}{{if .IsExternalSQL}}, sql string{{end}}{{range .Params}}, {{.LowerCamelName}} {{.Type}}{{end}}{{end}}
 

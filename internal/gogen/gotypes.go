@@ -1,4 +1,4 @@
-// Package gogen — генерация Go-кода: порт GoCG, GoTypes, GoStructFormatter и go.vm.
+// Package gogen generates Go code: a port of GoCG, GoTypes, GoStructFormatter and go.vm.
 package gogen
 
 import (
@@ -14,7 +14,7 @@ var (
 	reDollar = regexp.MustCompile(`[$]`)
 )
 
-// jsplit — String.split(regex) из Java (см. cg.jsplit).
+// jsplit is String.split(regex) of Java (see cg.jsplit).
 func jsplit(s string, re *regexp.Regexp) []string {
 	if !re.MatchString(s) {
 		return []string{s}
@@ -29,12 +29,12 @@ func jsplit(s string, re *regexp.Regexp) []string {
 
 func first(parts []string) string {
 	if len(parts) == 0 {
-		return "" // в Java здесь было бы ArrayIndexOutOfBounds
+		return "" // Java would throw ArrayIndexOutOfBounds here
 	}
 	return parts[0]
 }
 
-// typeImport — "time:time.Time `json:...`" -> "time"; "" если импорта нет.
+// typeImport: "time:time.Time `json:...`" -> "time"; "" if there is no import.
 func typeImport(t string) string {
 	part := first(jsplit(strings.TrimSpace(t), reWS))
 	i := strings.IndexByte(part, ':')
@@ -46,7 +46,7 @@ func typeImport(t string) string {
 
 // typeWithoutImport — "time:time.Time `json:"t_date"`${0}" -> "time.Time `json:"t_date"`".
 func typeWithoutImport(t string) string {
-	initial := first(jsplit(t, reDollar)) // для параметров
+	initial := first(jsplit(t, reDollar)) // for parameters
 	i := strings.IndexByte(first(jsplit(initial, reWS)), ':')
 	if i == -1 {
 		return initial
@@ -56,12 +56,12 @@ func typeWithoutImport(t string) string {
 
 // typeWithoutImportAndTag — "time:time.Time `json:...`" -> "time.Time".
 //
-// Тип — всё до тега (до '`'), а не до первого пробела, как в Java: имя драйвера, которого нет
-// в type-map, пишется как есть, а у MySQL оно бывает из двух слов ("UNSIGNED SMALLINT").
+// The type is everything before the tag (before '`'), not before the first space as in Java: a driver name missing
+// from type-map is written as is, and MySQL has ones of two words ("UNSIGNED SMALLINT").
 func typeWithoutImportAndTag(t string) string {
 	s := typeWithoutImport(t)
 	if s != strings.TrimLeft(s, " \t\r\n") {
-		return first(jsplit(s, reWS)) // как в Java: ведущий пробел — пустой тип
+		return first(jsplit(s, reWS)) // as in Java: a leading space means an empty type
 	}
 	if i := strings.IndexByte(s, '`'); i >= 0 {
 		s = s[:i]
@@ -69,7 +69,7 @@ func typeWithoutImportAndTag(t string) string {
 	return strings.TrimSpace(s)
 }
 
-// padRight — String.format("%-N.Ns", s): дополнить пробелами и обрезать до N символов.
+// padRight is String.format("%-N.Ns", s): pad with spaces and cut to N characters.
 func padRight(s string, n int) string {
 	if utf8.RuneCountInString(s) > n {
 		return string([]rune(s)[:n])

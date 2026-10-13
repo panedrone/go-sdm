@@ -7,7 +7,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta"
 )
 
-// Поля из метаданных: ColumnFields.java, TableFields.java, ParamFields.java.
+// Fields from metadata: ColumnFields.java, TableFields.java, ParamFields.java.
 
 func pkAliases(explicitPK string) (map[string]bool, error) {
 	keys, err := ListedItems(explicitPK, false)
@@ -61,7 +61,7 @@ type tableFields struct {
 	all, pk, notPK []FieldInfo
 }
 
-// readTableFields — explicitPK == "*" значит "PK таблицы".
+// readTableFields: explicitPK == "*" means "the PK of the table".
 func readTableFields(md meta.Metadata, tm *TypeMap, mode FieldNamesMode, model, tableRef, explicitPK, auto string) (*tableFields, error) {
 	t, err := md.Table(tableRef)
 	if err != nil {
@@ -132,7 +132,7 @@ func parseAutoColumn(auto string) (string, string) {
 	}
 	parts := jsplitLit(auto, ":")
 	if len(parts) < 2 {
-		return auto, "auto" // умолчание "*" ни на что не повлияет
+		return auto, "auto" // the default "*" affects nothing
 	}
 	return parts[0], parts[1]
 }
@@ -140,15 +140,15 @@ func parseAutoColumn(auto string) (string, string) {
 func refineByTableColumn(fi FieldInfo, tc meta.TableColumn, model string) FieldInfo {
 	fi = fi.WithComment("t")
 	if fi.raw == "" {
-		fi = fi.WithRaw(tc.RawType) // SQLite: у выражений типа нет, у колонки таблицы он объявлен
+		fi = fi.WithRaw(tc.RawType) // SQLite: expressions have no type, a table column has it declared
 	}
 	fi = refineJdbcType(fi, tc, model)
 	fi = refineColSize(fi, tc)
 	if tc.DecimalDigits != nil {
-		// у Oracle NUMERIC всегда -127, у SQLite всегда 10
+		// Oracle NUMERIC is always -127, SQLite always 10
 		fi = fi.WithDecimalDigits(*tc.DecimalDigits)
 	}
-	// IS_AUTOINCREMENT бывает неверным (sqlite-jdbc-3.19.3) — только если AI не пришёл из колонок
+	// IS_AUTOINCREMENT may be wrong (sqlite-jdbc-3.19.3): only if AI did not come from the columns
 	if !fi.ai && tc.IsAI != nil && *tc.IsAI {
 		fi = fi.WithAI(true)
 	}
@@ -167,7 +167,7 @@ func refineByTableColumn(fi FieldInfo, tc meta.TableColumn, model string) FieldI
 	return fi
 }
 
-// java.sql.Types -> Java-тип (org.apache.cayenne.dba.TypesMapping.SQL_ENUM_JAVA).
+// java.sql.Types -> Java type (org.apache.cayenne.dba.TypesMapping.SQL_ENUM_JAVA).
 var sqlEnumJava = map[int]string{
 	-5:   "java.lang.Long", // BIGINT
 	-2:   "byte[]",         // BINARY
@@ -214,7 +214,7 @@ func javaBySQLType(t int) string {
 }
 
 func refineJdbcType(fi FieldInfo, tc meta.TableColumn, model string) FieldInfo {
-	// тип переопределяется, только если из колонки пришёл Object: никаких преобразований в рантайме
+	// the type is overridden only if Object came from the column: no conversions at runtime
 	if fi.originalType != model+meta.JavaObject || tc.DataType == nil {
 		return fi
 	}
@@ -237,9 +237,9 @@ func refineColSize(fi FieldInfo, tc meta.TableColumn) FieldInfo {
 	return fi.WithColumnSize(size)
 }
 
-// Параметры -------------------------------------------------------
+// Parameters -------------------------------------------------------
 
-// readParams — не для CRUD.
+// readParams is not for CRUD.
 func readParams(md meta.Metadata, tm *TypeMap, mc *Macros, jdbcSQL string, mode FieldNamesMode, descriptors []string) ([]ParamInfo, error) {
 	if err := checkDuplicates(descriptors); err != nil {
 		return nil, err
@@ -263,14 +263,14 @@ func readParams(md meta.Metadata, tm *TypeMap, mc *Macros, jdbcSQL string, mode 
 	for i, d := range descriptors {
 		d = strings.TrimSpace(d)
 		if strings.HasPrefix(d, "[") {
-			// массив обработчиков неявных курсоров объявлен, но JDBC-параметром не считается
+			// an array of implicit cursor handlers is declared, but it does not count as a JDBC parameter
 			if !strings.HasSuffix(d, "]") {
 				return nil, fmt.Errorf("Ending ']' expected")
 			}
 			continue
 		}
 		plain++
-		// параметр, похожий на колонку: макросы type-map ждут колонку
+		// a parameter that looks like a column: type-map macros expect a column
 		base, err := NewFieldInfo(mode, ps.JavaTypes[i], "base_fi", "base_fi")
 		if err != nil {
 			return nil, err
@@ -290,7 +290,7 @@ func readParams(md meta.Metadata, tm *TypeMap, mc *Macros, jdbcSQL string, mode 
 	return res, nil
 }
 
-// createParamInfo — base (может быть nil) — колонка, с которой сравнивается параметр; её тип — умолчание.
+// createParamInfo: base (may be nil) is the column the parameter is compared with; its type is the default.
 func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor string, base *FieldInfo) (ParamInfo, error) {
 	typ, name, _ := splitParamTypeAndName(descriptor)
 	var target string
@@ -298,7 +298,7 @@ func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor st
 		if base == nil {
 			target = tm.TargetRaw(meta.JavaObject, meta.RawUnknown)
 		} else {
-			raw := "" // сырое имя — только к типу из метаданных, не к уже отображённому
+			raw := "" // the raw name goes only to a type from metadata, not to an already mapped one
 			if base.renderedType == base.originalType {
 				raw = base.rawKey("")
 			}
@@ -308,7 +308,7 @@ func createParamInfo(tm *TypeMap, mc *Macros, mode FieldNamesMode, descriptor st
 				return ParamInfo{}, err
 			}
 		}
-	} else if tm.Unmapped(typ) { // Java-имя без ключа: словами драйвера
+	} else if tm.Unmapped(typ) { // a Java name without a key: in the driver's words
 		target = tm.TargetRaw(typ, tm.RawOfJava(typ))
 	} else {
 		target = tm.Target(typ)

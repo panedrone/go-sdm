@@ -1,9 +1,9 @@
-// Package sdmxml — sdm.xml, внешние <dao-class>-файлы и settings.xml.
+// Package sdmxml reads sdm.xml, external <dao-class> files and settings.xml.
 //
-// Схемы (sdm.xsd, dao.xsd, settings.xsd) здесь не проверяются: XML пишут в IDE, где
-// подсказки и подсветку даёт XSD. Здесь — то, без чего вывод был бы неправильным:
-// умолчания атрибутов из XSD, порядок DAO-элементов (от него зависит порядок методов)
-// и незнакомые элементы DAO как ошибка, а не молчаливый пропуск.
+// The schemas (sdm.xsd, dao.xsd, settings.xsd) are not checked here: XML is written in an IDE, where
+// XSD gives completion and highlighting. Here is what the output would be wrong without:
+// attribute defaults from XSD, the order of DAO elements (the order of methods depends on it)
+// and unknown DAO elements as an error, not a silent skip.
 package sdmxml
 
 import (
@@ -17,10 +17,10 @@ import (
 type Sdm struct {
 	DtoClasses []DtoClass
 	DaoClasses []DaoClass
-	Classes    []Class // и те, и другие — в порядке объявления
+	Classes    []Class // both kinds, in the order of declaration
 }
 
-// Class — <dto-class> или <dao-class> в общем порядке sdm.xml.
+// Class is a <dto-class> or <dao-class> in the common order of sdm.xml.
 type Class struct {
 	Name string
 	Dao  bool
@@ -63,9 +63,9 @@ func (s *Sdm) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
 type DtoClass struct {
 	Name   string  `xml:"name,attr"`
 	Ref    string  `xml:"ref,attr"`
-	PK     string  `xml:"pk,attr"`   // умолчание "*"
-	Auto   string  `xml:"auto,attr"` // умолчание "*"
-	Header *string `xml:"header"`    // nil — элемента нет (в шаблоне это разные случаи)
+	PK     string  `xml:"pk,attr"`   // default "*"
+	Auto   string  `xml:"auto,attr"` // default "*"
+	Header *string `xml:"header"`    // nil: no element (these are different cases in the template)
 	Custom string  `xml:"custom"`
 	Fields []Field `xml:"field"`
 }
@@ -85,11 +85,11 @@ func (c *DtoClass) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
-// DaoClass — <dao-class> в sdm.xml: либо ссылка на внешний файл (Ref), либо сами элементы.
+// DaoClass is a <dao-class> in sdm.xml: either a reference to an external file (Ref) or the elements themselves.
 type DaoClass struct {
 	Name  string
 	Ref   string
-	Items []DaoItem // в порядке документа
+	Items []DaoItem // in document order
 }
 
 func (c *DaoClass) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -108,7 +108,7 @@ func (c *DaoClass) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
-// DaoItem — один из crud, query, query-list, query-dto, query-dto-list, exec-dml.
+// DaoItem is one of crud, query, query-list, query-dto, query-dto-list, exec-dml.
 type DaoItem struct {
 	XMLName        xml.Name
 	Method         string      `xml:"method,attr"`
@@ -116,8 +116,8 @@ type DaoItem struct {
 	Dto            string      `xml:"dto,attr"`
 	ExternalSQL    bool        `xml:"external-sql,attr"`
 	ReturnType     string      `xml:"return-type,attr"`
-	Table          string      `xml:"table,attr"`           // crud, умолчание "*"
-	FetchGenerated bool        `xml:"fetch-generated,attr"` // crud, умолчание true
+	Table          string      `xml:"table,attr"`           // crud, default "*"
+	FetchGenerated bool        `xml:"fetch-generated,attr"` // crud, default true
 	Create         *CrudMethod `xml:"create"`
 	ReadAll        *CrudMethod `xml:"read-all"`
 	Read           *CrudMethod `xml:"read"`
@@ -125,7 +125,7 @@ type DaoItem struct {
 	Delete         *CrudMethod `xml:"delete"`
 }
 
-// Kind — имя элемента: "crud", "query", ...
+// Kind is the element name: "crud", "query", ...
 func (it *DaoItem) Kind() string {
 	return it.XMLName.Local
 }
@@ -157,13 +157,13 @@ func checkItems(items []DaoItem) error {
 	return nil
 }
 
-// externalDao — корень внешнего DAO-файла.
+// externalDao is the root of an external DAO file.
 type externalDao struct {
 	Items []DaoItem `xml:",any"`
 }
 
-// LoadSdm читает sdmDir/sdm.xml и подтягивает элементы внешних <dao-class ref="X.xml">
-// (путь — относительно sdmDir, как в Java-плагине).
+// LoadSdm reads sdmDir/sdm.xml and pulls in the elements of external <dao-class ref="X.xml">
+// (the path is relative to sdmDir, as in the Java plug-in).
 func LoadSdm(sdmDir string) (*Sdm, error) {
 	var s Sdm
 	if err := readXML(filepath.Join(sdmDir, "sdm.xml"), "sdm", &s); err != nil {

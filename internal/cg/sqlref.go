@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-// Грамматика 'ref' (SqlUtils.java). Развилки и порядок проверок — как в Java,
-// включая странности: от них зависит, что именно сгенерирует плагин.
+// The grammar of 'ref' (SqlUtils.java). The branches and the order of checks are as in Java,
+// oddities included: what the plug-in generates depends on them.
 
 type sqlShortcut struct {
 	tableName string
-	params    string // "" — нет
+	params    string // "" means none
 	hasParams bool
 	colNames  string
 	hasCols   bool
@@ -64,7 +64,7 @@ func IsTableRef(ref string) bool {
 	if strings.ContainsAny(ref, illegalTableChars) {
 		return false
 	}
-	return !slices.Contains(strings.Split(ref, "."), "") // нет пустых частей между точками
+	return !slices.Contains(strings.Split(ref, "."), "") // no empty parts between dots
 }
 
 func IsJdbcStoredProcCall(sql string) bool {
@@ -149,7 +149,7 @@ func jdbcSQLByTableName(table string) string {
 	return "select * from " + table
 }
 
-// loadTextFromFile — регистр имени файла проверяется и на Windows, как в Java-плагине.
+// loadTextFromFile checks the case of the file name on Windows too, as the Java plug-in does.
 func loadTextFromFile(path string) (string, error) {
 	dir, name := filepath.Split(path)
 	entries, err := os.ReadDir(dir)
@@ -178,7 +178,7 @@ func concatPath(a, b string) string {
 
 func JdbcSQLByDtoClassRef(ref, sqlRoot string) (string, error) {
 	parts := jsplitLit(ref, ":")
-	table := "null" // так в Java: 'x:y' без "table:" дают "select * from null"
+	table := "null" // as in Java: 'x:y' without "table:" gives "select * from null"
 	switch {
 	case len(parts) >= 2:
 		if strings.ToLower(strings.TrimSpace(parts[0])) == "table" {
@@ -266,7 +266,7 @@ func crudDeleteSQL(table string, pk []FieldInfo) string {
 	return "delete from " + table + " where " + pkCondition(pk)
 }
 
-// SQL в коде ------------------------------------------------------
+// SQL in code ------------------------------------------------------
 
 func sqlLines(sql string) []string {
 	sql = strings.ReplaceAll(sql, "\r", "\n")
@@ -274,7 +274,7 @@ func sqlLines(sql string) []string {
 	return jsplit(sql, reNL)
 }
 
-// FormatJdbcSQLForGo — SQL в обратных кавычках, строки через " \n\t\t".
+// FormatJdbcSQLForGo puts SQL in backquotes, lines joined by " \n\t\t".
 func FormatJdbcSQLForGo(sql string) string {
 	var b strings.Builder
 	b.WriteString("`")

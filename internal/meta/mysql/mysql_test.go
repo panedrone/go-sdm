@@ -47,7 +47,7 @@ func TestFirstWordAndCall(t *testing.T) {
 	}
 }
 
-// Ожидания сняты с Connector/J 8.4 (MetaDump.java на cli/metadump/mysql.txt).
+// The expectations are taken from Connector/J 8.4 (MetaDump.java on cli/metadump/mysql.txt).
 func TestPrecision(t *testing.T) {
 	mb := func(cs uint16) int {
 		if cs == 255 { // utf8mb4

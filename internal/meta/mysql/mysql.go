@@ -1,12 +1,12 @@
-// Package mysql — meta.Metadata поверх MySQL 8 (go-mysql-org/go-mysql: чистый Go и поля
-// протокола целиком — флаги, кодировка, длина, которых database/sql не отдаёт).
+// Package mysql is meta.Metadata on top of MySQL 8 (go-mysql-org/go-mysql: pure Go and the
+// protocol fields in full: flags, charset, length, which database/sql does not expose).
 //
-// Повторяет Connector/J 8.4 с настройками по умолчанию (клиентский prepare):
-//   - колонки результата узнаются выполнением запроса с NULL вместо '?' и пределом в одну
-//     строку; не-SELECT (INSERT, UPDATE, ...) метаданных не имеют;
-//   - CALL тоже выполняется (так делает Connector/J) — здесь в транзакции с откатом;
-//   - типы параметров — java.lang.Object, кроме CALL: у процедуры они объявлены;
-//   - таблицы, ключи и индексы — information_schema текущей базы.
+// It mirrors Connector/J 8.4 with default settings (client-side prepare):
+//   - result columns are found out by running the query with NULL instead of '?' and a limit of one
+//     row; non-SELECT statements (INSERT, UPDATE, ...) have no metadata;
+//   - CALL is executed too (Connector/J does so), here in a transaction that is rolled back;
+//   - parameter types are java.lang.Object, except for CALL: a procedure declares them;
+//   - tables, keys and indexes come from information_schema of the current database.
 package mysql
 
 import (
@@ -25,12 +25,12 @@ const noMetaData = "Cannot detect Prepared Statement MetaData"
 
 type DB struct {
 	conn     *client.Conn
-	mbMaxLen map[uint16]int // id кодировки (collation) -> байт на символ
+	mbMaxLen map[uint16]int // charset id (collation) -> bytes per character
 }
 
 var _ meta.Metadata = (*DB)(nil)
 
-// ConnParams — адрес, база, пользователь и пароль из jdbc:mysql://host[:port]/db или mysql://...
+// ConnParams returns the address, database, user and password from jdbc:mysql://host[:port]/db or mysql://...
 func ConnParams(jdbcURL, user, pwd string) (addr, db, u, p string, err error) {
 	raw := strings.TrimSpace(jdbcURL)
 	raw = strings.TrimPrefix(raw, "jdbc:")
@@ -49,7 +49,7 @@ func ConnParams(jdbcURL, user, pwd string) (addr, db, u, p string, err error) {
 		addr += ":3306"
 	}
 	u, p = user, pwd
-	if pu.User != nil { // свои данные в URL главнее
+	if pu.User != nil { // credentials in the URL take precedence
 		u = pu.User.Username()
 		if s, ok := pu.User.Password(); ok {
 			p = s
@@ -59,7 +59,7 @@ func ConnParams(jdbcURL, user, pwd string) (addr, db, u, p string, err error) {
 }
 
 func Open(addr, db, user, pwd string) (*DB, error) {
-	// CALL возвращает результаты, только если клиент заявил MULTI_RESULTS
+	// CALL returns results only if the client declared MULTI_RESULTS
 	multiResults := func(c *client.Conn) error {
 		return c.SetCapability(gm.CLIENT_MULTI_RESULTS)
 	}
@@ -67,7 +67,7 @@ func Open(addr, db, user, pwd string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	// длины полей результата зависят от кодировки соединения: как у Connector/J — utf8mb4
+	// result field lengths depend on the connection charset: utf8mb4, as with Connector/J
 	if err := conn.SetCharset("utf8mb4"); err != nil {
 		_ = conn.Close()
 		return nil, err
@@ -91,7 +91,7 @@ func (db *DB) Close() error {
 	return db.conn.Close()
 }
 
-// Exec — для подготовки схемы в дампах.
+// Exec is for setting up the schema in dumps.
 func (db *DB) Exec(sql string) error {
 	_, err := db.conn.Execute(sql)
 	return err
@@ -104,7 +104,7 @@ func (db *DB) maxLen(charset uint16) int {
 	return db.mbMaxLen[charset]
 }
 
-// serverMessage — текст ошибки сервера без кода, как его отдаёт Connector/J.
+// serverMessage is the server error text without the code, as Connector/J gives it.
 func serverMessage(err error) string {
 	var e *gm.MyError
 	if errors.As(err, &e) {
@@ -155,7 +155,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 	return res, nil
 }
 
-// resultFields — поля первого результата: не больше одной строки, CALL — с откатом.
+// resultFields returns the fields of the first result: at most one row, CALL is rolled back.
 func (db *DB) resultFields(sql string, call bool) ([]*gm.Field, error) {
 	if _, err := db.conn.Execute("SET SQL_SELECT_LIMIT = 1"); err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (db *DB) SQLParams(jdbcSQL string, typeCount int) (*meta.Params, error) {
 	if err != nil {
 		return nil, err
 	}
-	// типы '?' — по их месту среди аргументов процедуры
+	// the types of '?' come from their position among the procedure arguments
 	k := 0
 	for i, a := range args {
 		if a != "?" {
@@ -260,7 +260,7 @@ func splitSchema(tableRef string) (schema, table string, err error) {
 	return parts[0], parts[1], nil
 }
 
-// schemaExpr — текущая база или явно указанная.
+// schemaExpr is the current database or the one given explicitly.
 func schemaExpr(schema string, args *[]any) string {
 	if schema == "" {
 		return "DATABASE()"
@@ -301,7 +301,7 @@ func (db *DB) tableColumns(tableRef string) ([]meta.TableColumn, error) {
 	if i := strings.LastIndexByte(tableRef, '.'); i >= 0 {
 		schema, table = tableRef[:i], tableRef[i+1:]
 	}
-	// Java передаёт в getIndexInfo/getImportedKeys полное имя (со схемой) — повторено
+	// Java passes the full name (with the schema) to getIndexInfo/getImportedKeys; repeated here
 	unique, err := db.indexedColumns(tableRef, true)
 	if err != nil {
 		return nil, err

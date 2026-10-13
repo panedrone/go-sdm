@@ -1,8 +1,8 @@
-// genharness — design-time сверка генератора с Java-плагином.
+// genharness is a design-time comparison of the generator with the Java plug-in.
 //
-// Читает тот же список проектов, что sdm-plugins/harness (label | project dir | sdm folder),
-// и пишет вывод в той же раскладке, что HarnessMain.java: <out>/<label>/dto|dao/<файл>,
-// _output_dir.txt и <Class>.ERROR.txt. Сверка — diff -r с выводом Java-харнесса.
+// It reads the same project list as sdm-plugins/harness (label | project dir | sdm folder),
+// and writes the output in the same layout as HarnessMain.java: <out>/<label>/dto|dao/<file>,
+// _output_dir.txt and <Class>.ERROR.txt. Compare with diff -r against the output of the Java harness.
 //
 //	go run ./cli/genharness <projects-list-file> <out-dir>
 package main

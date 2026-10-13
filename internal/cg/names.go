@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-// FieldNamesMode — как называть поля и параметры (Names.java, FieldNamesMode.java).
+// FieldNamesMode is how fields and parameters are named (Names.java, FieldNamesMode.java).
 type FieldNamesMode int
 
 const (
@@ -16,7 +16,7 @@ const (
 	TitleCase
 )
 
-// FieldNamesModeOf — <dto field-names-mode>: 0 — TitleCase, 1 — camelCase, иначе snake_case.
+// FieldNamesModeOf maps <dto field-names-mode>: 0 is TitleCase, 1 is camelCase, otherwise snake_case.
 func FieldNamesModeOf(mode int) FieldNamesMode {
 	switch mode {
 	case 0:
@@ -36,7 +36,7 @@ func ToKebabCase(src string) string {
 	return strings.Join(jsplit(CamelCaseToLowerSnakeCase(src), reUnderSc), "-")
 }
 
-// FileNameSnakeCase — имя файла класса: "TasksDao" -> "tasks_dao.go".
+// FileNameSnakeCase is the file name of a class: "TasksDao" -> "tasks_dao.go".
 func FileNameSnakeCase(className, ext string) string {
 	return CamelCaseToLowerSnakeCase(className) + "." + ext
 }
@@ -133,7 +133,7 @@ func lowerCamelOrTitle(str string, title bool) string {
 	return sb.String()
 }
 
-// Model — "sa-Task" -> "sa"; без '-' модели нет.
+// Model: "sa-Task" -> "sa"; no model without '-'.
 func Model(dtoClassName string) string {
 	if i := strings.IndexByte(dtoClassName, '-'); i >= 0 {
 		return dtoClassName[:i]
@@ -148,7 +148,7 @@ func ClassNameWithoutModel(dtoClassName string) string {
 	return dtoClassName
 }
 
-// pkColNameAlias — xerial отдаёт PK в нижнем регистре и как '[employeeid] asc' (составной PK).
+// pkColNameAlias: xerial gives the PK in lower case and as '[employeeid] asc' (composite PK).
 func pkColNameAlias(pk string) (string, error) {
 	pk = strings.TrimSpace(strings.NewReplacer("[", "", "]", "").Replace(strings.ToLower(pk)))
 	if strings.HasSuffix(pk, " asc") {
@@ -156,7 +156,7 @@ func pkColNameAlias(pk string) (string, error) {
 	}
 	if strings.HasSuffix(pk, " desc") {
 		parts := jsplit(pk, reDesc)
-		if len(parts) < 2 { // так в Java: split(" desc")[1]
+		if len(parts) < 2 { // as in Java: split(" desc")[1]
 			return "", errors.New("Index 1 out of bounds for length 1")
 		}
 		pk = parts[1]

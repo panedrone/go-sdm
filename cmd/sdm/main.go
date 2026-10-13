@@ -1,4 +1,4 @@
-// sdm — генератор DAO для Go по sdm.xml и метаданным живой базы (PostgreSQL, MySQL, SQLite).
+// sdm is a DAO generator for Go from sdm.xml and the metadata of a live database (PostgreSQL, MySQL, SQLite).
 package main
 
 import (
@@ -79,7 +79,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, usage, version)
 		return 0
 	default:
-		fmt.Fprintf(stderr, "unknown command %q\n\n"+usage, cmd, version)
+		printErr(stderr, fmt.Errorf("unknown command %q", cmd))
+		fmt.Fprintf(stderr, "\n"+usage, version)
 		return 2
 	}
 }
@@ -103,8 +104,8 @@ func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, 
 	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
 }
 
-// parse — флаги вперемешку с классами: sdm gen 1,3 -dir x 5 (пакет flag останавливается
-// на первом не-флаге).
+// parse allows flags mixed with classes: sdm gen 1,3 -dir x 5 (the flag package stops
+// at the first non-flag).
 func parse(fs *flag.FlagSet, args []string) ([]string, error) {
 	var rest []string
 	for {
@@ -125,7 +126,7 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "created: "+f)
 	}
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, then sdm gen\n",
@@ -133,7 +134,7 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// runGenerate — generate (write == true) или validate.
+// runGenerate is generate (write == true) or validate.
 func runGenerate(args []string, write bool, stdout, stderr io.Writer) int {
 	fs, dir := newFlags(map[bool]string{true: "generate", false: "validate"}[write], stderr)
 	models, daos := kindFlags(fs)
@@ -158,7 +159,7 @@ func runList(args []string, stdout, stderr io.Writer) int {
 	}
 	entries, err := gen.List(".", cleanRel(*dir))
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	all := make([]sdmxml.Class, len(entries))
@@ -167,7 +168,7 @@ func runList(args []string, stdout, stderr io.Writer) int {
 	}
 	only, err := gen.Select(all, classes, *models, *daos)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 2
 	}
 	var shown []gen.Entry
@@ -205,21 +206,21 @@ func runList(args []string, stdout, stderr io.Writer) int {
 func generate(dir string, classes []string, models, daos, write bool, stdout, stderr io.Writer) int {
 	s, err := sdmxml.LoadSettings(dir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	if s.GoDB == nil {
-		fmt.Fprintf(stderr, "%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)\n", dir)
+		printErr(stderr, fmt.Errorf("%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)", dir))
 		return 1
 	}
 	sdm, err := sdmxml.LoadSdm(dir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	only, err := gen.Select(sdm.Classes, classes, models, daos)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 2
 	}
 	db := *s.GoDB
@@ -231,14 +232,14 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 	md, err := gen.OpenMetadata(".", db)
 	if err != nil {
 		st.clear()
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	defer md.Close()
 	res, err := gen.Run(".", dir, md, only, st.progress)
 	st.clear()
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	if write {
@@ -247,7 +248,7 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 			fmt.Fprintln(stdout, "updated: "+f)
 		}
 		if err != nil {
-			fmt.Fprintln(stderr, err)
+			printErr(stderr, err)
 			return 1
 		}
 	}
@@ -259,13 +260,13 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 		case write:
 			fmt.Fprintln(stdout, "updated: "+c.Path)
 		case c.Missing:
-			fmt.Fprintln(stdout, "missing: "+c.Path)
+			fmt.Fprintln(stdout, red(stdout, "missing: "+c.Path))
 		default:
-			fmt.Fprintln(stdout, "out of date: "+c.Path)
+			fmt.Fprintln(stdout, red(stdout, "out of date: "+c.Path))
 		}
 	}
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		printErr(stderr, err)
 		return 1
 	}
 	if !write && len(changes) > 0 {

@@ -10,7 +10,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
 
-// init, затем gen и val. t.Chdir — без t.Parallel.
+// init, then gen and val. t.Chdir: no t.Parallel.
 func TestInitGenerate(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
@@ -24,7 +24,7 @@ func TestInitGenerate(t *testing.T) {
 		t.Errorf("init output: %s", out.String())
 	}
 
-	// база для генерации: SQLite-файл с таблицей, settings.xml — на неё
+	// the database to generate from: an SQLite file with a table, settings.xml points to it
 	db, err := sqlite.Open("app.sqlite")
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestInitGenerate(t *testing.T) {
 	}
 }
 
-// ls, выборочные gen и val: номера по порядку объявления, имена, запятые, флаги после классов.
+// ls, selective gen and val: numbers in the order of declaration, names, commas, flags after classes.
 func TestListAndSelect(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
@@ -92,7 +92,7 @@ func TestListAndSelect(t *testing.T) {
 		}
 	}
 	_ = db.Close()
-	// модели и DAO вперемешку: номера — в порядке объявления
+	// models and DAO interleaved: numbers follow the order of declaration
 	sdmXML := `<sdm>
 <dto-class name="Task" ref="tasks"/>
 <dao-class name="TasksDao"><crud dto="Task"/></dao-class>
@@ -155,7 +155,7 @@ func TestListAndSelect(t *testing.T) {
 		t.Errorf("ls -l, not generated: %q", lines[4])
 	}
 
-	// -m/-d у gen и val: модели отдельно от DAO
+	// -m/-d of gen and val: models apart from DAO
 	if err := os.Remove(filepath.Join("internal", "dbal", "models", "task.go")); err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestListAndSelect(t *testing.T) {
 	}
 }
 
-// без команды — подсказка и код 2, ни init, ни генерации
+// no command: usage and exit code 2, neither init nor generation
 func TestNoCommand(t *testing.T) {
 	t.Chdir(t.TempDir())
 	for _, args := range [][]string{nil, {"-db", "sqlite"}} {
@@ -200,7 +200,7 @@ func TestVersion(t *testing.T) {
 	}
 }
 
-// init в готовом проекте: ошибка, ничего не тронуто.
+// init in a ready project: an error, nothing touched.
 func TestInitExisting(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if err := os.WriteFile("go.mod", []byte("module m\n"), 0o644); err != nil {
@@ -227,7 +227,7 @@ func TestInitExisting(t *testing.T) {
 	}
 }
 
-// строка состояния не показывает логин и пароль
+// the status line shows no login and password
 func TestDbLabel(t *testing.T) {
 	for url, want := range map[string]string{
 		"jdbc:postgresql://localhost:5432/my_tests":  "localhost:5432/my_tests",
@@ -241,7 +241,7 @@ func TestDbLabel(t *testing.T) {
 	}
 }
 
-// без <go-db> — ошибка с подсказкой: <jdbc> (он в settings.xml есть) go-sdm не читает
+// without <go-db>: an error with a hint; go-sdm does not read <jdbc> (settings.xml has it)
 func TestNoGoDB(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
@@ -257,7 +257,7 @@ func TestNoGoDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := strings.Replace(string(b), `<go-db url="sqlite:app.sqlite3" user="" pwd=""/>`, "", 1) // остаётся только <jdbc>
+	s := strings.Replace(string(b), `<go-db url="sqlite:app.sqlite3" user="" pwd=""/>`, "", 1) // only <jdbc> is left
 	if s == string(b) {
 		t.Fatal("<go-db> not found in settings.xml")
 	}

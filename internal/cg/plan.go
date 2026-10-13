@@ -7,8 +7,8 @@ import (
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
-// План методов DAO-класса (JaxbUtils.plan_dao_methods): всё, что не зависит от целевого
-// языка — имена методов (в том числе по умолчанию у пустого <crud/>), параметры, таблица, PK.
+// The method plan of a DAO class (JaxbUtils.plan_dao_methods): everything that does not depend on the target
+// language: method names (including the defaults of an empty <crud/>), parameters, table, PK.
 
 type MethodKind int
 
@@ -34,12 +34,12 @@ type DaoMethod struct {
 	// query
 	ReturnTypeIsDto bool
 	DtoOrReturnType string
-	FetchList       bool // и CRUD read: "read all" или "read one"
+	FetchList       bool // and CRUD read: "read all" or "read one"
 
 	// CRUD
 	DtoClassName   string
 	TableName      string
-	ExplicitPK     string // "" у "read all"
+	ExplicitPK     string // "" for "read all"
 	AutoColumn     string
 	FetchGenerated bool
 }
@@ -130,7 +130,7 @@ func planExecDml(it sdmxml.DaoItem) (DaoMethod, error) {
 	return m, nil
 }
 
-// nullable — так Java печатает отсутствующий атрибут в сообщениях.
+// nullable is how Java prints a missing attribute in messages.
 func nullable(s string) string {
 	if s == "" {
 		return "null"
@@ -152,7 +152,7 @@ func planCrud(it sdmxml.DaoItem, dtos []sdmxml.DtoClass, mode FieldNamesMode) ([
 		}
 		create, readAll, read, update, del := it.Create, it.ReadAll, it.Read, it.Update, it.Delete
 		if create == nil && readAll == nil && read == nil && update == nil && del == nil {
-			// пустой <crud/> — все пять методов с именами по умолчанию
+			// an empty <crud/>: all five methods with default names
 			all := &sdmxml.CrudMethod{}
 			create, readAll, read, update, del = all, all, all, all, all
 		}
@@ -181,7 +181,7 @@ func planCrud(it sdmxml.DaoItem, dtos []sdmxml.DtoClass, mode FieldNamesMode) ([
 			res = append(res, m)
 		}
 		add(create, CrudCreate, "create", "", dto.PK, false)
-		add(readAll, CrudRead, "read", "List", "", true) // у "read all" нет WHERE
+		add(readAll, CrudRead, "read", "List", "", true) // "read all" has no WHERE
 		add(read, CrudRead, "read", "", dto.PK, false)
 		add(update, CrudUpdate, "update", "", dto.PK, false)
 		add(del, CrudDelete, "delete", "", dto.PK, false)
@@ -215,7 +215,7 @@ func refineTableName(dto *sdmxml.DtoClass, table string) (string, error) {
 	return table, nil
 }
 
-// PackageName — последний сегмент scope (GoCG._get_package_name).
+// PackageName is the last segment of scope (GoCG._get_package_name).
 func PackageName(scope string) (string, error) {
 	if strings.TrimSpace(scope) == "" {
 		return "", errors.New(GolangScopesErr)

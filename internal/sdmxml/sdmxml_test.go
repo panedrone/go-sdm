@@ -22,7 +22,7 @@ func TestLoadSdm(t *testing.T) {
 		t.Errorf("classes: %s", got)
 	}
 
-	// умолчания XSD и явные значения, в том числе пустые
+	// XSD defaults and explicit values, empty ones included
 	d0, d1 := s.DtoClasses[0], s.DtoClasses[1]
 	if d0.PK != "*" || d0.Auto != "*" {
 		t.Errorf("defaults: pk=%q auto=%q", d0.PK, d0.Auto)
@@ -31,7 +31,7 @@ func TestLoadSdm(t *testing.T) {
 		t.Errorf("explicit: %+v", d1)
 	}
 
-	// порядок элементов разных типов сохраняется
+	// the order of elements of different kinds is kept
 	inline := s.DaoClasses[0]
 	var kinds []string
 	for _, it := range inline.Items {
@@ -52,7 +52,7 @@ func TestLoadSdm(t *testing.T) {
 		t.Error("external-sql")
 	}
 
-	// внешний файл подтянут, порядок как в файле
+	// the external file is pulled in, in the order of the file
 	sp := s.DaoClasses[1]
 	if sp.Ref != "SpDao.xml" || len(sp.Items) == 0 {
 		t.Fatalf("SpDao.xml not loaded: %+v", sp)
@@ -92,7 +92,7 @@ func TestLoadSettings(t *testing.T) {
 			value++
 		}
 	}
-	if velocity != 1 || value == 0 { // ${ora-num} — единственный <vm-xml> в пресете
+	if velocity != 1 || value == 0 { // ${ora-num} is the only <vm-xml> in the preset
 		t.Errorf("macros: velocity=%d value=%d", velocity, value)
 	}
 }

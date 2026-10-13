@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 	"unicode/utf8"
 )
 
-// status — одна строка состояния, переписываемая через \r. Только в терминал: в CI и в
-// перенаправленный вывод не пишет ничего.
+// status is one status line, rewritten via \r. Terminal only: in CI and in
+// redirected output it writes nothing.
 type status struct {
 	w   io.Writer
-	len int // длина последней строки — затереть пробелами
+	len int // length of the last line, to blank it out with spaces
 }
 
 func newStatus(w io.Writer) *status {
-	if f, ok := w.(*os.File); ok {
-		if fi, err := f.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
-			return &status{w: w}
-		}
+	if isTerminal(w) {
+		return &status{w: w}
 	}
 	return &status{}
 }
@@ -39,7 +36,7 @@ func (s *status) show(format string, a ...any) {
 	s.len = n
 }
 
-// clear — убрать строку перед обычным выводом.
+// clear removes the line before regular output.
 func (s *status) clear() {
 	if s.w == nil || s.len == 0 {
 		return
@@ -52,7 +49,7 @@ func (s *status) progress(n, total int, class string) {
 	s.show("[%d/%d] %s", n, total, class)
 }
 
-// dbLabel — куда подключаемся, без логина и пароля.
+// dbLabel is where we connect, without login and password.
 func dbLabel(raw string) string {
 	raw = strings.TrimSpace(raw)
 	s := strings.TrimPrefix(raw, "jdbc:")

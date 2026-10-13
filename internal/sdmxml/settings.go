@@ -9,15 +9,15 @@ type Settings struct {
 	Folders Folders `xml:"folders"`
 	Dto     Dto     `xml:"dto"`
 	Dao     Dao     `xml:"dao"`
-	Jdbc    DB      `xml:"jdbc"`  // IDE-плагины; go-sdm его не читает (cli/genharness — читает)
-	GoDB    *DB     `xml:"go-db"` // база go-sdm
+	Jdbc    DB      `xml:"jdbc"`  // IDE plug-ins; go-sdm does not read it (cli/genharness does)
+	GoDB    *DB     `xml:"go-db"` // the database of go-sdm
 	TypeMap TypeMap `xml:"type-map"`
 	Macros  []Macro `xml:"macros>macro"`
-	// <ide> — настройка IDE, CLI её не читает
+	// <ide> is an IDE setting, the CLI does not read it
 }
 
 type Folders struct {
-	Target string `xml:"target,attr"` // для Go — module из go.mod
+	Target string `xml:"target,attr"` // for Go: module of go.mod
 	SQL    string `xml:"sql,attr"`
 }
 
@@ -34,7 +34,7 @@ type Dao struct {
 	Macro           string `xml:"macro,attr"`
 }
 
-// DB — <go-db> и <jdbc>; у <jdbc> jar и class не нужны: драйвер вшит в бинарник.
+// DB is <go-db> and <jdbc>; <jdbc> needs no jar and class: the driver is built into the binary.
 type DB struct {
 	URL  string `xml:"url,attr"`
 	User string `xml:"user,attr"`
@@ -51,17 +51,17 @@ type Type struct {
 	Target   string `xml:"target,attr"`
 }
 
-// Macro — либо value (подстановка текста), либо Velocity-код в <vm>/<vm-xml>.
+// Macro is either value (text substitution) or Velocity code in <vm>/<vm-xml>.
 type Macro struct {
 	Name  string  `xml:"name,attr"`
-	Value *string `xml:"value,attr"` // nil — атрибута нет
+	Value *string `xml:"value,attr"` // nil: no attribute
 	VM    *string `xml:"vm"`
 	VMXML *struct {
 		Inner string `xml:",innerxml"`
 	} `xml:"vm-xml"`
 }
 
-// IsVelocity — макрос на Velocity, которого в Go-версии нет.
+// IsVelocity reports a Velocity macro, which the Go version does not have.
 func (m *Macro) IsVelocity() bool {
 	return m.VM != nil || m.VMXML != nil
 }

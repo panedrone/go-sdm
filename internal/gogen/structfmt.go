@@ -8,8 +8,8 @@ import (
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
-// Выравнивание полей структуры DTO (GoStructFormatter.java): имена, типы и теги —
-// колонками, как это сделал бы gofmt, плюс поля из <custom>.
+// Alignment of DTO struct fields (GoStructFormatter.java): names, types and tags
+// in columns, as gofmt would do it, plus the fields of <custom>.
 
 type customField struct {
 	name, typ, tag string
@@ -35,7 +35,7 @@ func formatFields(dto *sdmxml.DtoClass, fields []cg.FieldInfo) ([]string, []cg.F
 	var res []string
 	maxName := -1
 	for _, fi := range fields {
-		if fi.Name() == "" { // {base}: встроенный тип идёт первым
+		if fi.Name() == "" { // {base}: the embedded type goes first
 			res = append(res, typeWithoutImportAndTag(fi.Type()))
 			continue
 		}
@@ -62,14 +62,14 @@ func formatFields(dto *sdmxml.DtoClass, fields []cg.FieldInfo) ([]string, []cg.F
 		if b := tpBlocks[fi.Name()]; b != nil && b.maxLen > 0 {
 			tp = padRight(justType, b.maxLen)
 		}
-		if justTpLen < len([]rune(typeName)) { // есть тег
+		if justTpLen < len([]rune(typeName)) { // has a tag
 			tag := strings.TrimSpace(string([]rune(typeName)[justTpLen+1:]))
 			if b := tagBlocks[fi.Name()]; b != nil && b.maxLen > 0 {
 				tag = padRight(tag, b.maxLen)
 			}
-			typeName = tp + " " + tag // без trim
+			typeName = tp + " " + tag // no trim
 		} else {
-			typeName = tp // без trim
+			typeName = tp // no trim
 		}
 		name := padRight(fi.Name(), maxName)
 		var line string
@@ -92,7 +92,7 @@ func hasComment(byName map[string]customField, name string) bool {
 	return ok && cf.comment != nil
 }
 
-// typeBlocks — подряд идущие поля с тегом или комментарием выравнивают типы по самому длинному.
+// typeBlocks: consecutive fields with a tag or a comment align types by the longest one.
 func typeBlocks(byName map[string]customField, fields []cg.FieldInfo) map[string]*block {
 	res := map[string]*block{}
 	var cur *block
@@ -117,7 +117,7 @@ func typeBlocks(byName map[string]customField, fields []cg.FieldInfo) map[string
 	return res
 }
 
-// tagBlocks — подряд идущие поля с комментарием выравнивают теги.
+// tagBlocks: consecutive fields with a comment align tags.
 func tagBlocks(byName map[string]customField, fields []cg.FieldInfo) map[string]*block {
 	res := map[string]*block{}
 	var cur *block
@@ -161,7 +161,7 @@ func parseCustom(custom string) []customField {
 			if tp == "" {
 				continue
 			}
-			cf.typ = tp // у {base} комментариев нет
+			cf.typ = tp // {base} has no comments
 			res = append(res, cf)
 			continue
 		}
@@ -183,7 +183,7 @@ func parseCustomField(line string, cf *customField) {
 		cf.name = parts[0]
 	}
 	if len(parts) > 1 {
-		cf.typ = parts[1] // без пробелов внутри типа
+		cf.typ = parts[1] // no spaces inside the type
 	}
 	if len(parts) > 2 {
 		if pos := strings.Index(line, cf.name); pos != -1 {

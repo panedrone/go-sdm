@@ -2,7 +2,7 @@ package pg
 
 import "testing"
 
-// Ожидания сняты с pgjdbc 42.2.9 (MetaDump.java на PostgreSQL); typmod — как в pg_attribute.
+// The expectations are taken from pgjdbc 42.2.9 (MetaDump.java on PostgreSQL); typmod as in pg_attribute.
 func TestSizes(t *testing.T) {
 	cases := []struct {
 		name                      string
@@ -45,7 +45,7 @@ func TestJavaType(t *testing.T) {
 		oidTimestamp: "java.util.Date",
 		oidBytea:     "byte[]",
 		oidRefcursor: "java.sql.ResultSet",
-		3802:         javaObject, // jsonb: pgjdbc 42.2 его не знает
+		3802:         javaObject, // jsonb: pgjdbc 42.2 does not know it
 	}
 	for oid, want := range cases {
 		if got := javaType(oid); got != want {

@@ -18,7 +18,7 @@ func newProject(t *testing.T) string {
 	return dir
 }
 
-// configExists — в папке уже есть конфигурация (sdm.xml или settings.xml).
+// configExists reports that the folder already has a configuration (sdm.xml or settings.xml).
 func configExists(projectDir, sdmDir string) bool {
 	for _, n := range []string{"sdm.xml", "settings.xml"} {
 		if _, err := os.Stat(filepath.Join(projectDir, sdmDir, n)); err == nil {
@@ -42,7 +42,7 @@ func TestInit(t *testing.T) {
 		t.Fatalf("written %d, exists %t", len(written), configExists(dir, "go-sdm"))
 	}
 
-	// settings.xml разбирается и указывает туда, куда выложен скелет
+	// settings.xml parses and points to where the skeleton was put
 	s, err := sdmxml.LoadSettings(filepath.Join(dir, "go-sdm"))
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestInit(t *testing.T) {
 		t.Error("data_store_no_orm.go: package dbal, no build constraint expected")
 	}
 
-	// -orm sqlx: только пара sqlx, field-assign-mode="2"
+	// -orm sqlx: only the sqlx pair, field-assign-mode="2"
 	dir = newProject(t)
 	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "store", ORM: "sqlx"}); err != nil {
 		t.Fatal(err)
@@ -82,7 +82,7 @@ func TestInit(t *testing.T) {
 		t.Error("unknown -orm accepted")
 	}
 
-	// -db mysql: ключи и url MySQL
+	// -db mysql: MySQL keys and url
 	dir = newProject(t)
 	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "dbal", DB: "mysql"}); err != nil {
 		t.Fatal(err)
@@ -96,7 +96,7 @@ func TestInit(t *testing.T) {
 	}
 }
 
-// Повторный init — ошибка, и не тронуто ничего, даже XSD.
+// A repeated init is an error, and nothing is touched, not even XSD.
 func TestInitTwice(t *testing.T) {
 	dir := newProject(t)
 	o := Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "dbal"}
@@ -121,7 +121,7 @@ func TestInitTwice(t *testing.T) {
 	}
 }
 
-// Init при чужом data store не создаёт и конфигурацию: всё или ничего.
+// Init with someone else's data store does not create the configuration either: all or nothing.
 func TestInitAllOrNothing(t *testing.T) {
 	dir := newProject(t)
 	ds := filepath.Join(dir, "dbal", "data_store_no_orm.go")

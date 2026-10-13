@@ -1,9 +1,9 @@
-// dsgen — design-time: собирает data store под каждую базу из шаблонов datastore/templates
-// в datastore/<db>/<orm>/. Запускается из корня go-sdm после правки шаблонов:
+// dsgen is design-time: it builds the data store for each database from the templates datastore/templates
+// into datastore/<db>/<orm>/. Run it from the go-sdm root after editing the templates:
 //
 //	go run ./cli/dsgen
 //
-// Тест пакета datastore падает, если варианты разошлись с шаблонами.
+// The datastore package test fails if the variants diverge from the templates.
 package main
 
 import (

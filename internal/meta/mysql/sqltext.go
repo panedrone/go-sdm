@@ -4,9 +4,9 @@ import (
 	"strings"
 )
 
-// nullParams — '?' -> NULL вне строк, `идентификаторов` и комментариев: так Connector/J
-// (клиентский prepare) выполняет запрос, чтобы узнать колонки результата. Возвращает и
-// число параметров.
+// nullParams replaces '?' with NULL outside strings, `identifiers` and comments: this is how Connector/J
+// (client-side prepare) runs the query to find out the result columns. It also returns
+// the number of parameters.
 func nullParams(sql string) (string, int) {
 	var b strings.Builder
 	n := 0
@@ -47,7 +47,7 @@ func nullParams(sql string) (string, int) {
 	return b.String(), n
 }
 
-// skipQuoted — индекс после закрывающей кавычки (или конец строки).
+// skipQuoted returns the index after the closing quote (or the end of the string).
 func skipQuoted(sql string, start int, q byte, backslash bool) int {
 	for i := start + 1; i < len(sql); i++ {
 		switch sql[i] {
@@ -57,7 +57,7 @@ func skipQuoted(sql string, start int, q byte, backslash bool) int {
 			}
 		case q:
 			if i+1 < len(sql) && sql[i+1] == q {
-				i++ // удвоенная кавычка
+				i++ // doubled quote
 				continue
 			}
 			return i + 1
@@ -66,7 +66,7 @@ func skipQuoted(sql string, start int, q byte, backslash bool) int {
 	return len(sql)
 }
 
-// unescapeCall — "{call p(?)}" -> "call p(?)", как escape-обработка Connector/J.
+// unescapeCall turns "{call p(?)}" into "call p(?)", as the escape processing of Connector/J does.
 func unescapeCall(sql string) string {
 	s := strings.TrimSpace(sql)
 	if strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}") {
@@ -75,7 +75,7 @@ func unescapeCall(sql string) string {
 	return sql
 }
 
-// firstWord — первое слово запроса в нижнем регистре, без комментариев в начале.
+// firstWord returns the first word of the query in lower case, skipping leading comments.
 func firstWord(sql string) string {
 	s := strings.TrimSpace(sql)
 	for {
@@ -101,7 +101,7 @@ func firstWord(sql string) string {
 	return strings.ToLower(s[:end])
 }
 
-// callArgs — аргументы "call p(a, ?, 'x')" верхнего уровня; nil, если это не вызов процедуры.
+// callArgs returns the top-level arguments of "call p(a, ?, 'x')"; nil if it is not a procedure call.
 func callArgs(sql string) (proc string, args []string) {
 	s := strings.TrimSpace(sql)
 	if firstWord(s) != "call" {

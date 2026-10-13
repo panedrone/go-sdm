@@ -1,29 +1,29 @@
-// Package meta — что база говорит о SQL-запросах и таблицах, как есть: без settings,
-// без type-map, без полей DTO. Повторяет IDbMetadata Java-плагина один в один, чтобы
-// вывод генератора можно было сверять побайтово (cli/metadump против MetaDump.java).
+// Package meta is what the database says about SQL queries and tables, as is: no settings,
+// no type-map, no DTO fields. It mirrors IDbMetadata of the Java plug-in one to one, so that
+// the generator output can be compared byte for byte (cli/metadump against MetaDump.java).
 //
-// Типы называются Java-именами (java.lang.Integer, java.util.Date, ...): на них
-// завязаны ключи <type detected=...> в settings.xml существующих проектов.
+// Types are named by Java names (java.lang.Integer, java.util.Date, ...): the keys
+// <type detected=...> in settings.xml of existing projects depend on them.
 //
-// RawType — то же словами драйвера: второй словарь ключей type-map, наравне с Java-именами.
+// RawType is the same in the driver's words: the second vocabulary of type-map keys, on a par with Java names.
 package meta
 
-// Metadata — одна реализация на диалект (pg, позже mysql и sqlite).
+// Metadata has one implementation per dialect (pg, mysql, sqlite).
 type Metadata interface {
-	// SQLColumns — колонки результата jdbcSQL (SQL с '?').
+	// SQLColumns returns the result columns of jdbcSQL (SQL with '?').
 	SQLColumns(jdbcSQL string) ([]Column, error)
 
-	// Table — 'select * from tableRef' + то, что каталог говорит о колонках.
+	// Table runs 'select * from tableRef' and adds what the catalog says about the columns.
 	Table(tableRef string) (*Table, error)
 
-	// PKColNames — имена PK-колонок в порядке ключа.
+	// PKColNames returns the names of the PK columns in key order.
 	PKColNames(tableRef string) ([]string, error)
 
-	// SQLParams — параметры jdbcSQL; типы читаются для индексов 0..typeCount-1.
+	// SQLParams returns the parameters of jdbcSQL; types are read for indexes 0..typeCount-1.
 	SQLParams(jdbcSQL string, typeCount int) (*Params, error)
 
-	// RawOfJava — Java-имя типа из XML плагина (java.lang.Integer) словами драйвера этой базы
-	// (pg: int4, MySQL: INT, SQLite: INTEGER); "" — не известно.
+	// RawOfJava returns a Java type name from the plug-in XML (java.lang.Integer) in the words of this database's driver
+	// (pg: int4, MySQL: INT, SQLite: INTEGER); "" means unknown.
 	RawOfJava(javaType string) string
 
 	Close() error
@@ -31,45 +31,45 @@ type Metadata interface {
 
 const (
 	JavaObject = "java.lang.Object"
-	// RawUnknown — сырое имя типа, о котором драйвер ничего не сказал (ключ type-map)
+	// RawUnknown is the raw name of a type the driver said nothing about (a type-map key)
 	RawUnknown = "unknown"
 )
 
-// Column — колонка результата (ResultSetMetaData).
+// Column is a result column (ResultSetMetaData).
 type Column struct {
 	Name        string
-	JavaType    string // JavaObject, если не определён
-	RawType     string // тип словами драйвера (pg: int4, MySQL: INT, SQLite: INTEGER); "" — не сообщил
+	JavaType    string // JavaObject if not determined
+	RawType     string // the type in the driver's words (pg: int4, MySQL: INT, SQLite: INTEGER); "" means not reported
 	IsAI        bool
 	Scale       int
 	Precision   int
 	DisplaySize int
 }
 
-// TableColumn — строка DatabaseMetaData.getColumns. nil — драйвер не смог сообщить.
+// TableColumn is a row of DatabaseMetaData.getColumns. nil means the driver could not report it.
 type TableColumn struct {
 	Name          string
 	DataType      *int   // java.sql.Types
-	RawType       string // тип словами драйвера; нужен там, где колонка результата его не знает (SQLite)
+	RawType       string // the type in the driver's words; needed where the result column does not know it (SQLite)
 	ColumnSize    *int
 	DecimalDigits *int
 	IsAI          *bool
 	IsNullable    *bool
-	FK            string // "pk_table.pk_column" или ""
+	FK            string // "pk_table.pk_column" or ""
 	IsIndexed     bool
 	IsUnique      bool
 }
 
 type Table struct {
 	Columns []Column // 'select * from table'
-	// в порядке getColumns; одна и та же колонка может прийти несколько раз (одноимённые
-	// таблицы в разных схемах), и тогда каждая строка уточняет её ещё раз
+	// in getColumns order; the same column may come several times (tables of the same
+	// name in different schemas), and then each row refines it once more
 	TableColumns []TableColumn
 }
 
 type Params struct {
-	CountUnknown bool // метаданные параметров есть, но их число узнать не удалось
+	CountUnknown bool // parameter metadata exists, but their number could not be found out
 	Count        int
-	JavaTypes    []string // JavaObject там, где не определён
-	RawTypes     []string // типы словами драйвера; "" — не сообщил (длина — как у JavaTypes)
+	JavaTypes    []string // JavaObject where not determined
+	RawTypes     []string // types in the driver's words; "" means not reported (same length as JavaTypes)
 }

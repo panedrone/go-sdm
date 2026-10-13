@@ -1,5 +1,5 @@
-// Package gen — прогон генерации для одного проекта: settings.xml и sdm.xml из папки sdm,
-// метаданные — из базы <jdbc url>, результат — тексты файлов DTO и DAO.
+// Package gen is a generation run for one project: settings.xml and sdm.xml from the sdm folder,
+// metadata from the database <jdbc url>, the result is the texts of DTO and DAO files.
 package gen
 
 import (
@@ -23,18 +23,18 @@ import (
 
 type File struct {
 	Class   string
-	Name    string // имя файла
+	Name    string // file name
 	Content string
-	Err     error // класс не сгенерирован
+	Err     error // the class is not generated
 }
 
 type Result struct {
-	DtoDir, DaoDir string // относительно проекта, как scope в settings.xml
+	DtoDir, DaoDir string // relative to the project, as scope in settings.xml
 	Dto, Dao       []File
 }
 
-// OpenMetadata — база из <go-db url user pwd> (или <jdbc> — у cli/genharness). $PROJECT_DIR$ и ${project_loc} — папка проекта,
-// относительный путь SQLite — тоже от неё.
+// OpenMetadata opens the database of <go-db url user pwd> (or <jdbc>, for cli/genharness). $PROJECT_DIR$ and ${project_loc} are the project folder,
+// a relative SQLite path is relative to it too.
 func OpenMetadata(projectDir string, j sdmxml.DB) (meta.Metadata, error) {
 	url := strings.NewReplacer("$PROJECT_DIR$", projectDir, "${project_loc}", projectDir).Replace(strings.TrimSpace(j.URL))
 	if file, ok := strings.CutPrefix(strings.TrimPrefix(url, "jdbc:"), "sqlite:"); ok {
@@ -63,12 +63,12 @@ func OpenMetadata(projectDir string, j sdmxml.DB) (meta.Metadata, error) {
 	return pg.Open(context.Background(), cs)
 }
 
-// Progress — вызывается перед генерацией каждого класса: n-й из total.
+// Progress is called before generating each class: n-th of total.
 type Progress func(n, total int, class string)
 
-// Run — генерация DTO и DAO проекта: всех или только классов из only (имена, см. Select).
-// Ошибка конкретного класса — в File.Err, общая ошибка (настройки, XML) — в error.
-// progress может быть nil.
+// Run generates the DTO and DAO of the project: all of them or only the classes of only (names, see Select).
+// An error of a particular class goes to File.Err, a general error (settings, XML) to error.
+// progress may be nil.
 func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, progress Progress) (*Result, error) {
 	if progress == nil {
 		progress = func(int, int, string) {}
@@ -88,7 +88,7 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 	picked := func(name string) bool { return only == nil || only[name] }
 	sqlRoot := projectDir + "/" + s.Folders.SQL
 	dtoMode := cg.FieldNamesModeOf(s.Dto.FieldNamesMode)
-	// у Java-плагина DTO и DAO — два отдельных прогона со своим JdbcUtils
+	// the Java plug-in has DTO and DAO as two separate runs with their own JdbcUtils
 	dtoGen, err := gogen.NewDTO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
 	if err != nil {
 		return nil, err
@@ -133,10 +133,10 @@ func scopes(s *sdmxml.Settings) (dto, dao string, err error) {
 	return dto, dao, nil
 }
 
-// Select — имена классов по номерам (с 1, в порядке объявления, как у sdm ls) и по
-// именам; в одном аргументе может быть несколько через запятую. models/daos — только
-// модели или только DAO; оба или ни одного — и те, и другие. Ни аргументов, ни
-// models/daos — nil, все.
+// Select returns class names by numbers (from 1, in the order of declaration, as in sdm ls) and by
+// names; one argument may hold several, separated by commas. models/daos: models only
+// or DAO only; both or neither mean both kinds. No arguments and no
+// models/daos: nil, all of them.
 func Select(classes []sdmxml.Class, args []string, models, daos bool) (map[string]bool, error) {
 	only, err := byArgs(classes, args)
 	if err != nil || models == daos {
@@ -187,15 +187,15 @@ func hasClass(classes []sdmxml.Class, name string) bool {
 	return false
 }
 
-// Entry — класс sdm.xml и его файл.
+// Entry is a class of sdm.xml and its file.
 type Entry struct {
-	N int // номер, с 1, в порядке объявления
+	N int // number, from 1, in the order of declaration
 	sdmxml.Class
-	Path     string    // относительно проекта, с '/'
-	Modified time.Time // нулевое — файла нет
+	Path     string    // relative to the project, with '/'
+	Modified time.Time // zero: no file
 }
 
-// List — классы sdm.xml в порядке объявления, без базы.
+// List returns the classes of sdm.xml in the order of declaration, without the database.
 func List(projectDir, sdmDir string) ([]Entry, error) {
 	s, err := sdmxml.LoadSettings(sdmDir)
 	if err != nil {

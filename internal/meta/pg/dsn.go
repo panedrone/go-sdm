@@ -8,8 +8,8 @@ import (
 
 const jdbcPrefix = "jdbc:postgresql:"
 
-// ConnString строит строку подключения pgx из <jdbc url user pwd> файла settings.xml.
-// Принимается и JDBC-URL (как у Java-плагина), и обычный postgres://.
+// ConnString builds the pgx connection string from <jdbc url user pwd> of settings.xml.
+// Both a JDBC URL (as in the Java plug-in) and a plain postgres:// are accepted.
 func ConnString(jdbcURL, user, pwd string) (string, error) {
 	raw := strings.TrimSpace(jdbcURL)
 	switch {
@@ -34,7 +34,7 @@ func ConnString(jdbcURL, user, pwd string) (string, error) {
 		}
 	}
 	q := u.Query()
-	// pgjdbc 'currentSchema' -> search_path, иначе pgx отправит его серверу как неизвестный параметр
+	// pgjdbc 'currentSchema' -> search_path, otherwise pgx would send it to the server as an unknown parameter
 	if s := q.Get("currentSchema"); s != "" {
 		q.Del("currentSchema")
 		q.Set("search_path", s)
