@@ -1,5 +1,4 @@
 /sdm
-/sdm.exe
 *.test
 .idea/workspace.xml
 /.claude/
