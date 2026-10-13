@@ -29,6 +29,22 @@ type Metadata interface {
 	Close() error
 }
 
+// Catalog is what the XML assistants read from the database (SdmUtils of the Java plug-in):
+// getTables and getImportedKeys.
+type Catalog interface {
+	// Tables lists the tables and, if includeViews, the views of the database, as
+	// getTables(null, "%", TABLE, VIEW) sorts them: tables first, then views, by name.
+	Tables(includeViews bool) ([]string, error)
+	// ImportedKeys lists the foreign key columns of table: by PK table, then key order.
+	ImportedKeys(table string) ([]ImportedKey, error)
+}
+
+// ImportedKey is a row of getImportedKeys: PKTABLE_NAME and FKCOLUMN_NAME.
+type ImportedKey struct {
+	PKTable  string
+	FKColumn string
+}
+
 const (
 	JavaObject = "java.lang.Object"
 	// RawUnknown is the raw name of a type the driver said nothing about (a type-map key)

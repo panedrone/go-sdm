@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -11,12 +12,14 @@ import (
 	"text/tabwriter"
 
 	"github.com/panedrone/go-sdm/datastore"
+	"github.com/panedrone/go-sdm/internal/assist"
 	"github.com/panedrone/go-sdm/internal/gen"
+	"github.com/panedrone/go-sdm/internal/meta"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "0.1.0-dev"
+const version = "1.1.0"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 
@@ -33,6 +36,11 @@ usage:
   sdm list|ls [-dir go-sdm] [-m] [-d] [-l] [class ...]
                                   numbered classes of sdm.xml in the order of declaration,
                                   -l: a table with files and dates
+  sdm xml [-dir go-sdm] [-m] [-d]
+                                  starting XML from the database schema, to the console:
+                                  -m <dto-class> for each table and view, -d <crud/> and
+                                  FK access; classes already in sdm.xml are skipped;
+                                  to a file: sdm xml -m > models.xml
   sdm version|-v|--version
   sdm help
 
@@ -72,6 +80,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runGenerate(args, false, stdout, stderr)
 	case "list", "ls":
 		return runList(args, stdout, stderr)
+	case "xml":
+		return runXML(args, stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, version)
 		return 0
@@ -204,13 +214,9 @@ func runList(args []string, stdout, stderr io.Writer) int {
 }
 
 func generate(dir string, classes []string, models, daos, write bool, stdout, stderr io.Writer) int {
-	s, err := sdmxml.LoadSettings(dir)
+	s, err := loadSettings(dir)
 	if err != nil {
 		printErr(stderr, err)
-		return 1
-	}
-	if s.GoDB == nil {
-		printErr(stderr, fmt.Errorf("%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)", dir))
 		return 1
 	}
 	sdm, err := sdmxml.LoadSdm(dir)
@@ -223,15 +229,9 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 		printErr(stderr, err)
 		return 2
 	}
-	db := *s.GoDB
-	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
-		db.Pwd = pwd
-	}
 	st := newStatus(stderr)
-	st.show("connecting to %s ...", dbLabel(db.URL))
-	md, err := gen.OpenMetadata(".", db)
+	md, err := connect(s, st)
 	if err != nil {
-		st.clear()
 		printErr(stderr, err)
 		return 1
 	}
@@ -276,6 +276,123 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 		fmt.Fprintf(stdout, "up to date: %d classes\n", len(res.Dto)+len(res.Dao))
 	}
 	return 0
+}
+
+// loadSettings: settings.xml with <go-db>.
+func loadSettings(dir string) (*sdmxml.Settings, error) {
+	s, err := sdmxml.LoadSettings(dir)
+	if err != nil {
+		return nil, err
+	}
+	if s.GoDB == nil {
+		return nil, fmt.Errorf("%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)", dir)
+	}
+	return s, nil
+}
+
+// connect opens the database of <go-db>; SDM_PWD overrides pwd.
+func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
+	db := *s.GoDB
+	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
+		db.Pwd = pwd
+	}
+	st.show("connecting to %s ...", dbLabel(db.URL))
+	md, err := gen.OpenMetadata(".", db)
+	if err != nil {
+		st.clear()
+	}
+	return md, err
+}
+
+// runXML prints the starting XML from the database schema: <dto-class> (-m) and the <crud>
+// with FK access (-d), both if neither or both are given.
+func runXML(args []string, stdout, stderr io.Writer) int {
+	fs, dir := newFlags("xml", stderr)
+	models, daos := kindFlags(fs)
+	rest, err := parse(fs, args)
+	if err != nil {
+		return 2
+	}
+	if len(rest) > 0 {
+		printErr(stderr, fmt.Errorf("xml takes no classes: %s", strings.Join(rest, " ")))
+		return 2
+	}
+	if !*models && !*daos {
+		*models, *daos = true, true
+	}
+	sdmDir := cleanRel(*dir)
+	s, err := loadSettings(sdmDir)
+	if err != nil {
+		printErr(stderr, err)
+		return 1
+	}
+	sdm, err := sdmxml.LoadSdm(sdmDir)
+	if err != nil {
+		printErr(stderr, err)
+		return 1
+	}
+	st := newStatus(stderr)
+	md, err := connect(s, st)
+	if err != nil {
+		printErr(stderr, err)
+		return 1
+	}
+	defer md.Close()
+	cat, ok := md.(meta.Catalog)
+	if !ok {
+		st.clear()
+		printErr(stderr, errors.New("this database cannot list its tables"))
+		return 1
+	}
+	st.show("reading the schema ...")
+	var out []string
+	if *models {
+		x, err := assist.DtoClasses(cat, dtoClasses(sdm))
+		if err != nil {
+			st.clear()
+			printErr(stderr, err)
+			return 1
+		}
+		if x != "" {
+			out = append(out, x)
+		}
+	}
+	if *daos {
+		x, err := assist.DaoItems(cat, crudDtos(sdm))
+		if err != nil {
+			st.clear()
+			printErr(stderr, err)
+			return 1
+		}
+		if x != "" {
+			out = append(out, x)
+		}
+	}
+	st.clear()
+	_, _ = fmt.Fprint(stdout, strings.Join(out, "\n"))
+	return 0
+}
+
+// dtoClasses: the names of <dto-class> in sdm.xml.
+func dtoClasses(sdm *sdmxml.Sdm) map[string]bool {
+	res := map[string]bool{}
+	for _, c := range sdm.DtoClasses {
+		res[c.Name] = true
+	}
+	return res
+}
+
+// crudDtos: the DTO classes of <crud> in all DAO classes.
+func crudDtos(sdm *sdmxml.Sdm) map[string]bool {
+	res := map[string]bool{}
+	for _, c := range sdm.DaoClasses {
+		for _, it := range c.Items {
+			if it.Kind() == "crud" {
+				res[it.Dto] = true
+			}
+		}
+	}
+	return res
 }
 
 func cleanRel(p string) string {

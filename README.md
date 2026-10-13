@@ -94,6 +94,7 @@ Describe classes in `go-sdm/sdm.xml`, set `<go-db url>` in `go-sdm/settings.xml`
 | `sdm generate`, `sdm gen`  | generates into the folders of `settings.xml`, writes only what changed                |
 | `sdm validate`, `sdm val`  | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate   |
 | `sdm list`, `sdm ls`       | the classes of `sdm.xml`, numbered in the order of declaration                        |
+| `sdm xml`                  | the starting XML from the database schema, to the console                             |
 | `sdm version`, `-v`        | the version (also `--version`)                                                        |
 
 `ls` prints one line, `ls -l` a table with the generated files and their dates:
@@ -114,6 +115,56 @@ means all of them. `-m` keeps the models only, `-d` the DAO only:
 sdm gen 1,3 GroupsDao
 sdm val -d
 ```
+
+`sdm xml` reads the tables and views of the database and prints what the XML assistants of
+the IDE plug-ins make: `-m` a `<dto-class>` for each of them, `-d` a `<crud>` for each and, after
+it, the access by foreign keys. The DAO part is one pile of elements, not a `<dao-class>` per
+table: put it into the DAO classes the way you want. Classes already in `sdm.xml` (a
+`<dto-class>`, a `<crud dto>`) are skipped, so after a new table `sdm xml` prints only it.
+
+```
+$ sdm xml -m
+<dto-class name="Group" ref="groups"/>
+<dto-class name="Task" ref="tasks"/>
+$ sdm xml -d
+<crud dto="Group" table="groups"/>
+<crud dto="Task" table="tasks"/>
+<query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>
+```
+
+`<crud/>` without inner elements makes all five methods with default names; add `<create/>`,
+`<read-all/>` and the others inside only where you need other names or fewer methods.
+
+The output goes to the console only, so it chains like any other command:
+
+```bash
+sdm xml -m > models.xml                     # to a file
+sdm xml -m >> models.xml                    # appended to a file
+sdm xml -d | grep -E 'tasks|groups'         # only some tables
+sdm xml -m | clip                           # to the clipboard: clip on Windows, pbcopy on macOS
+```
+
+A ready external DAO file, the same `<dao-class>` root as the IDE plug-ins write:
+
+```bash
+{ echo '<dao-class>'; sdm xml -d; echo '</dao-class>'; } > go-sdm/CrudDao.xml
+```
+
+and then, in `sdm.xml`, `<dao-class name="CrudDao" ref="CrudDao.xml"/>` and `sdm gen`. In this
+order: `sdm xml` reads every DAO file of `sdm.xml`, so a reference to a file not written yet is
+an error. And never redirect into a DAO file that `sdm.xml` already refers to: the shell empties
+the file before `sdm` reads it. Write a new file, or a temporary one and move it.
+
+PowerShell 7 writes UTF-8 with `>` as well. Windows PowerShell 5.1 writes UTF-16 with `>` by
+default, which `sdm` does not read, so there use `Out-File`:
+
+```powershell
+sdm xml -m | Out-File -Encoding utf8 models.xml
+& { '<dao-class>'; sdm xml -d; '</dao-class>' } | Out-File -Encoding utf8 go-sdm/CrudDao.xml
+```
+
+As in the plug-ins, the names of DTO classes are English singulars of the table names, and
+all schemas but the system ones are read, without the schema in the XML.
 
 Options of `init`:
 

@@ -191,6 +191,60 @@ func TestNoCommand(t *testing.T) {
 	}
 }
 
+// xml: starting XML from the schema, classes already in sdm.xml are skipped.
+func TestXML(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"init", "-db", "sqlite"}, &out, &errOut); code != 0 {
+		t.Fatalf("init: %d %s", code, errOut.String())
+	}
+	db, err := sqlite.Open("app.sqlite3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		"create table groups (g_id integer primary key autoincrement)",
+		"create table tasks (t_id integer primary key autoincrement, g_id integer references groups(g_id))",
+	} {
+		if err := db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = db.Close()
+	sdmXML := `<sdm><dto-class name="Group" ref="groups"/><dao-class name="GroupsDao"><crud dto="Group"/></dao-class></sdm>`
+	if err := os.WriteFile(filepath.Join("go-sdm", "sdm.xml"), []byte(sdmXML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	xml := func(args ...string) string {
+		t.Helper()
+		out.Reset()
+		errOut.Reset()
+		if code := run(append([]string{"xml"}, args...), &out, &errOut); code != 0 {
+			t.Fatalf("xml %v: %d %s", args, code, errOut.String())
+		}
+		return out.String()
+	}
+	if got := xml("-m"); got != `<dto-class name="Task" ref="tasks"/>`+"\n" {
+		t.Errorf("xml -m: %q", got)
+	}
+	d := xml("-d")
+	if !strings.HasPrefix(d, `<crud dto="Task" table="tasks"/>`) || strings.Contains(d, `dto="Group"`) ||
+		!strings.Contains(d, `<query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>`) {
+		t.Errorf("xml -d:\n%s", d)
+	}
+	if got := xml(); !strings.HasPrefix(got, `<dto-class name="Task"`) || !strings.HasSuffix(got, d) {
+		t.Errorf("xml:\n%s", got)
+	}
+	errOut.Reset()
+	if code := run([]string{"xml", "1"}, &out, &errOut); code != 2 {
+		t.Errorf("xml 1: %d %s", code, errOut.String())
+	}
+}
+
 func TestVersion(t *testing.T) {
 	for _, a := range []string{"version", "-v", "--version"} {
 		var out, errOut bytes.Buffer
