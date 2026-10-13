@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
 )
@@ -278,6 +280,110 @@ func TestInitExisting(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(sdmXML); string(b) != "mine" {
 		t.Error("sdm.xml overwritten")
+	}
+}
+
+func TestProgressLine(t *testing.T) {
+	for _, c := range []struct {
+		done, total int
+		elapsed     time.Duration
+		want        string
+	}{
+		{0, 38, 0, "generating [0/38] [                    ] 0.00% (Elapsed: 00:00:00, ETA: 00:00:00)"},
+		{1, 38, time.Second, "generating [1/38] [▪                   ] 2.63% (Elapsed: 00:00:01, ETA: 00:00:37)"},
+		{19, 38, 90 * time.Second, "generating [19/38] [▪▪▪▪▪▪▪▪▪▪          ] 50.00% (Elapsed: 00:01:30, ETA: 00:01:30)"},
+		{38, 38, time.Hour + 2*time.Second, "generating [38/38] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 01:00:02, ETA: 00:00:00)"},
+		{0, 0, 0, "generating [0/0] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00, ETA: 00:00:00)"},
+	} {
+		if got := progressLine("generating", c.done, c.total, c.elapsed); got != c.want {
+			t.Errorf("%d/%d:\n got %q\nwant %q", c.done, c.total, got, c.want)
+		}
+	}
+}
+
+// lockedBuffer: the ticker writes from its goroutine, the test reads from its own.
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
+}
+
+// the time goes on while one class is generated; after clear nothing is written
+func TestStatusTicker(t *testing.T) {
+	var out lockedBuffer
+	s := &status{w: &out, title: "generating", tick: time.Millisecond}
+	s.progress(1, 2, "TasksDao")
+	redraws := func() int { return strings.Count(out.String(), "TasksDao") }
+	deadline := time.Now().Add(5 * time.Second)
+	for redraws() < 3 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if redraws() < 3 {
+		t.Fatalf("no redraws by the ticker: %q", out.String())
+	}
+	s.clear()
+	after := out.String()
+	if !strings.HasSuffix(after, "\r") {
+		t.Errorf("the line is not cleared: %q", after)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if out.String() != after {
+		t.Error("written after clear")
+	}
+	s.clear() // twice is fine
+}
+
+// finish leaves the complete progress bar on its own line, without the class
+func TestStatusFinish(t *testing.T) {
+	var out lockedBuffer
+	s := &status{w: &out, title: "generating", tick: time.Hour}
+	s.progress(1, 2, "Task")
+	s.progress(2, 2, "TasksDao")
+	s.finish()
+	got := out.String()
+	last := got[strings.LastIndex(got, "\r")+1:]
+	if !strings.HasPrefix(last, "generating [2/2] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00, ETA: 00:00:00)") ||
+		!strings.HasSuffix(last, "\n") || strings.Contains(last, "TasksDao") {
+		t.Errorf("last line: %q", last)
+	}
+	s.finish() // twice is fine
+	if out.String() != got {
+		t.Error("written by the second finish")
+	}
+
+	// no classes: nothing stays
+	var empty lockedBuffer
+	s = &status{w: &empty, tick: time.Hour}
+	s.show("connecting ...")
+	s.finish()
+	if !strings.HasSuffix(empty.String(), "\r") {
+		t.Errorf("no classes: %q", empty.String())
+	}
+}
+
+// keep leaves the line as is and goes to the next one
+func TestStatusKeep(t *testing.T) {
+	var out lockedBuffer
+	s := &status{w: &out, tick: time.Hour}
+	s.show("connecting to db ...")
+	s.show("connected to db in 0.10s")
+	s.keep()
+	s.keep() // nothing more to keep
+	s.show("next")
+	s.clear()
+	if got := out.String(); got != "\rconnecting to db ...\rconnected to db in 0.10s\n\rnext\r    \r" {
+		t.Errorf("%q", got)
 	}
 }
 

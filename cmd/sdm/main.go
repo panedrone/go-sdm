@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/panedrone/go-sdm/datastore"
 	"github.com/panedrone/go-sdm/internal/assist"
@@ -19,7 +20,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.1.0"
+const version = "1.0.3"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 
@@ -230,6 +231,7 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 		return 2
 	}
 	st := newStatus(stderr)
+	st.title = map[bool]string{true: "generating", false: "validating"}[write]
 	md, err := connect(s, st)
 	if err != nil {
 		printErr(stderr, err)
@@ -237,11 +239,12 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 	}
 	defer md.Close()
 	res, err := gen.Run(".", dir, md, only, st.progress)
-	st.clear()
 	if err != nil {
+		st.clear()
 		printErr(stderr, err)
 		return 1
 	}
+	st.finish() // stays: how long it took
 	if write {
 		xsd, err := skeleton.RefreshXSD(".", dir)
 		for _, f := range xsd {
@@ -296,11 +299,14 @@ func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
 	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
 		db.Pwd = pwd
 	}
-	st.show("connecting to %s ...", dbLabel(db.URL))
+	label := dbLabel(db.URL)
+	st.show("connecting to %s ...", label)
+	start := time.Now()
 	md, err := gen.OpenMetadata(".", db)
-	if err != nil {
-		st.clear()
+	if err == nil {
+		st.show("connected to %s in %.2fs", label, time.Since(start).Seconds())
 	}
+	st.keep() // stays, the error (if any) goes below it
 	return md, err
 }
 
