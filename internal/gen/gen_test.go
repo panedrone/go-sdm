@@ -52,7 +52,7 @@ func runGolden(t *testing.T, label, project, sdmDir string) {
 	if err := db.Exec(string(schema)); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Run(filepath.ToSlash(project), sdmDir, db, nil)
+	res, err := Run(filepath.ToSlash(project), sdmDir, db, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

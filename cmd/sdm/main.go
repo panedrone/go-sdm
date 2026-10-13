@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/panedrone/go-sdm/datastore"
 	"github.com/panedrone/go-sdm/internal/gen"
@@ -20,16 +21,25 @@ const version = "0.1.0-dev"
 const usage = `sdm %s — SQL DAL Maker for Go
 
 usage:
-  sdm [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm] [-db pg|mysql|sqlite]
-                                  no configuration yet: init; otherwise: generate
   sdm init [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm] [-db pg|mysql|sqlite]
                                   create sdm.xml, settings.xml, XSD and the data store
                                   (database/sql, sqlx or gorm; no_orm by default),
                                   type map and url for pg (default), mysql or sqlite;
                                   an error if any of them exists, nothing is overwritten
-  sdm generate [-dir go-sdm]      generate models and DAO into the folders of settings.xml
-  sdm check [-dir go-sdm]         exit 1 if the generated code is out of date (for CI)
-  sdm version
+  sdm generate|gen [-dir go-sdm] [-m] [-d] [class ...]
+                                  generate models and DAO into the folders of settings.xml
+  sdm validate|val [-dir go-sdm] [-m] [-d] [class ...]
+                                  exit 1 if the generated code is out of date (for CI)
+  sdm list|ls [-dir go-sdm] [-m] [-d] [-l] [class ...]
+                                  numbered classes of sdm.xml in the order of declaration,
+                                  -l: a table with files and dates
+  sdm version|-v|--version
+  sdm help
+
+-m: models only, -d: DAO only.
+
+class: a number of sdm ls or a name; several, by spaces or commas: sdm gen 1,3 5 TasksDao.
+None: all classes.
 
 Run it in the folder of go.mod. The database is <go-db url user pwd> of settings.xml;
 SDM_PWD, if set, overrides "pwd".
@@ -41,22 +51,27 @@ func main() {
 
 func run(args []string, stdout, stderr io.Writer) int {
 	cmd := ""
-	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	if len(args) > 0 && (args[0] == "-v" || args[0] == "--version" || args[0] == "-version") {
+		cmd, args = "version", args[1:]
+	} else if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		cmd, args = args[0], args[1:]
 	}
 	switch cmd {
 	case "":
-		return runAuto(args, stdout, stderr)
+		fmt.Fprintf(stderr, usage, version)
+		return 2
 	case "init":
 		o, ok := parseInit("init", args, stderr)
 		if !ok {
 			return 2
 		}
 		return runInit(o, stdout, stderr)
-	case "generate":
+	case "generate", "gen":
 		return runGenerate(args, true, stdout, stderr)
-	case "check":
+	case "validate", "val":
 		return runGenerate(args, false, stdout, stderr)
+	case "list", "ls":
+		return runList(args, stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, version)
 		return 0
@@ -88,16 +103,20 @@ func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, 
 	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
 }
 
-// runAuto — без команды: init, если конфигурации ещё нет, иначе generate.
-func runAuto(args []string, stdout, stderr io.Writer) int {
-	o, ok := parseInit("sdm", args, stderr)
-	if !ok {
-		return 2
+// parse — флаги вперемешку с классами: sdm gen 1,3 -dir x 5 (пакет flag останавливается
+// на первом не-флаге).
+func parse(fs *flag.FlagSet, args []string) ([]string, error) {
+	var rest []string
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+		if fs.NArg() == 0 {
+			return rest, nil
+		}
+		rest = append(rest, fs.Arg(0))
+		args = fs.Args()[1:]
 	}
-	if !skeleton.Exists(o.ProjectDir, o.SdmDir) {
-		return runInit(o, stdout, stderr)
-	}
-	return generate(o.SdmDir, true, stdout, stderr)
 }
 
 func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
@@ -109,21 +128,81 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, run sdm again\n",
+	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, then sdm gen\n",
 		o.SdmDir, o.SdmDir)
 	return 0
 }
 
-// runGenerate — generate (write == true) или check.
+// runGenerate — generate (write == true) или validate.
 func runGenerate(args []string, write bool, stdout, stderr io.Writer) int {
-	fs, dir := newFlags(map[bool]string{true: "generate", false: "check"}[write], stderr)
-	if err := fs.Parse(args); err != nil {
+	fs, dir := newFlags(map[bool]string{true: "generate", false: "validate"}[write], stderr)
+	models, daos := kindFlags(fs)
+	classes, err := parse(fs, args)
+	if err != nil {
 		return 2
 	}
-	return generate(cleanRel(*dir), write, stdout, stderr)
+	return generate(cleanRel(*dir), classes, *models, *daos, write, stdout, stderr)
 }
 
-func generate(dir string, write bool, stdout, stderr io.Writer) int {
+func kindFlags(fs *flag.FlagSet) (models, daos *bool) {
+	return fs.Bool("m", false, "models only"), fs.Bool("d", false, "DAO only")
+}
+
+func runList(args []string, stdout, stderr io.Writer) int {
+	fs, dir := newFlags("list", stderr)
+	models, daos := kindFlags(fs)
+	long := fs.Bool("l", false, "a table with files and dates")
+	classes, err := parse(fs, args)
+	if err != nil {
+		return 2
+	}
+	entries, err := gen.List(".", cleanRel(*dir))
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	all := make([]sdmxml.Class, len(entries))
+	for i, e := range entries {
+		all[i] = e.Class
+	}
+	only, err := gen.Select(all, classes, *models, *daos)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
+	}
+	var shown []gen.Entry
+	for _, e := range entries {
+		if only == nil || only[e.Name] {
+			shown = append(shown, e)
+		}
+	}
+	if !*long {
+		items := make([]string, len(shown))
+		for i, e := range shown {
+			items[i] = fmt.Sprintf("%d:%s", e.N, e.Name)
+		}
+		if len(items) > 0 {
+			fmt.Fprintln(stdout, strings.Join(items, "  "))
+		}
+		return 0
+	}
+	tw := tabwriter.NewWriter(stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "#\tkind\tclass\tfile\tmodified")
+	for _, e := range shown {
+		kind, mod := "model", "-"
+		if e.Dao {
+			kind = "dao"
+		}
+		if !e.Modified.IsZero() {
+			mod = e.Modified.Format("2006-01-02 15:04:05")
+		}
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\n", e.N, kind, e.Name, e.Path, mod)
+	}
+	_ = tw.Flush()
+	return 0
+}
+
+func generate(dir string, classes []string, models, daos, write bool, stdout, stderr io.Writer) int {
 	s, err := sdmxml.LoadSettings(dir)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -132,6 +211,16 @@ func generate(dir string, write bool, stdout, stderr io.Writer) int {
 	if s.GoDB == nil {
 		fmt.Fprintf(stderr, "%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)\n", dir)
 		return 1
+	}
+	sdm, err := sdmxml.LoadSdm(dir)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	only, err := gen.Select(sdm.Classes, classes, models, daos)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 2
 	}
 	db := *s.GoDB
 	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
@@ -146,7 +235,7 @@ func generate(dir string, write bool, stdout, stderr io.Writer) int {
 		return 1
 	}
 	defer md.Close()
-	res, err := gen.Run(".", dir, md, st.progress)
+	res, err := gen.Run(".", dir, md, only, st.progress)
 	st.clear()
 	if err != nil {
 		fmt.Fprintln(stderr, err)

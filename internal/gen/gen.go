@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/panedrone/go-sdm/internal/cg"
 	"github.com/panedrone/go-sdm/internal/gogen"
@@ -64,9 +66,10 @@ func OpenMetadata(projectDir string, j sdmxml.DB) (meta.Metadata, error) {
 // Progress — вызывается перед генерацией каждого класса: n-й из total.
 type Progress func(n, total int, class string)
 
-// Run — генерация всех DTO и DAO проекта. Ошибка конкретного класса — в File.Err,
-// общая ошибка (настройки, XML) — в error. progress может быть nil.
-func Run(projectDir, sdmDir string, md meta.Metadata, progress Progress) (*Result, error) {
+// Run — генерация DTO и DAO проекта: всех или только классов из only (имена, см. Select).
+// Ошибка конкретного класса — в File.Err, общая ошибка (настройки, XML) — в error.
+// progress может быть nil.
+func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, progress Progress) (*Result, error) {
 	if progress == nil {
 		progress = func(int, int, string) {}
 	}
@@ -78,13 +81,11 @@ func Run(projectDir, sdmDir string, md meta.Metadata, progress Progress) (*Resul
 	if err != nil {
 		return nil, err
 	}
-	res := &Result{
-		DtoDir: strings.TrimSpace(strings.ReplaceAll(s.Dto.Scope, `\`, "/")),
-		DaoDir: strings.TrimSpace(strings.ReplaceAll(s.Dao.Scope, `\`, "/")),
+	res := &Result{}
+	if res.DtoDir, res.DaoDir, err = scopes(s); err != nil {
+		return nil, err
 	}
-	if res.DtoDir == "" || res.DaoDir == "" {
-		return nil, errors.New(cg.GolangScopesErr)
-	}
+	picked := func(name string) bool { return only == nil || only[name] }
 	sqlRoot := projectDir + "/" + s.Folders.SQL
 	dtoMode := cg.FieldNamesModeOf(s.Dto.FieldNamesMode)
 	// у Java-плагина DTO и DAO — два отдельных прогона со своим JdbcUtils
@@ -92,8 +93,16 @@ func Run(projectDir, sdmDir string, md meta.Metadata, progress Progress) (*Resul
 	if err != nil {
 		return nil, err
 	}
-	total := len(sdm.DtoClasses) + len(sdm.DaoClasses)
+	total := 0
+	for _, c := range sdm.Classes {
+		if picked(c.Name) {
+			total++
+		}
+	}
 	for _, c := range sdm.DtoClasses {
+		if !picked(c.Name) {
+			continue
+		}
 		progress(len(res.Dto)+1, total, c.Name)
 		f := File{Class: c.Name, Name: fileName(c.Name)}
 		f.Content, f.Err = dtoGen.Translate(c.Name)
@@ -104,12 +113,119 @@ func Run(projectDir, sdmDir string, md meta.Metadata, progress Progress) (*Resul
 		return nil, err
 	}
 	for _, c := range sdm.DaoClasses {
+		if !picked(c.Name) {
+			continue
+		}
 		progress(len(res.Dto)+len(res.Dao)+1, total, c.Name)
 		f := File{Class: c.Name, Name: fileName(c.Name)}
 		f.Content, f.Err = daoGen.Translate(c)
 		res.Dao = append(res.Dao, f)
 	}
 	return res, nil
+}
+
+func scopes(s *sdmxml.Settings) (dto, dao string, err error) {
+	dto = strings.TrimSpace(strings.ReplaceAll(s.Dto.Scope, `\`, "/"))
+	dao = strings.TrimSpace(strings.ReplaceAll(s.Dao.Scope, `\`, "/"))
+	if dto == "" || dao == "" {
+		return "", "", errors.New(cg.GolangScopesErr)
+	}
+	return dto, dao, nil
+}
+
+// Select — имена классов по номерам (с 1, в порядке объявления, как у sdm ls) и по
+// именам; в одном аргументе может быть несколько через запятую. models/daos — только
+// модели или только DAO; оба или ни одного — и те, и другие. Ни аргументов, ни
+// models/daos — nil, все.
+func Select(classes []sdmxml.Class, args []string, models, daos bool) (map[string]bool, error) {
+	only, err := byArgs(classes, args)
+	if err != nil || models == daos {
+		return only, err
+	}
+	picked := map[string]bool{}
+	for _, c := range classes {
+		if c.Dao == daos && (only == nil || only[c.Name]) {
+			picked[c.Name] = true
+		}
+	}
+	return picked, nil
+}
+
+func byArgs(classes []sdmxml.Class, args []string) (map[string]bool, error) {
+	var only map[string]bool
+	for _, a := range args {
+		for _, x := range strings.Split(a, ",") {
+			x = strings.TrimSpace(x)
+			if x == "" {
+				continue
+			}
+			if only == nil {
+				only = map[string]bool{}
+			}
+			if n, err := strconv.Atoi(x); err == nil {
+				if n < 1 || n > len(classes) {
+					return nil, fmt.Errorf("no class #%d: sdm.xml has %d", n, len(classes))
+				}
+				only[classes[n-1].Name] = true
+				continue
+			}
+			if !hasClass(classes, x) {
+				return nil, fmt.Errorf("no class %q in sdm.xml", x)
+			}
+			only[x] = true
+		}
+	}
+	return only, nil
+}
+
+func hasClass(classes []sdmxml.Class, name string) bool {
+	for _, c := range classes {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// Entry — класс sdm.xml и его файл.
+type Entry struct {
+	N int // номер, с 1, в порядке объявления
+	sdmxml.Class
+	Path     string    // относительно проекта, с '/'
+	Modified time.Time // нулевое — файла нет
+}
+
+// List — классы sdm.xml в порядке объявления, без базы.
+func List(projectDir, sdmDir string) ([]Entry, error) {
+	s, err := sdmxml.LoadSettings(sdmDir)
+	if err != nil {
+		return nil, err
+	}
+	sdm, err := sdmxml.LoadSdm(sdmDir)
+	if err != nil {
+		return nil, err
+	}
+	dtoDir, daoDir, err := scopes(s)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]Entry, 0, len(sdm.Classes))
+	for i, c := range sdm.Classes {
+		dir := dtoDir
+		if c.Dao {
+			dir = daoDir
+		}
+		e := Entry{N: i + 1, Class: c, Path: relPath(dir, fileName(c.Name))}
+		if fi, err := os.Stat(filepath.Join(projectDir, filepath.FromSlash(e.Path))); err == nil {
+			e.Modified = fi.ModTime()
+		}
+		entries = append(entries, e)
+	}
+	return entries, nil
+}
+
+func relPath(dir, name string) string {
+	return strings.TrimSuffix(dir, "/") + "/" + name
 }
 
 func fileName(className string) string {

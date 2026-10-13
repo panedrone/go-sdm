@@ -54,7 +54,7 @@ func generateRaw(t *testing.T, typeMap string) map[string]string {
 	if err := db.Exec(rawSchema); err != nil {
 		t.Fatal(err)
 	}
-	res, err := Run(dir, dir, db, nil)
+	res, err := Run(dir, dir, db, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

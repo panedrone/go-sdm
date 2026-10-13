@@ -18,18 +18,28 @@ func newProject(t *testing.T) string {
 	return dir
 }
 
+// configExists — в папке уже есть конфигурация (sdm.xml или settings.xml).
+func configExists(projectDir, sdmDir string) bool {
+	for _, n := range []string{"sdm.xml", "settings.xml"} {
+		if _, err := os.Stat(filepath.Join(projectDir, sdmDir, n)); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func TestInit(t *testing.T) {
 	dir := newProject(t)
 	o := Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "internal/dbal"}
-	if Exists(dir, "go-sdm") {
+	if configExists(dir, "go-sdm") {
 		t.Fatal("Exists before init")
 	}
 	written, err := Init(o)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(written) != 7 || !Exists(dir, "go-sdm") {
-		t.Fatalf("written %d, exists %t", len(written), Exists(dir, "go-sdm"))
+	if len(written) != 7 || !configExists(dir, "go-sdm") {
+		t.Fatalf("written %d, exists %t", len(written), configExists(dir, "go-sdm"))
 	}
 
 	// settings.xml разбирается и указывает туда, куда выложен скелет
@@ -124,7 +134,7 @@ func TestInitAllOrNothing(t *testing.T) {
 	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "dbal"}); err == nil {
 		t.Fatal("error expected")
 	}
-	if Exists(dir, "go-sdm") {
+	if configExists(dir, "go-sdm") {
 		t.Error("configuration created in spite of the error")
 	}
 }

@@ -15,8 +15,49 @@ import (
 )
 
 type Sdm struct {
-	DtoClasses []DtoClass `xml:"dto-class"`
-	DaoClasses []DaoClass `xml:"dao-class"`
+	DtoClasses []DtoClass
+	DaoClasses []DaoClass
+	Classes    []Class // и те, и другие — в порядке объявления
+}
+
+// Class — <dto-class> или <dao-class> в общем порядке sdm.xml.
+type Class struct {
+	Name string
+	Dao  bool
+}
+
+func (s *Sdm) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
+	for {
+		tok, err := d.Token()
+		if err != nil {
+			return err
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch t.Name.Local {
+			case "dto-class":
+				var c DtoClass
+				if err := d.DecodeElement(&c, &t); err != nil {
+					return err
+				}
+				s.DtoClasses = append(s.DtoClasses, c)
+				s.Classes = append(s.Classes, Class{Name: c.Name})
+			case "dao-class":
+				var c DaoClass
+				if err := d.DecodeElement(&c, &t); err != nil {
+					return err
+				}
+				s.DaoClasses = append(s.DaoClasses, c)
+				s.Classes = append(s.Classes, Class{Name: c.Name, Dao: true})
+			default:
+				if err := d.Skip(); err != nil {
+					return err
+				}
+			}
+		case xml.EndElement:
+			return nil
+		}
+	}
 }
 
 type DtoClass struct {

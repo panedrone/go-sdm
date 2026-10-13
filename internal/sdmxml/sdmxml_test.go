@@ -14,6 +14,14 @@ func TestLoadSdm(t *testing.T) {
 		t.Fatalf("dto: %d, dao: %d", len(s.DtoClasses), len(s.DaoClasses))
 	}
 
+	var order []string
+	for _, c := range s.Classes {
+		order = append(order, c.Name+map[bool]string{false: ":dto", true: ":dao"}[c.Dao])
+	}
+	if got := strings.Join(order, ","); got != "Test:dto,Test1:dto,InlineDao:dao,SpDao:dao" {
+		t.Errorf("classes: %s", got)
+	}
+
 	// умолчания XSD и явные значения, в том числе пустые
 	d0, d1 := s.DtoClasses[0], s.DtoClasses[1]
 	if d0.PK != "*" || d0.Auto != "*" {

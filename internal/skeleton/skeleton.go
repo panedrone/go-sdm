@@ -46,17 +46,6 @@ var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 		"sqlite-jdbc-3.51.1.0.jar", "org.sqlite.JDBC", "jdbc:sqlite:$PROJECT_DIR$/app.sqlite3"},
 }
 
-// Exists — в папке уже есть конфигурация (sdm.xml или settings.xml).
-func Exists(projectDir, sdmDir string) bool {
-	dir := filepath.Join(projectDir, filepath.FromSlash(sdmDir))
-	for _, n := range []string{"sdm.xml", "settings.xml"} {
-		if _, err := os.Stat(filepath.Join(dir, n)); err == nil {
-			return true
-		}
-	}
-	return false
-}
-
 // Init создаёт конфигурацию и data store. Возвращает созданные файлы.
 func Init(o Options) ([]string, error) {
 	module, err := readModule(filepath.Join(o.ProjectDir, "go.mod"))

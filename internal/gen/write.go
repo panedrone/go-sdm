@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Change — файл, который generate запишет (или check считает устаревшим).
+// Change — файл, который generate запишет (или validate считает устаревшим).
 type Change struct {
 	Path    string // относительно проекта, с '/'
 	Missing bool   // файла ещё нет
@@ -28,7 +28,7 @@ func Sync(projectDir string, res *Result, write bool) ([]Change, error) {
 				errs = append(errs, fmt.Errorf("%s: %w", f.Class, f.Err))
 				continue
 			}
-			rel := strings.TrimSuffix(set.dir, "/") + "/" + f.Name
+			rel := relPath(set.dir, f.Name)
 			path := filepath.Join(projectDir, filepath.FromSlash(rel))
 			old, err := os.ReadFile(path)
 			missing := errors.Is(err, os.ErrNotExist)

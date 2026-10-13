@@ -25,7 +25,7 @@
 
     <ide event-log="true"/>
 
-    <!-- One settings.xml for the IDE plug-in and for go-sdm:
+    <!-- One "settings.xml" for the IDE plug-in and for go-sdm:
             jdbc  - the IDE plug-in (jar, class and url of JDBC); go-sdm does not read it.
             go-db - go-sdm (url: postgres://host:port/db, mysql://host:port/db or sqlite:<file>);
                     the IDE plug-in ignores it. SDM_PWD, if set, overrides "pwd" of go-db. -->
