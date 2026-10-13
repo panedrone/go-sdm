@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/panedrone/go-sdm/internal/meta"
 )
@@ -20,10 +21,17 @@ type pgType struct {
 	elem    uint32
 }
 
+// attKey is a table column: pg_attribute.attrelid and attnum.
+type attKey struct {
+	rel uint32
+	num int16
+}
+
 type DB struct {
 	ctx   context.Context
 	conn  *pgx.Conn
 	types map[uint32]pgType // pg_type by OID
+	ai    map[attKey]bool   // auto-increment of table columns met in results
 }
 
 var _ meta.Metadata = (*DB)(nil)
@@ -33,7 +41,7 @@ func Open(ctx context.Context, connString string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{ctx: ctx, conn: conn, types: map[uint32]pgType{}}, nil
+	return &DB{ctx: ctx, conn: conn, types: map[uint32]pgType{}, ai: map[attKey]bool{}}, nil
 }
 
 func (db *DB) Close() error {
@@ -55,6 +63,9 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		// this is how it looks in Java: ResultSetMetaData == null for a statement without rows
 		return nil, errors.New("Cannot detect Prepared Statement MetaData")
 	}
+	if err := db.loadAutoIncrement(sd.Fields); err != nil {
+		return nil, err
+	}
 	res := make([]meta.Column, 0, len(sd.Fields))
 	for i, f := range sd.Fields {
 		name := f.Name
@@ -69,13 +80,7 @@ func (db *DB) SQLColumns(jdbcSQL string) ([]meta.Column, error) {
 		if err != nil {
 			return nil, err
 		}
-		ai := false
-		if f.TableOID != 0 {
-			ai, err = db.isAutoIncrement(f.TableOID, f.TableAttributeNumber)
-			if err != nil {
-				return nil, err
-			}
-		}
+		ai := db.ai[attKey{f.TableOID, int16(f.TableAttributeNumber)}]
 		res = append(res, meta.Column{
 			Name:        name,
 			JavaType:    javaType,
@@ -155,16 +160,44 @@ func (db *DB) pgType(oid uint32) (pgType, error) {
 
 const aiExpr = `(a.attidentity in ('a', 'd') or coalesce(pg_catalog.pg_get_expr(d.adbin, d.adrelid) like '%nextval(%', false))`
 
-func (db *DB) isAutoIncrement(tableOID uint32, attnum uint16) (bool, error) {
-	var ai bool
-	err := db.conn.QueryRow(db.ctx, `select `+aiExpr+`
-		from pg_catalog.pg_attribute a
-		left join pg_catalog.pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
-		where a.attrelid = $1 and a.attnum = $2`, tableOID, int16(attnum)).Scan(&ai)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+// loadAutoIncrement reads auto-increment of the table columns of a result, all in one
+// query and only for the columns not met before: one round trip per column made a remote
+// database minutes slower than pgjdbc, which fetches the field metadata of a result at once.
+func (db *DB) loadAutoIncrement(fields []pgconn.FieldDescription) error {
+	var rels []uint32
+	var nums []int16
+	seen := map[attKey]bool{}
+	for _, f := range fields {
+		k := attKey{f.TableOID, int16(f.TableAttributeNumber)}
+		if _, known := db.ai[k]; known || seen[k] || f.TableOID == 0 {
+			continue
+		}
+		seen[k] = true
+		rels, nums = append(rels, k.rel), append(nums, k.num)
 	}
-	return ai, err
+	if len(rels) == 0 {
+		return nil
+	}
+	rows, err := db.conn.Query(db.ctx, `select a.attrelid, a.attnum, `+aiExpr+`
+		from unnest($1::oid[], $2::int2[]) as k(rel, num)
+		join pg_catalog.pg_attribute a on a.attrelid = k.rel and a.attnum = k.num
+		left join pg_catalog.pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum`, rels, nums)
+	if err != nil {
+		return err
+	}
+	found := map[attKey]bool{}
+	var k attKey
+	var ai bool
+	if _, err := pgx.ForEachRow(rows, []any{&k.rel, &k.num, &ai}, func() error {
+		found[k] = ai
+		return nil
+	}); err != nil {
+		return err
+	}
+	for k := range seen {
+		db.ai[k] = found[k] // a column gone from pg_attribute is not auto-increment, as before
+	}
+	return nil
 }
 
 // Table -----------------------------------------------------------

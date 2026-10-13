@@ -73,6 +73,7 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 	if progress == nil {
 		progress = func(int, int, string) {}
 	}
+	md = meta.Cached(md) // the DTO and DAO passes ask for the same tables again and again
 	s, err := sdmxml.LoadSettings(sdmDir)
 	if err != nil {
 		return nil, err

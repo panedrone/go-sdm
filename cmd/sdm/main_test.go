@@ -289,11 +289,12 @@ func TestProgressLine(t *testing.T) {
 		elapsed     time.Duration
 		want        string
 	}{
-		{0, 38, 0, "generating [0/38] [                    ] 0.00% (Elapsed: 00:00:00, ETA: 00:00:00)"},
-		{1, 38, time.Second, "generating [1/38] [▪                   ] 2.63% (Elapsed: 00:00:01, ETA: 00:00:37)"},
-		{19, 38, 90 * time.Second, "generating [19/38] [▪▪▪▪▪▪▪▪▪▪          ] 50.00% (Elapsed: 00:01:30, ETA: 00:01:30)"},
-		{38, 38, time.Hour + 2*time.Second, "generating [38/38] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 01:00:02, ETA: 00:00:00)"},
-		{0, 0, 0, "generating [0/0] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00, ETA: 00:00:00)"},
+		{0, 38, 0, "generating [0/38] [                    ] 0.00% (Elapsed: 00:00:00.00, ETA: 00:00:00.00)"},
+		{1, 38, time.Second, "generating [1/38] [▪                   ] 2.63% (Elapsed: 00:00:01.00, ETA: 00:00:37.00)"},
+		{19, 38, 90 * time.Second, "generating [19/38] [▪▪▪▪▪▪▪▪▪▪          ] 50.00% (Elapsed: 00:01:30.00, ETA: 00:01:30.00)"},
+		{38, 38, time.Hour + 2*time.Second, "generating [38/38] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 01:00:02.00, ETA: 00:00:00.00)"},
+		{33, 33, 840 * time.Millisecond, "generating [33/33] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00.84, ETA: 00:00:00.00)"},
+		{0, 0, 0, "generating [0/0] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00.00, ETA: 00:00:00.00)"},
 	} {
 		if got := progressLine("generating", c.done, c.total, c.elapsed); got != c.want {
 			t.Errorf("%d/%d:\n got %q\nwant %q", c.done, c.total, got, c.want)
@@ -353,7 +354,7 @@ func TestStatusFinish(t *testing.T) {
 	s.finish()
 	got := out.String()
 	last := got[strings.LastIndex(got, "\r")+1:]
-	if !strings.HasPrefix(last, "generating [2/2] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:00, ETA: 00:00:00)") ||
+	if !strings.HasPrefix(last, "generating [2/2] [▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪] 100.00% (Elapsed: 00:00:0") ||
 		!strings.HasSuffix(last, "\n") || strings.Contains(last, "TasksDao") {
 		t.Errorf("last line: %q", last)
 	}

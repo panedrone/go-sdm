@@ -157,7 +157,7 @@ func (s *status) redrawLocked() {
 
 const barWidth = 20
 
-// progressLine: "generating [12/38] [▪▪▪▪▪▪          ] 31.58% (Elapsed: 00:00:04, ETA: 00:00:09)".
+// progressLine: "generating [12/38] [▪▪▪▪▪▪          ] 31.58% (Elapsed: 00:00:04.20, ETA: 00:00:09.10)".
 func progressLine(title string, done, total int, elapsed time.Duration) string {
 	percent := 1.0
 	if total > 0 {
@@ -176,9 +176,10 @@ func progressLine(title string, done, total int, elapsed time.Duration) string {
 		percent*100, hms(elapsed), hms(eta))
 }
 
-// hms formats a duration as hh:mm:ss.
+// hms formats a duration as hh:mm:ss.cc: with hundredths, as a fast run takes less than a second.
 func hms(d time.Duration) string {
-	return fmt.Sprintf("%02d:%02d:%02d", int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60)
+	cs := d.Milliseconds() / 10
+	return fmt.Sprintf("%02d:%02d:%02d.%02d", cs/360000, cs/6000%60, cs/100%60, cs%100)
 }
 
 // dbLabel is where we connect, without login and password.
