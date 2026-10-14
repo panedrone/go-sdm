@@ -230,20 +230,50 @@ func TestXML(t *testing.T) {
 		}
 		return out.String()
 	}
-	if got := xml("-m"); got != `<dto-class name="Task" ref="tasks"/>`+"\n" {
+	if got := xml("-m", "-orm", "no_orm"); got != `<dto-class name="Task" ref="tasks"/>`+"\n" {
 		t.Errorf("xml -m: %q", got)
 	}
-	d := xml("-d")
-	if !strings.HasPrefix(d, `<crud dto="Task" table="tasks"/>`) || strings.Contains(d, `dto="Group"`) ||
-		!strings.Contains(d, `<query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>`) {
+	if got := xml("-m", "-orm", "sqlx"); got != `<dto-class name="sqlx-Task" ref="tasks"/>`+"\n" {
+		t.Errorf("xml -m -orm sqlx: %q", got)
+	}
+	if got := xml("-orm", "gorm", "-d"); !strings.Contains(got, `<crud dto="gorm-Task" table="tasks"/>`) ||
+		!strings.Contains(got, `<query-dto-list dto="gorm-Task" `) {
+		t.Errorf("xml -d -orm gorm:\n%s", got)
+	}
+	d := xml("-d", "-orm", "no_orm")
+	if want := `<dao-class name="TasksDao">
+    <crud dto="Task" table="tasks"/>
+    <query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>
+</dao-class>
+`; d != want {
 		t.Errorf("xml -d:\n%s", d)
 	}
-	if got := xml(); !strings.HasPrefix(got, `<dto-class name="Task"`) || !strings.HasSuffix(got, d) {
+	if got := xml("-orm", "no_orm"); !strings.HasPrefix(got, `<dto-class name="Task"`) || !strings.HasSuffix(got, d) {
 		t.Errorf("xml:\n%s", got)
 	}
-	errOut.Reset()
-	if code := run([]string{"xml", "1"}, &out, &errOut); code != 2 {
-		t.Errorf("xml 1: %d %s", code, errOut.String())
+	// all tables in sdm.xml, of another model: skipped, stdout empty, the reason in stderr
+	sdmXML = `<sdm><dto-class name="sqlx-Group" ref="groups"/><dto-class name="sqlx-Task" ref="tasks"/>
+<dao-class name="GroupsDao"><crud dto="sqlx-Group"/></dao-class><dao-class name="TasksDao"><crud dto="sqlx-Task"/></dao-class></sdm>`
+	if err := os.WriteFile(filepath.Join("go-sdm", "sdm.xml"), []byte(sdmXML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := xml("-orm", "gorm"); got != "" || !strings.Contains(errOut.String(), "nothing to print: all 2 tables and views") {
+		t.Errorf("xml, all in sdm.xml: %q %q", got, errOut.String())
+	}
+	// -force: all of them anyway; sdm.xml is not read, a broken one is no error
+	if err := os.WriteFile(filepath.Join("go-sdm", "sdm.xml"), []byte("<sdm"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := xml("-orm", "gorm", "-force"); !strings.Contains(got, `<dto-class name="gorm-Group" ref="groups"/>`) ||
+		!strings.Contains(got, `<dao-class name="TasksDao">`) {
+		t.Errorf("xml -force:\n%s", got)
+	}
+	// no classes; -orm has no default and only the values of init
+	for _, args := range [][]string{{"1", "-orm", "no_orm"}, {"-m"}, {"-orm", "ent"}} {
+		errOut.Reset()
+		if code := run(append([]string{"xml"}, args...), &out, &errOut); code != 2 {
+			t.Errorf("xml %v: %d %s", args, code, errOut.String())
+		}
 	}
 }
 

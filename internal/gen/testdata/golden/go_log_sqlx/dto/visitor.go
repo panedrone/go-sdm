@@ -4,12 +4,12 @@ package models
 // https://sqldalmaker.sourceforge.net/
 
 type Visitor struct {
-	VIp            interface{} `json:"v_ip" db:"v_ip"`
-	VFirstDatetime interface{} `json:"v_first_datetime" db:"v_first_datetime"`
-	VLastDatetime  interface{} `json:"v_last_datetime" db:"v_last_datetime"`
-	VSessions      interface{} `json:"v_sessions" db:"v_sessions"`
-	VPages         interface{} `json:"v_pages" db:"v_pages"`
-	CCode2         interface{} `json:"c_code2" db:"c_code2"`
-	CCode3         interface{} `json:"c_code3" db:"c_code3"`
-	CName          interface{} `json:"c_name" db:"c_name"`
+	VIp            any `json:"v_ip" db:"v_ip"`
+	VFirstDatetime any `json:"v_first_datetime" db:"v_first_datetime"`
+	VLastDatetime  any `json:"v_last_datetime" db:"v_last_datetime"`
+	VSessions      any `json:"v_sessions" db:"v_sessions"`
+	VPages         any `json:"v_pages" db:"v_pages"`
+	CCode2         any `json:"c_code2" db:"c_code2"`
+	CCode3         any `json:"c_code3" db:"c_code3"`
+	CName          any `json:"c_name" db:"c_name"`
 }

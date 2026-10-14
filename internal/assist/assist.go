@@ -15,8 +15,10 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta"
 )
 
-// DtoClasses returns a <dto-class> for each table and view, except the classes of inUse.
-func DtoClasses(cat meta.Catalog, inUse map[string]bool) (string, error) {
+// DtoClasses returns a <dto-class> for each table and view, except the classes of inUse (names
+// without the model: Task, not sqlx-Task). model is the class model of the names: "" for
+// database/sql, "sqlx" or "gorm" (sqlx-Task).
+func DtoClasses(cat meta.Catalog, model string, inUse map[string]bool) (string, error) {
 	tables, err := cat.Tables(true)
 	if err != nil {
 		return "", err
@@ -25,38 +27,53 @@ func DtoClasses(cat meta.Catalog, inUse map[string]bool) (string, error) {
 	for _, t := range tables {
 		name := DtoClassName(t, true)
 		if !inUse[name] {
-			fmt.Fprintf(&b, "<dto-class name=\"%s\" ref=\"%s\"/>\n", attr(name), attr(t))
+			fmt.Fprintf(&b, "<dto-class name=\"%s\" ref=\"%s\"/>\n", attr(withModel(model, name)), attr(t))
 		}
 	}
 	return b.String(), nil
 }
 
-// DaoItems returns, all in one pile, a <crud> for each table and view whose DTO class is not
-// in inUse (DTO classes of the existing <crud>), each followed by <query-dto-list> FK access.
-func DaoItems(cat meta.Catalog, inUse map[string]bool) (string, error) {
+// DaoClasses returns a <dao-class> for each table and view: its <crud>, then <query-dto-list>
+// FK access, the DTO classes with the model as in DtoClasses. Skipped are the tables whose DTO
+// class has a <crud> already (dtoInUse, names without the model) and those whose DAO class
+// name is taken (daoInUse).
+func DaoClasses(cat meta.Catalog, model string, dtoInUse, daoInUse map[string]bool) (string, error) {
 	tables, err := cat.Tables(true)
 	if err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	for _, t := range tables {
-		dto := DtoClassName(t, true)
-		if inUse[dto] {
+		dto, dao := DtoClassName(t, true), DaoClassName(t)
+		if dtoInUse[dto] || daoInUse[dao] {
 			continue
 		}
-		fmt.Fprintf(&b, "<crud dto=\"%s\" table=\"%s\"/>\n", attr(dto), attr(t))
-		keys, err := cat.ImportedKeys(t)
-		if err != nil {
-			continue // as in Java: the <crud> stays, the FK access of the table is skipped
-		}
-		fkAccess(&b, t, keys)
+		fmt.Fprintf(&b, "<dao-class name=\"%s\">\n", attr(dao))
+		fmt.Fprintf(&b, "    <crud dto=\"%s\" table=\"%s\"/>\n", attr(withModel(model, dto)), attr(t))
+		if keys, err := cat.ImportedKeys(t); err == nil {
+			fkAccess(&b, model, t, keys)
+		} // else as in Java: the <crud> stays, the FK access of the table is skipped
+		b.WriteString("</dao-class>\n")
 	}
 	return b.String(), nil
 }
 
+// DaoClassName: the title-cased table name, plural kept, and "Dao": tasks -> TasksDao.
+func DaoClassName(table string) string {
+	return DtoClassName(table, false) + "Dao"
+}
+
+// withModel: "sqlx", "Task" -> "sqlx-Task"; no model, the name as is.
+func withModel(model, name string) string {
+	if model == "" {
+		return name
+	}
+	return model + "-" + name
+}
+
 // fkAccess: a "get<FkTable>By<PkClass>" for each referenced table, all FK columns to it as
 // the parameters and the shortcut "fk_table(col, ...)" as the SQL.
-func fkAccess(b *strings.Builder, fkTable string, keys []meta.ImportedKey) {
+func fkAccess(b *strings.Builder, model, fkTable string, keys []meta.ImportedKey) {
 	var pkTables []string
 	cols := map[string][]string{}
 	for _, k := range keys {
@@ -73,8 +90,8 @@ func fkAccess(b *strings.Builder, fkTable string, keys []meta.ImportedKey) {
 		method := "get" + DtoClassName(fkTable, false) + "By" + DtoClassName(pk, true) +
 			"(" + strings.Join(params, ", ") + ")"
 		ref := fkTable + "(" + strings.Join(cols[pk], ", ") + ")"
-		fmt.Fprintf(b, "<query-dto-list dto=\"%s\" method=\"%s\" ref=\"%s\"/>\n",
-			attr(DtoClassName(fkTable, true)), attr(method), attr(ref))
+		fmt.Fprintf(b, "    <query-dto-list dto=\"%s\" method=\"%s\" ref=\"%s\"/>\n",
+			attr(withModel(model, DtoClassName(fkTable, true))), attr(method), attr(ref))
 	}
 }
 

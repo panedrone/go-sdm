@@ -4,7 +4,7 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type QuarterlyOrdersByProduct struct {
-	ProductName interface{} `json:"product_name" db:"ProductName"`
-	CustomerID  interface{} `json:"customer_id" db:"CustomerID"`
-	OrderYear   interface{} `json:"order_year" db:"OrderYear"`
+	ProductName any `json:"product_name" db:"ProductName"`
+	CustomerID  any `json:"customer_id" db:"CustomerID"`
+	OrderYear   any `json:"order_year" db:"OrderYear"`
 }

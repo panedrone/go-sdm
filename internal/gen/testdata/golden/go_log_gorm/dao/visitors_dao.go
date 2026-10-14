@@ -18,7 +18,7 @@ var CreateVisitor = func(ctx context.Context, item *models.Visitor) (rowsAffecte
 
 // C(R)UD: visitors
 
-var ReadVisitor = func(ctx context.Context, vIp interface{}) (*models.Visitor, error) {
+var ReadVisitor = func(ctx context.Context, vIp any) (*models.Visitor, error) {
 	ds := DS(ctx)
 	res := &models.Visitor{}
 	err := ds.Read(ctx, "visitors", res, vIp)

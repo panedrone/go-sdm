@@ -4,7 +4,7 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type ProductSales struct {
-	CategoryName interface{} `json:"category_name" db:"CategoryName"`
-	ProductName  interface{} `json:"product_name" db:"ProductName"`
-	ProductSales interface{} `json:"product_sales" db:"ProductSales"`
+	CategoryName any `json:"category_name" db:"CategoryName"`
+	ProductName  any `json:"product_name" db:"ProductName"`
+	ProductSales any `json:"product_sales" db:"ProductSales"`
 }

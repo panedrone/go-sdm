@@ -4,11 +4,11 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type OrderDetailsExtended struct {
-	OrderID       interface{} `json:"order_id" db:"OrderID"`
-	ProductID     interface{} `json:"product_id" db:"ProductID"`
-	ProductName   interface{} `json:"product_name" db:"ProductName"`
-	UnitPrice     interface{} `json:"unit_price" db:"UnitPrice"`
-	Quantity      interface{} `json:"quantity" db:"Quantity"`
-	Discount      interface{} `json:"discount" db:"Discount"`
-	ExtendedPrice interface{} `json:"extended_price" db:"ExtendedPrice"`
+	OrderID       any `json:"order_id" db:"OrderID"`
+	ProductID     any `json:"product_id" db:"ProductID"`
+	ProductName   any `json:"product_name" db:"ProductName"`
+	UnitPrice     any `json:"unit_price" db:"UnitPrice"`
+	Quantity      any `json:"quantity" db:"Quantity"`
+	Discount      any `json:"discount" db:"Discount"`
+	ExtendedPrice any `json:"extended_price" db:"ExtendedPrice"`
 }

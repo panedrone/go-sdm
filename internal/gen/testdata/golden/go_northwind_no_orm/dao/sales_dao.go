@@ -15,7 +15,7 @@ var GetSalesByCategory = func(ctx context.Context, d1 string, d2 string) (res []
 		GROUP BY Categories.CategoryID, Categories.CategoryName, Products.ProductName 
 		ORDER BY Products.ProductName;`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Sales{}
 		SetAny(&item.CategoryID, row, "CategoryID", errMap)
 		SetAny(&item.CategoryName, row, "CategoryName", errMap)
@@ -36,7 +36,7 @@ var GetSalesByYear = func(ctx context.Context, d1 string, d2 string) (res []*Sal
 		FROM Orders INNER JOIN [OrderDetails] ON Orders.OrderID = [OrderDetails].OrderID 
 		WHERE (((Orders.ShippedDate) Is Not Null And (Orders.ShippedDate) Between ? And ?));`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := SalesByYear{}
 		SetString(&item.ShippedDate, row, "ShippedDate", errMap)
 		SetInt64(&item.OrderID, row, "OrderID", errMap)

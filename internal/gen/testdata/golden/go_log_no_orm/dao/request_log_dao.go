@@ -35,7 +35,7 @@ var GetLog = func(ctx context.Context) (res []*models.RequestLog, err error) {
 	sql := `select r.*, c.code3 as c_code3, c.name as c_name 
 		from REQUEST_LOG r left outer join countries c on r.c_code2=c.code2`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.RequestLog{}
 		SetInt64(&item.ID, row, "ID", errMap)
 		SetTime(&item.EventTime, row, "EVENT_TIME", errMap)
@@ -63,7 +63,7 @@ var ClearLog = func(ctx context.Context) (rowsAffected int64, err error) {
 	return
 }
 
-var GetLogItemsCount = func(ctx context.Context) (res interface{}, err error) {
+var GetLogItemsCount = func(ctx context.Context) (res any, err error) {
 	ds := DS(ctx)
 	sql := `select count (*) from REQUEST_LOG`
 	err = ds.Query(ctx, sql, &res)

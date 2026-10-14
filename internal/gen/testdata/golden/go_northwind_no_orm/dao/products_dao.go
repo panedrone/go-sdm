@@ -26,7 +26,7 @@ var GetProductSales = func(ctx context.Context, d1 string, d2 string) (res []*Pr
 		WHERE (((Orders.ShippedDate) Between ? And ?)) 
 		GROUP BY Categories.CategoryName, Products.ProductName;`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := ProductSales{}
 		SetString(&item.CategoryName, row, "CategoryName", errMap)
 		SetString(&item.ProductName, row, "ProductName", errMap)

@@ -8,12 +8,12 @@ import (
 )
 
 type Visitor struct {
-	VIp            int64       `json:"v_ip"`
-	VFirstDatetime interface{} `json:"v_first_datetime"`
-	VLastDatetime  time.Time   `json:"v_last_datetime"`
-	VSessions      int64       `json:"v_sessions"`
-	VPages         int64       `json:"v_pages"`
-	CCode2         string      `json:"c_code2"`
-	CCode3         string      `json:"c_code3"`
-	CName          string      `json:"c_name"`
+	VIp            int64     `json:"v_ip"`
+	VFirstDatetime any       `json:"v_first_datetime"`
+	VLastDatetime  time.Time `json:"v_last_datetime"`
+	VSessions      int64     `json:"v_sessions"`
+	VPages         int64     `json:"v_pages"`
+	CCode2         string    `json:"c_code2"`
+	CCode3         string    `json:"c_code3"`
+	CName          string    `json:"c_name"`
 }

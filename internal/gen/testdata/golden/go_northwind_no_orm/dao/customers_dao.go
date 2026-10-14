@@ -22,7 +22,7 @@ var GetCustomersAndSuppliersByCity = func(ctx context.Context) (res []*Customers
 		FROM Suppliers 
 		ORDER BY City, CompanyName;`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := CustomersAndSuppliersByCity{}
 		SetString(&item.City, row, "City", errMap)
 		SetString(&item.CompanyName, row, "CompanyName", errMap)
@@ -41,7 +41,7 @@ var Find = func(ctx context.Context, city string, companyName string) (res []*Cu
 	ds := DS(ctx)
 	sql := `select * from customers where City=? and CompanyName=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Customer{}
 		SetString(&item.CustomerID, row, "CustomerID", errMap)
 		SetString(&item.CompanyName, row, "CompanyName", errMap)

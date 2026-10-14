@@ -93,7 +93,7 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 {{- else}}{{template "sql_var" .}}
 {{- if eq .AssignMode 0}}
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := {{.ReturnedTypeName}}{}
 {{- range .Fields}}
 		{{template "set_field" .}}
@@ -105,9 +105,9 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 		err = ErrMapToErr(errMap)
 	}
 {{- else if eq .AssignMode 1}}
-	_onRow := func() (interface{}, func()) {
+	_onRow := func() (any, func()) {
 		item := &{{.ReturnedTypeName}}{}
-		return []interface{}{
+		return []any{
 {{- range .Fields}}
 				&item.{{.Name}},
 {{- end}}
@@ -117,7 +117,7 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 	}
 	err = ds.Select(ctx, sql, _onRow{{template "args" .}})
 {{- else if eq .AssignMode 2}}
-	_onRow := func() (interface{}, func()) {
+	_onRow := func() (any, func()) {
 		item := &{{.ReturnedTypeName}}{}
 		return item, func() {
 			res = append(res, item)
@@ -161,7 +161,7 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 	return &item, err
 {{- else if eq .AssignMode 1}}
 	res := &{{.ReturnedTypeName}}{}
-	_fa := []interface{}{
+	_fa := []any{
 {{- range .Fields}}
 		&res.{{.Name}},
 {{- end}}
@@ -218,7 +218,7 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 	errMap := make(map[string]int)
 {{- end}}
 {{- range .Mappings}}
-	{{.ExecDmlParamName}} := func(row map[string]interface{}) {
+	{{.ExecDmlParamName}} := func(row map[string]any) {
 		item := {{.DtoClassName}}{}
 {{- range .Fields}}
 		{{template "set_field" .}}
@@ -229,10 +229,10 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 {{- else}}
 {{- $assign := .AssignMode}}
 {{- range .Mappings}}
-	{{.ExecDmlParamName}} := func() (interface{}, func()) {
+	{{.ExecDmlParamName}} := func() (any, func()) {
 {{- if eq $assign 1}}
 		item := {{.DtoClassName}}{}
-		return []interface{}{
+		return []any{
 {{- range .Fields}}
 				&item.{{.Name}},
 {{- end}}

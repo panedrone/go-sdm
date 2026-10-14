@@ -4,8 +4,8 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type CustomersAndSuppliersByCity struct {
-	City         interface{} `json:"city" db:"City"`
-	CompanyName  interface{} `json:"company_name" db:"CompanyName"`
-	ContactName  interface{} `json:"contact_name" db:"ContactName"`
-	Relationship interface{} `json:"relationship" db:"Relationship"`
+	City         any `json:"city" db:"City"`
+	CompanyName  any `json:"company_name" db:"CompanyName"`
+	ContactName  any `json:"contact_name" db:"ContactName"`
+	Relationship any `json:"relationship" db:"Relationship"`
 }

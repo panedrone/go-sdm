@@ -76,7 +76,7 @@ func TestRawKeysSameAsJava(t *testing.T) {
 		<type detected="java.lang.Float" target="float64${json} -> SetFloat64"/>
 		<type detected="byte[]" target="[]byte${json} -> SetBytes"/>
 		<type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
-		<type detected="java.lang.Object" target="interface{}${json}"/>`)
+		<type detected="java.lang.Object" target="any${json}"/>`)
 	raw := generateRaw(t, `
 		<type detected="INTEGER" target="int64${json} -> SetInt64"/>
 		<type detected="VARCHAR" target="string${json} -> SetString"/>
@@ -85,7 +85,7 @@ func TestRawKeysSameAsJava(t *testing.T) {
 		<type detected="BLOB" target="string${json} -> SetString"/> <!-- xerial (the plug-in) sees BLOB as VARCHAR -->
 		<type detected="java.lang.String" target="string${json} -> SetString"/> <!-- parameters: SQLite has no raw type -->
 		<type detected="java.lang.Long" target="int64${json} -> SetInt64"/>
-		<type detected="unknown" target="interface{}${json}"/>`)
+		<type detected="unknown" target="any${json}"/>`)
 	if len(java) == 0 || len(java) != len(raw) {
 		t.Fatalf("files: %d vs %d", len(java), len(raw))
 	}

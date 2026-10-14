@@ -4,12 +4,12 @@ package models
 // https://sqldalmaker.sourceforge.net/
 
 type Visitor struct {
-	VIp            interface{} `json:"v_ip" gorm:"column:v_ip;not null"`
-	VFirstDatetime interface{} `json:"v_first_datetime" gorm:"column:v_first_datetime;not null"`
-	VLastDatetime  interface{} `json:"v_last_datetime" gorm:"column:v_last_datetime;not null"`
-	VSessions      interface{} `json:"v_sessions" gorm:"column:v_sessions;not null"`
-	VPages         interface{} `json:"v_pages" gorm:"column:v_pages;not null"`
-	CCode2         interface{} `json:"c_code2" gorm:"column:c_code2;not null"`
-	CCode3         interface{} `json:"c_code3" gorm:"column:c_code3;not null"`
-	CName          interface{} `json:"c_name" gorm:"column:c_name;not null"`
+	VIp            any `json:"v_ip" gorm:"column:v_ip;not null"`
+	VFirstDatetime any `json:"v_first_datetime" gorm:"column:v_first_datetime;not null"`
+	VLastDatetime  any `json:"v_last_datetime" gorm:"column:v_last_datetime;not null"`
+	VSessions      any `json:"v_sessions" gorm:"column:v_sessions;not null"`
+	VPages         any `json:"v_pages" gorm:"column:v_pages;not null"`
+	CCode2         any `json:"c_code2" gorm:"column:c_code2;not null"`
+	CCode3         any `json:"c_code3" gorm:"column:c_code3;not null"`
+	CName          any `json:"c_name" gorm:"column:c_name;not null"`
 }

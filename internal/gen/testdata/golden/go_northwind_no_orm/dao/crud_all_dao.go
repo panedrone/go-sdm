@@ -26,7 +26,7 @@ var ReadCategoryList = func(ctx context.Context) (res []*Category, err error) {
 	ds := DS(ctx)
 	sql := `select * from Categories`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Category{}
 		SetInt64(&item.CategoryID, row, "CategoryID", errMap)
 		SetString(&item.CategoryName, row, "CategoryName", errMap)
@@ -93,7 +93,7 @@ var ReadCustomerList = func(ctx context.Context) (res []*Customer, err error) {
 	ds := DS(ctx)
 	sql := `select * from Customers`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Customer{}
 		SetString(&item.CustomerID, row, "CustomerID", errMap)
 		SetString(&item.CompanyName, row, "CompanyName", errMap)
@@ -178,7 +178,7 @@ var ReadEmployeeList = func(ctx context.Context) (res []*Employee, err error) {
 	ds := DS(ctx)
 	sql := `select * from Employees`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Employee{}
 		SetInt64(&item.EmployeeID, row, "EmployeeID", errMap)
 		SetString(&item.LastName, row, "LastName", errMap)
@@ -271,7 +271,7 @@ var ReadEmployeesTerritoryList = func(ctx context.Context) (res []*EmployeesTerr
 	ds := DS(ctx)
 	sql := `select * from EmployeesTerritories`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := EmployeesTerritory{}
 		SetInt64(&item.EmployeeID, row, "EmployeeID", errMap)
 		SetInt64(&item.TerritoryID, row, "TerritoryID", errMap)
@@ -316,7 +316,7 @@ var GetEmployeesTerritoriesByEmployee = func(ctx context.Context, employeeID int
 	ds := DS(ctx)
 	sql := `select * from EmployeesTerritories where EmployeeID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := EmployeesTerritory{}
 		SetInt64(&item.EmployeeID, row, "EmployeeID", errMap)
 		SetInt64(&item.TerritoryID, row, "TerritoryID", errMap)
@@ -333,7 +333,7 @@ var GetEmployeesTerritoriesByTerritory = func(ctx context.Context, territoryID i
 	ds := DS(ctx)
 	sql := `select * from EmployeesTerritories where TerritoryID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := EmployeesTerritory{}
 		SetInt64(&item.EmployeeID, row, "EmployeeID", errMap)
 		SetInt64(&item.TerritoryID, row, "TerritoryID", errMap)
@@ -361,7 +361,7 @@ var ReadInternationalOrderList = func(ctx context.Context) (res []*International
 	ds := DS(ctx)
 	sql := `select * from InternationalOrders`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := InternationalOrder{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetString(&item.CustomsDescription, row, "CustomsDescription", errMap)
@@ -415,7 +415,7 @@ var GetInternationalOrdersByOrder = func(ctx context.Context, orderID int64) (re
 	ds := DS(ctx)
 	sql := `select * from InternationalOrders where OrderID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := InternationalOrder{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetString(&item.CustomsDescription, row, "CustomsDescription", errMap)
@@ -444,7 +444,7 @@ var ReadOrderDetailList = func(ctx context.Context) (res []*OrderDetail, err err
 	ds := DS(ctx)
 	sql := `select * from OrderDetails`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := OrderDetail{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
@@ -502,7 +502,7 @@ var GetOrderDetailsByOrder = func(ctx context.Context, orderID int64) (res []*Or
 	ds := DS(ctx)
 	sql := `select * from OrderDetails where OrderID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := OrderDetail{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
@@ -522,7 +522,7 @@ var GetOrderDetailsByProduct = func(ctx context.Context, productID int64) (res [
 	ds := DS(ctx)
 	sql := `select * from OrderDetails where ProductID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := OrderDetail{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
@@ -542,7 +542,7 @@ var GetOrdersByCustomer = func(ctx context.Context, customerID string) (res []*O
 	ds := DS(ctx)
 	sql := `select * from Orders where CustomerID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Order{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetString(&item.CustomerID, row, "CustomerID", errMap)
@@ -581,7 +581,7 @@ var ReadPreviousEmployeeList = func(ctx context.Context) (res []*PreviousEmploye
 	ds := DS(ctx)
 	sql := `select * from PreviousEmployees`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := PreviousEmployee{}
 		SetInt64(&item.EmployeeID, row, "EmployeeID", errMap)
 		SetString(&item.LastName, row, "LastName", errMap)
@@ -678,7 +678,7 @@ var ReadProductList = func(ctx context.Context) (res []*Product, err error) {
 	ds := DS(ctx)
 	sql := `select * from Products`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Product{}
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
 		SetString(&item.ProductName, row, "ProductName", errMap)
@@ -748,7 +748,7 @@ var GetProductsBySupplier = func(ctx context.Context, supplierID int64) (res []*
 	ds := DS(ctx)
 	sql := `select * from Products where SupplierID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Product{}
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
 		SetString(&item.ProductName, row, "ProductName", errMap)
@@ -774,7 +774,7 @@ var GetProductsByCategory = func(ctx context.Context, categoryID int64) (res []*
 	ds := DS(ctx)
 	sql := `select * from Products where CategoryID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Product{}
 		SetInt64(&item.ProductID, row, "ProductID", errMap)
 		SetString(&item.ProductName, row, "ProductName", errMap)
@@ -811,7 +811,7 @@ var ReadRegionList = func(ctx context.Context) (res []*Region, err error) {
 	ds := DS(ctx)
 	sql := `select * from Regions`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Region{}
 		SetInt64(&item.RegionID, row, "RegionID", errMap)
 		SetString(&item.RegionDescription, row, "RegionDescription", errMap)
@@ -878,7 +878,7 @@ var ReadSupplierList = func(ctx context.Context) (res []*Supplier, err error) {
 	ds := DS(ctx)
 	sql := `select * from Suppliers`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Supplier{}
 		SetInt64(&item.SupplierID, row, "SupplierID", errMap)
 		SetString(&item.CompanyName, row, "CompanyName", errMap)
@@ -961,7 +961,7 @@ var ReadTerritoryList = func(ctx context.Context) (res []*Territory, err error) 
 	ds := DS(ctx)
 	sql := `select * from Territories`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Territory{}
 		SetInt64(&item.TerritoryID, row, "TerritoryID", errMap)
 		SetString(&item.TerritoryDescription, row, "TerritoryDescription", errMap)
@@ -1015,7 +1015,7 @@ var GetTerritoriesByRegion = func(ctx context.Context, regionID int64) (res []*T
 	ds := DS(ctx)
 	sql := `select * from Territories where RegionID=?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Territory{}
 		SetInt64(&item.TerritoryID, row, "TerritoryID", errMap)
 		SetString(&item.TerritoryDescription, row, "TerritoryDescription", errMap)

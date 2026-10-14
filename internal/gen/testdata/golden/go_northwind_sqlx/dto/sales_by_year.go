@@ -4,8 +4,8 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type SalesByYear struct {
-	ShippedDate  interface{} `json:"shipped_date" db:"ShippedDate"`
-	OrderID      interface{} `json:"order_id" db:"OrderID"`
-	ProductSales interface{} `json:"product_sales" db:"ProductSales"`
-	ShippedYear  interface{} `json:"shipped_year" db:"ShippedYear"`
+	ShippedDate  any `json:"shipped_date" db:"ShippedDate"`
+	OrderID      any `json:"order_id" db:"OrderID"`
+	ProductSales any `json:"product_sales" db:"ProductSales"`
+	ShippedYear  any `json:"shipped_year" db:"ShippedYear"`
 }

@@ -8,19 +8,21 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/panedrone/go-sdm/datastore"
 	"github.com/panedrone/go-sdm/internal/assist"
+	"github.com/panedrone/go-sdm/internal/cg"
 	"github.com/panedrone/go-sdm/internal/gen"
 	"github.com/panedrone/go-sdm/internal/meta"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.0.4"
+const version = "1.0.5"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 
@@ -37,11 +39,13 @@ usage:
   sdm list|ls [-dir go-sdm] [-m] [-d] [-l] [class ...]
                                   numbered classes of sdm.xml in the order of declaration,
                                   -l: a table with files and dates
-  sdm xml [-dir go-sdm] [-m] [-d]
+  sdm xml -orm no_orm|sqlx|gorm [-dir go-sdm] [-m] [-d] [-force]
                                   starting XML from the database schema, to the console:
-                                  -m <dto-class> for each table and view, -d <crud/> and
-                                  FK access; classes already in sdm.xml are skipped;
-                                  to a file: sdm xml -m > models.xml
+                                  -m <dto-class> for each table and view, -d <dao-class>
+                                  for each, named by the table, with <crud/> and FK access;
+                                  -orm (required): DTO classes Task, sqlx-Task or gorm-Task;
+                                  classes already in sdm.xml are skipped, -force: not;
+                                  to a file: sdm xml -orm gorm -m > models.xml
   sdm version|-v|--version
   sdm help
 
@@ -310,11 +314,13 @@ func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
 	return md, err
 }
 
-// runXML prints the starting XML from the database schema: <dto-class> (-m) and the <crud>
-// with FK access (-d), both if neither or both are given.
+// runXML prints the starting XML from the database schema: <dto-class> (-m) and <dao-class>
+// with <crud> and FK access (-d), both if neither or both are given.
 func runXML(args []string, stdout, stderr io.Writer) int {
 	fs, dir := newFlags("xml", stderr)
 	models, daos := kindFlags(fs)
+	orm := fs.String("orm", "", "the model of DTO classes, required: "+strings.Join(datastore.Variants, ", "))
+	force := fs.Bool("force", false, "all tables and views, sdm.xml is not read")
 	rest, err := parse(fs, args)
 	if err != nil {
 		return 2
@@ -322,6 +328,14 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 	if len(rest) > 0 {
 		printErr(stderr, fmt.Errorf("xml takes no classes: %s", strings.Join(rest, " ")))
 		return 2
+	}
+	if !slices.Contains(datastore.Variants, *orm) {
+		printErr(stderr, fmt.Errorf("xml: -orm %s expected", strings.Join(datastore.Variants, "|")))
+		return 2
+	}
+	model := *orm // the prefix of DTO class names: sqlx-Task, gorm-Task
+	if model == datastore.Variants[0] {
+		model = "" // database/sql: Task
 	}
 	if !*models && !*daos {
 		*models, *daos = true, true
@@ -332,10 +346,12 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 		printErr(stderr, err)
 		return 1
 	}
-	sdm, err := sdmxml.LoadSdm(sdmDir)
-	if err != nil {
-		printErr(stderr, err)
-		return 1
+	sdm := &sdmxml.Sdm{} // -force: nothing is in use
+	if !*force {
+		if sdm, err = sdmxml.LoadSdm(sdmDir); err != nil {
+			printErr(stderr, err)
+			return 1
+		}
 	}
 	st := newStatus(stderr)
 	md, err := connect(s, st)
@@ -353,7 +369,7 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 	st.show("reading the schema ...")
 	var out []string
 	if *models {
-		x, err := assist.DtoClasses(cat, dtoClasses(sdm))
+		x, err := assist.DtoClasses(cat, model, dtoClasses(sdm))
 		if err != nil {
 			st.clear()
 			printErr(stderr, err)
@@ -364,7 +380,7 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	if *daos {
-		x, err := assist.DaoItems(cat, crudDtos(sdm))
+		x, err := assist.DaoClasses(cat, model, crudDtos(sdm), daoClasses(sdm))
 		if err != nil {
 			st.clear()
 			printErr(stderr, err)
@@ -375,26 +391,51 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	st.clear()
+	if len(out) == 0 {
+		// stderr: the output stays empty for > and |, the console still sees why
+		tables, err := cat.Tables(true)
+		if err != nil {
+			printErr(stderr, err)
+			return 1
+		}
+		if len(tables) == 0 {
+			fmt.Fprintln(stderr, "nothing to print: no tables and views in the database")
+		} else {
+			fmt.Fprintf(stderr, "nothing to print: all %d tables and views are in %s/sdm.xml (-force: all of them anyway)\n",
+				len(tables), sdmDir)
+		}
+		return 0
+	}
 	_, _ = fmt.Fprint(stdout, strings.Join(out, "\n"))
 	return 0
 }
 
-// dtoClasses: the names of <dto-class> in sdm.xml.
+// dtoClasses: the names of <dto-class> in sdm.xml, without the model (sqlx-Task -> Task): one
+// table, one model file, whatever the model.
 func dtoClasses(sdm *sdmxml.Sdm) map[string]bool {
 	res := map[string]bool{}
 	for _, c := range sdm.DtoClasses {
+		res[cg.ClassNameWithoutModel(c.Name)] = true
+	}
+	return res
+}
+
+// daoClasses: the names of <dao-class> in sdm.xml.
+func daoClasses(sdm *sdmxml.Sdm) map[string]bool {
+	res := map[string]bool{}
+	for _, c := range sdm.DaoClasses {
 		res[c.Name] = true
 	}
 	return res
 }
 
-// crudDtos: the DTO classes of <crud> in all DAO classes.
+// crudDtos: the DTO classes of <crud> in all DAO classes, without the model.
 func crudDtos(sdm *sdmxml.Sdm) map[string]bool {
 	res := map[string]bool{}
 	for _, c := range sdm.DaoClasses {
 		for _, it := range c.Items {
 			if it.Kind() == "crud" {
-				res[it.Dto] = true
+				res[cg.ClassNameWithoutModel(it.Dto)] = true
 			}
 		}
 	}

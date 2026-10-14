@@ -363,7 +363,7 @@ func (g *DAO) renderExecDml(m cg.DaoMethod) (string, error) {
 				elements = append(elements, mp.ExecDmlParamName)
 			}
 			// no "(Object) " cast: a Go variadic parameter takes a slice as one argument anyway
-			d.Params2 = append(d.Params2, cg.NewParamInfo(cg.AsIs, "[]", "[]interface{}{"+strings.Join(elements, ", ")+"}"))
+			d.Params2 = append(d.Params2, cg.NewParamInfo(cg.AsIs, "[]", "[]any{"+strings.Join(elements, ", ")+"}"))
 		case cg.Mapped:
 			p := params[slot.Index]
 			mp, err := g.createMapping(slot.Mapping)

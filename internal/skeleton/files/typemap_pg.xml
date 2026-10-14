@@ -22,7 +22,7 @@
         <type detected="_text" target="[]string${json}"/>
         <type detected="_varchar" target="[]string${json}"/>
         <type detected="refcursor" target="string"/>
-        <type detected="unknown" target="interface{}${json}"/>
+        <type detected="unknown" target="any${json}"/>
 
         <!-- sqlx -->
 
@@ -45,7 +45,7 @@
         <type detected="sqlx-uuid" target="github.com/google/uuid:uuid.UUID${json-sqlx}"/>
         <type detected="sqlx-_text" target="[]string${json-sqlx}"/>
         <type detected="sqlx-_varchar" target="[]string${json-sqlx}"/>
-        <type detected="sqlx-unknown" target="interface{}${json-sqlx}"/>
+        <type detected="sqlx-unknown" target="any${json-sqlx}"/>
 
         <!-- gorm -->
 
@@ -70,6 +70,6 @@
               target="github.com/google/uuid:uuid.UUID${json-gorm}|1:;type:uuid;default:gen_random_uuid()"/>
         <type detected="gorm-_text" target="[]string${json-gorm}"/>
         <type detected="gorm-_varchar" target="[]string${json-gorm}"/>
-        <type detected="gorm-unknown" target="interface{}${json-gorm}"/>
+        <type detected="gorm-unknown" target="any${json-gorm}"/>
 
     </type-map>

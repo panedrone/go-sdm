@@ -14,7 +14,7 @@ var GetCode2 = func(ctx context.Context, ip string) (res string, err error) {
 	return
 }
 
-var Count = func(ctx context.Context) (res interface{}, err error) {
+var Count = func(ctx context.Context) (res any, err error) {
 	ds := DS(ctx)
 	sql := `select count(*) from ip_ranges`
 	err = ds.Query(ctx, sql, &res)

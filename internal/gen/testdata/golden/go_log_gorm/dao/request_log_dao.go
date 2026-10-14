@@ -39,7 +39,7 @@ var ClearLog = func(ctx context.Context) (rowsAffected int64, err error) {
 	return
 }
 
-var GetLogItemsCount = func(ctx context.Context) (res interface{}, err error) {
+var GetLogItemsCount = func(ctx context.Context) (res any, err error) {
 	ds := DS(ctx)
 	sql := `select count (*) from REQUEST_LOG`
 	err = ds.Query(ctx, sql, &res)

@@ -4,6 +4,6 @@ package dbal
 // https://sqldalmaker.sourceforge.net/
 
 type OrderSubtotal struct {
-	OrderID  interface{} `json:"order_id" db:"OrderID"`
-	Subtotal interface{} `json:"subtotal" db:"Subtotal"`
+	OrderID  any `json:"order_id" db:"OrderID"`
+	Subtotal any `json:"subtotal" db:"Subtotal"`
 }

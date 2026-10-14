@@ -4,9 +4,9 @@ package models
 // https://sqldalmaker.sourceforge.net/
 
 type SessionSummary struct {
-	VSessionsSum interface{} `json:"v_sessions_sum" gorm:"column:v_sessions_sum;not null"`
-	VPagesSum    interface{} `json:"v_pages_sum" gorm:"column:v_pages_sum;not null"`
-	CCode2       interface{} `json:"c_code2" gorm:"column:c_code2;not null"`
-	CCode3       interface{} `json:"c_code3" gorm:"column:c_code3;not null"`
-	CName        interface{} `json:"c_name" gorm:"column:c_name;not null"`
+	VSessionsSum any `json:"v_sessions_sum" gorm:"column:v_sessions_sum;not null"`
+	VPagesSum    any `json:"v_pages_sum" gorm:"column:v_pages_sum;not null"`
+	CCode2       any `json:"c_code2" gorm:"column:c_code2;not null"`
+	CCode3       any `json:"c_code3" gorm:"column:c_code3;not null"`
+	CName        any `json:"c_name" gorm:"column:c_name;not null"`
 }

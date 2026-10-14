@@ -42,7 +42,7 @@ var shop = fakeCatalog{
 }
 
 func TestDtoClasses(t *testing.T) {
-	got, err := DtoClasses(shop, map[string]bool{"Order": true})
+	got, err := DtoClasses(shop, "", map[string]bool{"Order": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,17 +55,19 @@ func TestDtoClasses(t *testing.T) {
 	}
 }
 
-func TestDaoItems(t *testing.T) {
-	got, err := DaoItems(shop, map[string]bool{"Category": true})
+func TestDaoClasses(t *testing.T) {
+	got, err := DaoClasses(shop, "gorm", map[string]bool{"Category": true}, map[string]bool{"OrdersDao": true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `<crud dto="OrderItem" table="order_items"/>
-<query-dto-list dto="OrderItem" method="getOrderItemsByOrder(orderID)" ref="order_items(order_id)"/>
-<query-dto-list dto="OrderItem" method="getOrderItemsByProduct(productID, altProductID)" ref="order_items(product_id, alt_product_id)"/>
-<crud dto="Order" table="orders"/>
-<query-dto-list dto="Order" method="getOrdersByCategory(categoryID)" ref="orders(category_id)"/>
-<crud dto="VSale" table="v_sales"/>
+	want := `<dao-class name="OrderItemsDao">
+    <crud dto="gorm-OrderItem" table="order_items"/>
+    <query-dto-list dto="gorm-OrderItem" method="getOrderItemsByOrder(orderID)" ref="order_items(order_id)"/>
+    <query-dto-list dto="gorm-OrderItem" method="getOrderItemsByProduct(productID, altProductID)" ref="order_items(product_id, alt_product_id)"/>
+</dao-class>
+<dao-class name="VSalesDao">
+    <crud dto="gorm-VSale" table="v_sales"/>
+</dao-class>
 `
 	if got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
@@ -95,5 +97,8 @@ func TestDtoClassName(t *testing.T) {
 	}
 	if got := DtoClassName("order_items", false); got != "OrderItems" {
 		t.Errorf("plural kept: %s", got)
+	}
+	if got := DaoClassName("order_items"); got != "OrderItemsDao" {
+		t.Errorf("DAO class: %s", got)
 	}
 }

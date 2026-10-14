@@ -12,7 +12,7 @@ var ExecOneCursor = func(ctx context.Context, onTask func(*dto.Task)) (rowsAffec
 	ds := DS(ctx)
 	sql := `select * from tasks where t_id = ?`
 	errMap := make(map[string]int)
-	onTaskMapper := func(row map[string]interface{}) {
+	onTaskMapper := func(row map[string]any) {
 		item := dto.Task{}
 		SetInt64(&item.TID, row, "t_id", errMap)
 		SetString(&item.TDtCreated, row, "t_dt_created", errMap)
@@ -34,7 +34,7 @@ var ExecCursorArray = func(ctx context.Context, tID string, onTask1 func(*dto.Ta
 	ds := DS(ctx)
 	sql := `select * from tasks where t_id = ?`
 	errMap := make(map[string]int)
-	onTask1Mapper := func(row map[string]interface{}) {
+	onTask1Mapper := func(row map[string]any) {
 		item := dto.Task{}
 		SetInt64(&item.TID, row, "t_id", errMap)
 		SetString(&item.TDtCreated, row, "t_dt_created", errMap)
@@ -45,7 +45,7 @@ var ExecCursorArray = func(ctx context.Context, tID string, onTask1 func(*dto.Ta
 		SetInt64(&item.BID, row, "b_id", errMap)
 		onTask1(&item)
 	}
-	rowsAffected, err = ds.Exec(ctx, sql, tID, []interface{}{onTask1Mapper})
+	rowsAffected, err = ds.Exec(ctx, sql, tID, []any{onTask1Mapper})
 	if err == nil {
 		err = ErrMapToErr(errMap)
 	}
@@ -56,7 +56,7 @@ var ExecCursorArrayOnly = func(ctx context.Context, onTask1 func(*dto.Task), onT
 	ds := DS(ctx)
 	sql := `select * from tasks`
 	errMap := make(map[string]int)
-	onTask1Mapper := func(row map[string]interface{}) {
+	onTask1Mapper := func(row map[string]any) {
 		item := dto.Task{}
 		SetInt64(&item.TID, row, "t_id", errMap)
 		SetString(&item.TDtCreated, row, "t_dt_created", errMap)
@@ -67,7 +67,7 @@ var ExecCursorArrayOnly = func(ctx context.Context, onTask1 func(*dto.Task), onT
 		SetInt64(&item.BID, row, "b_id", errMap)
 		onTask1(&item)
 	}
-	onTask2Mapper := func(row map[string]interface{}) {
+	onTask2Mapper := func(row map[string]any) {
 		item := dto.Task{}
 		SetInt64(&item.TID, row, "t_id", errMap)
 		SetString(&item.TDtCreated, row, "t_dt_created", errMap)
@@ -78,7 +78,7 @@ var ExecCursorArrayOnly = func(ctx context.Context, onTask1 func(*dto.Task), onT
 		SetInt64(&item.BID, row, "b_id", errMap)
 		onTask2(&item)
 	}
-	rowsAffected, err = ds.Exec(ctx, sql, []interface{}{onTask1Mapper, onTask2Mapper})
+	rowsAffected, err = ds.Exec(ctx, sql, []any{onTask1Mapper, onTask2Mapper})
 	if err == nil {
 		err = ErrMapToErr(errMap)
 	}
@@ -89,7 +89,7 @@ var ExecOneCursorTilde = func(ctx context.Context, onTask func(*dto.Task)) (rows
 	ds := DS(ctx)
 	sql := `select * from tasks where t_id = ?`
 	errMap := make(map[string]int)
-	onTaskMapper := func(row map[string]interface{}) {
+	onTaskMapper := func(row map[string]any) {
 		item := dto.Task{}
 		SetInt64(&item.TID, row, "t_id", errMap)
 		SetString(&item.TDtCreated, row, "t_dt_created", errMap)

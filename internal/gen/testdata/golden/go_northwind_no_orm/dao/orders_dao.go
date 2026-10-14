@@ -26,7 +26,7 @@ var ReadOrderList = func(ctx context.Context) (res []*Order, err error) {
 	ds := DS(ctx)
 	sql := `select * from Orders`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Order{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetString(&item.CustomerID, row, "CustomerID", errMap)
@@ -102,7 +102,7 @@ var GetOrderSubtotals = func(ctx context.Context) (res []*OrderSubtotal, err err
 		FROM [OrderDetails] 
 		GROUP BY [OrderDetails].[OrderID];`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := OrderSubtotal{}
 		SetInt64(&item.OrderID, row, "OrderID", errMap)
 		SetFloat64(&item.Subtotal, row, "Subtotal", errMap)
@@ -122,7 +122,7 @@ var GetQuarterlyOrdersByProduct = func(ctx context.Context, d1 string, d2 string
 		WHERE (((Orders.OrderDate) Between ? And ?)) 
 		GROUP BY Products.ProductName, Orders.CustomerID, strftime('%Y', [OrderDate])`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := QuarterlyOrdersByProduct{}
 		SetString(&item.ProductName, row, "ProductName", errMap)
 		SetString(&item.CustomerID, row, "CustomerID", errMap)
@@ -149,7 +149,7 @@ var GetOrderDetailsExtended = func(ctx context.Context) (res []*OrderDetailsExte
 		FROM Products INNER JOIN [OrderDetails] ON Products.ProductID = [OrderDetails].ProductID 
 		ORDER BY [OrderDetails].OrderID;`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := OrderDetailsExtended{}
 		SetAny(&item.OrderID, row, "OrderID", errMap)
 		SetAny(&item.ProductID, row, "ProductID", errMap)

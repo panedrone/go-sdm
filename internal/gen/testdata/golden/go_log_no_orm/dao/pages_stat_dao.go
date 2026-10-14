@@ -43,7 +43,7 @@ var ReadPagesStatList = func(ctx context.Context) (res []*models.PagesStat, err 
 	ds := DS(ctx)
 	sql := `select * from pages_stat order by visits_count desc`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.PagesStat{}
 		SetInt64(&item.ID, row, "id", errMap)
 		SetString(&item.HttpReferer, row, "http_referer", errMap)

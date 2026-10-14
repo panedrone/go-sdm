@@ -30,7 +30,7 @@
         <type detected="TINYBLOB" target="[]byte${json} -> SetBytes"/>
         <type detected="MEDIUMBLOB" target="[]byte${json} -> SetBytes"/>
         <type detected="LONGBLOB" target="[]byte${json} -> SetBytes"/>
-        <type detected="NULL" target="interface{}${json}"/>
+        <type detected="NULL" target="any${json}"/>
         <type detected="BINARY" target="[]byte${json} -> SetBytes"/>
         <type detected="VARBINARY" target="[]byte${json} -> SetBytes"/>
         <type detected="BIT" target="bool${json} -> SetBool"/>
@@ -38,7 +38,7 @@
         <type detected="DATETIME" target="time:time.Time${json} -> SetTime"/>
         <type detected="TIMESTAMP" target="time:time.Time${json} -> SetTime"/>
         <type detected="YEAR" target="time:time.Time${json} -> SetTime"/>
-        <type detected="unknown" target="interface{}${json}"/>
+        <type detected="unknown" target="any${json}"/>
 
         <!-- sqlx -->
 
@@ -70,7 +70,7 @@
         <type detected="sqlx-TINYBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-MEDIUMBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-LONGBLOB" target="[]byte${json-sqlx} -> SetBytes"/>
-        <type detected="sqlx-NULL" target="interface{}${json-sqlx}"/>
+        <type detected="sqlx-NULL" target="any${json-sqlx}"/>
         <type detected="sqlx-BINARY" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-VARBINARY" target="[]byte${json-sqlx} -> SetBytes"/>
         <type detected="sqlx-BIT" target="bool${json-sqlx} -> SetBool"/>
@@ -78,7 +78,7 @@
         <type detected="sqlx-DATETIME" target="time:time.Time${json-sqlx} -> SetTime"/>
         <type detected="sqlx-TIMESTAMP" target="time:time.Time${json-sqlx} -> SetTime"/>
         <type detected="sqlx-YEAR" target="time:time.Time${json-sqlx} -> SetTime"/>
-        <type detected="sqlx-unknown" target="interface{}${json-sqlx}"/>
+        <type detected="sqlx-unknown" target="any${json-sqlx}"/>
 
         <!-- gorm -->
 
@@ -110,7 +110,7 @@
         <type detected="gorm-TINYBLOB" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-MEDIUMBLOB" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-LONGBLOB" target="[]byte${json-gorm} -> SetBytes"/>
-        <type detected="gorm-NULL" target="interface{}${json-gorm}"/>
+        <type detected="gorm-NULL" target="any${json-gorm}"/>
         <type detected="gorm-BINARY" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-VARBINARY" target="[]byte${json-gorm} -> SetBytes"/>
         <type detected="gorm-BIT" target="bool${json-gorm} -> SetBool"/>
@@ -118,6 +118,6 @@
         <type detected="gorm-DATETIME" target="${json-gorm-time}"/>
         <type detected="gorm-TIMESTAMP" target="${json-gorm-time}"/>
         <type detected="gorm-YEAR" target="${json-gorm-time}"/>
-        <type detected="gorm-unknown" target="interface{}${json-gorm}"/>
+        <type detected="gorm-unknown" target="any${json-gorm}"/>
 
     </type-map>

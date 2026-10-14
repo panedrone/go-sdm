@@ -37,7 +37,7 @@ var GetInvoices = func(ctx context.Context) (res []*Invoice, err error) {
 		Orders.Freight 
 		FROM (Products INNER JOIN ((Employees INNER JOIN (Customers INNER JOIN Orders ON Customers.CustomerID = Orders.CustomerID) ON Employees.EmployeeID = Orders.EmployeeID) INNER JOIN [OrderDetails] ON Orders.OrderID = [OrderDetails].OrderID) ON Products.ProductID = [OrderDetails].ProductID);`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := Invoice{}
 		SetAny(&item.ShipName, row, "ShipName", errMap)
 		SetAny(&item.ShipAddress, row, "ShipAddress", errMap)

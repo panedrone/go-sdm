@@ -117,19 +117,32 @@ sdm val -d
 ```
 
 `sdm xml` reads the tables and views of the database and prints what the XML assistants of
-the IDE plug-ins make: `-m` a `<dto-class>` for each of them, `-d` a `<crud>` for each and, after
-it, the access by foreign keys. The DAO part is one pile of elements, not a `<dao-class>` per
-table: put it into the DAO classes the way you want. Classes already in `sdm.xml` (a
-`<dto-class>`, a `<crud dto>`) are skipped, so after a new table `sdm xml` prints only it.
+the IDE plug-ins make: `-m` a `<dto-class>` for each of them, `-d` a `<dao-class>` for each,
+named by the table (`tasks` → `TasksDao`), with a `<crud>` and the access by foreign keys
+inside. Classes already in `sdm.xml` (a `<dto-class>`, a `<crud dto>`, a `<dao-class>` of the
+same name) are skipped, so after a new table `sdm xml` prints only it; if nothing is left, the
+reason goes to stderr. `-force` prints all tables and views anyway, without reading `sdm.xml`.
+
+`-orm no_orm|sqlx|gorm`, the same values as in `init`, is required, without a default: it is the
+model of the DTO classes (see [database/sql, sqlx or gorm](#databasesql-sqlx-or-gorm)), `Task`,
+`sqlx-Task` or `gorm-Task`, in `<dto-class>` and in the DAO classes. A class already in `sdm.xml`
+is skipped whatever its model: `gorm-Task` is skipped if there is `Task`.
 
 ```
-$ sdm xml -m
+$ sdm xml -orm no_orm -m
 <dto-class name="Group" ref="groups"/>
 <dto-class name="Task" ref="tasks"/>
-$ sdm xml -d
-<crud dto="Group" table="groups"/>
-<crud dto="Task" table="tasks"/>
-<query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>
+$ sdm xml -orm gorm -m
+<dto-class name="gorm-Group" ref="groups"/>
+<dto-class name="gorm-Task" ref="tasks"/>
+$ sdm xml -orm no_orm -d
+<dao-class name="GroupsDao">
+    <crud dto="Group" table="groups"/>
+</dao-class>
+<dao-class name="TasksDao">
+    <crud dto="Task" table="tasks"/>
+    <query-dto-list dto="Task" method="getTasksByGroup(gID)" ref="tasks(g_id)"/>
+</dao-class>
 ```
 
 `<crud/>` without inner elements makes all five methods with default names; add `<create/>`,
@@ -138,29 +151,19 @@ $ sdm xml -d
 The output goes to the console only, so it chains like any other command:
 
 ```bash
-sdm xml -m > models.xml                     # to a file
-sdm xml -m >> models.xml                    # appended to a file
-sdm xml -d | grep -E 'tasks|groups'         # only some tables
-sdm xml -m | clip                           # to the clipboard: clip on Windows, pbcopy on macOS
+sdm xml -orm sqlx -m > models.xml           # to a file
+sdm xml -orm sqlx -m >> models.xml          # appended to a file
+sdm xml -orm sqlx | clip                    # to the clipboard: clip on Windows, pbcopy on macOS
 ```
 
-A ready external DAO file, the same `<dao-class>` root as the IDE plug-ins write:
-
-```bash
-{ echo '<dao-class>'; sdm xml -d; echo '</dao-class>'; } > go-sdm/CrudDao.xml
-```
-
-and then, in `sdm.xml`, `<dao-class name="CrudDao" ref="CrudDao.xml"/>` and `sdm gen`. In this
-order: `sdm xml` reads every DAO file of `sdm.xml`, so a reference to a file not written yet is
-an error. And never redirect into a DAO file that `sdm.xml` already refers to: the shell empties
-the file before `sdm` reads it. Write a new file, or a temporary one and move it.
+Paste it into `sdm.xml` as is: models and DAO classes are ready elements of `<sdm>`. Never
+redirect into `sdm.xml` itself: the shell empties the file before `sdm` reads it.
 
 PowerShell 7 writes UTF-8 with `>` as well. Windows PowerShell 5.1 writes UTF-16 with `>` by
 default, which `sdm` does not read, so there use `Out-File`:
 
 ```powershell
-sdm xml -m | Out-File -Encoding utf8 models.xml
-& { '<dao-class>'; sdm xml -d; '</dao-class>' } | Out-File -Encoding utf8 go-sdm/CrudDao.xml
+sdm xml -orm sqlx -m | Out-File -Encoding utf8 models.xml
 ```
 
 As in the plug-ins, the names of DTO classes are English singulars of the table names, and

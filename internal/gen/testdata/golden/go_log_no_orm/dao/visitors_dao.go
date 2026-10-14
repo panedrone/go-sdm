@@ -70,7 +70,7 @@ var GetPage = func(ctx context.Context, startRow int, rows int) (res []*models.V
 		    order by v_last_datetime DESC 
 		    limit ?, ?`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.Visitor{}
 		SetInt64(&item.VIp, row, "v_ip", errMap)
 		SetAny(&item.VFirstDatetime, row, "v_first_datetime", errMap)
@@ -96,7 +96,7 @@ var GetSessionsTotal = func(ctx context.Context) (res []*models.SessionSummary, 
 		GROUP BY v.c_code2 
 		order by v_sessions_sum DESC`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.SessionSummary{}
 		SetAny(&item.VSessionsSum, row, "v_sessions_sum", errMap)
 		SetAny(&item.VPagesSum, row, "v_pages_sum", errMap)
@@ -120,7 +120,7 @@ var GetSessionsNonBounce = func(ctx context.Context) (res []*models.SessionSumma
 		GROUP BY v.c_code2 
 		order by v_sessions_sum DESC`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.SessionSummary{}
 		SetAny(&item.VSessionsSum, row, "v_sessions_sum", errMap)
 		SetAny(&item.VPagesSum, row, "v_pages_sum", errMap)
@@ -144,7 +144,7 @@ var GetSessionsBounced = func(ctx context.Context) (res []*models.SessionSummary
 		GROUP BY v.c_code2 
 		order by v_sessions_sum DESC`
 	errMap := make(map[string]int)
-	_onRow := func(row map[string]interface{}) {
+	_onRow := func(row map[string]any) {
 		item := models.SessionSummary{}
 		SetAny(&item.VSessionsSum, row, "v_sessions_sum", errMap)
 		SetAny(&item.VPagesSum, row, "v_pages_sum", errMap)

@@ -21,11 +21,11 @@
         <type detected="java.lang.Double" target="float64${json} -> SetFloat64"/>
         <type detected="java.lang.String" target="string${json} -> SetString"/>
         <type detected="byte[]" target="[]byte${json} -> SetBytes"/>
-        <type detected="java.lang.Object" target="interface{}${json}"/>
+        <type detected="java.lang.Object" target="any${json}"/>
 
         <type detected="java.lang.Float" target="float64${json} -> SetFloat64"/>
 
-        <type detected="Object" target="interface{}${json}"/>
+        <type detected="Object" target="any${json}"/>
 
         <!-- mysql, postgres, sql server -->
 
@@ -47,7 +47,7 @@
         <!--        <type detected="java.util.Date" target="time:time.Time${json} -> SetTime"/>-->
         <!--        <type detected="java.time.LocalDateTime" target="time:time.Time${json} -> SetTime"/>-->
 
-        <!--        <type detected="java.lang.Object" target="interface{}${json}"/>-->
+        <!--        <type detected="java.lang.Object" target="any${json}"/>-->
 
         <!-- oracle -->
 
@@ -64,7 +64,7 @@
         <!--        <type detected="byte[]" target="string${json} -> SetBytes"/>-->
         <!--        <type detected="java.lang.Boolean" target="int64${json} -> SetBool"/>-->
 
-        <!--        <type detected="java.lang.Object" target="interface{}{$json}"/>-->
+        <!--        <type detected="java.lang.Object" target="any{$json}"/>-->
 
     </type-map>
 

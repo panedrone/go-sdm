@@ -4,8 +4,8 @@ package models
 // https://sqldalmaker.sourceforge.net/
 
 type PagesCount struct {
-	VPagesSum interface{} `json:"v_pages_sum" db:"v_pages_sum"`
-	CCode2    interface{} `json:"c_code2" db:"c_code2"`
-	CCode3    interface{} `json:"c_code3" db:"c_code3"`
-	CName     interface{} `json:"c_name" db:"c_name"`
+	VPagesSum any `json:"v_pages_sum" db:"v_pages_sum"`
+	CCode2    any `json:"c_code2" db:"c_code2"`
+	CCode3    any `json:"c_code3" db:"c_code3"`
+	CName     any `json:"c_name" db:"c_name"`
 }
