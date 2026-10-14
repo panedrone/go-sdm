@@ -76,9 +76,9 @@ func Init(o Options) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	assign := "0"
-	if orm == "sqlx" {
-		assign = "2" // ptr to DTO or ptr to slice of DTO-s
+	assign := "3"
+	if orm == "no_orm" {
+		assign = "0" // by column name (database/sql, gorm)
 	}
 	vars := strings.NewReplacer(
 		"{{module}}", module,
