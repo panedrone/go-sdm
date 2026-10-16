@@ -456,7 +456,45 @@ func TestNoGoDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	errOut.Reset()
-	if code := run([]string{"generate"}, &out, &errOut); code != 1 || !strings.Contains(errOut.String(), "<go-db") {
+	if code := run([]string{"generate"}, &out, &errOut); code != 1 ||
+		!strings.Contains(errOut.String(), `has no <go-db>`) ||
+		!strings.Contains(errOut.String(), `<go-db url="mysql://localhost:3306/db" user="root" pwd=""/>`) ||
+		strings.Contains(strings.ToLower(errOut.String()), "jdbc") {
 		t.Errorf("generate without <go-db>: %d %q", code, errOut.String())
+	}
+}
+
+// datastore: rewrites data_store_<orm>.go, leaves data_store_<orm>_ex.go alone.
+func TestDataStore(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile("go.mod", []byte("module m\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"init", "-orm", "gorm", "-db", "sqlite"}, &out, &errOut); code != 0 {
+		t.Fatalf("init: %d %s", code, errOut.String())
+	}
+	out.Reset()
+	if code := run([]string{"ds"}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "up to date") {
+		t.Fatalf("fresh: %d %q %q", code, out.String(), errOut.String())
+	}
+	ds := filepath.Join("internal", "dbal", "data_store_gorm.go")
+	ex := filepath.Join("internal", "dbal", "data_store_gorm_ex.go")
+	for _, f := range []string{ds, ex} {
+		if err := os.WriteFile(f, []byte("package dbal\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out.Reset()
+	if code := run([]string{"datastore", "-dir", "go-sdm"}, &out, &errOut); code != 0 ||
+		strings.TrimSpace(out.String()) != "updated: "+ds+" (gorm for sqlite)" {
+		t.Fatalf("outdated: %d %q %q", code, out.String(), errOut.String())
+	}
+	if b, _ := os.ReadFile(ex); string(b) != "package dbal\n" {
+		t.Error("data_store_gorm_ex.go touched")
+	}
+	errOut.Reset()
+	if code := run([]string{"ds", "-db", "oracle"}, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "-db") {
+		t.Errorf("-db oracle: %d %q", code, errOut.String())
 	}
 }

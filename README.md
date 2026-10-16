@@ -95,6 +95,7 @@ Describe classes in `go-sdm/sdm.xml`, set `<go-db url>` in `go-sdm/settings.xml`
 | `sdm validate`, `sdm val`  | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate   |
 | `sdm list`, `sdm ls`       | the classes of `sdm.xml`, numbered in the order of declaration                        |
 | `sdm xml`                  | the starting XML from the database schema, to the console                             |
+| `sdm datastore`, `sdm ds`  | updates the data store of the DAO folder to this version of `sdm`                     |
 | `sdm version`, `-v`        | the version (also `--version`)                                                        |
 
 `ls` prints one line, `ls -l` a table with the generated files and their dates:
@@ -174,11 +175,57 @@ Options of `init`:
 | option                    | default         |                                                                                     |
 |---------------------------|-----------------|-------------------------------------------------------------------------------------|
 | `-db pg\|mysql\|sqlite`   | `pg`            | the database: type map and url in `settings.xml`, the data store for it             |
-| `-orm no_orm\|sqlx\|gorm` | `no_orm`        | database/sql, sqlx or gorm: the data store; for `sqlx` also `field-assign-mode="2"` |
+| `-orm no_orm\|sqlx\|gorm` | `no_orm`        | database/sql, sqlx or gorm: the data store; `field-assign-mode="0"` for `no_orm`, `"3"` for `sqlx` and `gorm` |
 | `-dao <folder>`           | `internal/dbal` | the folder of the DAO, models go to `<folder>/models`                               |
 | `-dir <folder>`           | `go-sdm`        | the folder of `sdm.xml` and `settings.xml` (for all commands)                       |
+| `-c N\|all`               | from `.sdm`     | the configuration N of `.sdm`, or each of them, instead of `-dir` (not for `init`)  |
 
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
+
+### Several configurations: `.sdm`
+
+A project may have more than one configuration, for example one per ORM. The IDE plug-ins keep
+them in `.sdm`, a text file next to `go.mod`: their tool window shows its lines. `sdm` reads the
+lines `<dir>/go.dal` of it, numbered from 1 in their order; `#` comments, `---` separators and
+the other files are skipped, `|title` at the end is ignored:
+
+```
+--- sdm
+
+no_orm/sdm/go.dal
+sqlx/sdm/go.dal | sqlx
+gorm/sdm/go.dal
+
+---
+
+README.md
+```
+
+Without `-dir` a command takes its configuration from there: `-c N` is the N-th, the only one
+needs no `-c`. With several, `sdm` prints them with the ready command for each and, in the console,
+asks for the number from the table or `all` (a wrong one is asked again, Enter cancels):
+
+```
+$ sdm gen -m
+.sdm has 3 configurations:
+
+  #     configuration         command
+  1     no_orm/sdm/go.dal     sdm gen -m -c 1
+  2     sqlx/sdm/go.dal       sdm gen -m -c 2
+  3     gorm/sdm/go.dal       sdm gen -m -c 3
+  all   (one after another)   sdm gen -m -c all
+
+configuration 1..3 or all (Enter: cancel): 2
+```
+
+`-c all` runs the command for each configuration, one after another, each under its header
+`--- N:<dir>/go.dal` and with its own progress; a failed one does not stop the rest, the exit code
+is the worst of them. So one line in CI checks them all: `sdm val -c all`. `xml` takes one
+configuration only.
+
+Without a console (CI, a pipe) the table is all, exit 2: copy the command you need. No `go.dal` in
+`.sdm` (or no `.sdm`) means `-dir go-sdm`, as before. `-dir` wins over `.sdm`; `-dir` together
+with `-c` is an error. `go.dal` is the root file of the plug-in, `sdm` needs only its folder.
 
 ## database/sql, sqlx or gorm
 
@@ -218,6 +265,13 @@ your DAO folder:
 The connection is `DATABASE_URL` (or the default in `_ex`). All nine are made from the
 templates in [`datastore/templates`](datastore/templates) by `go run ./cli/dsgen`; `go test`
 fails if they differ.
+
+`sdm gen` does not touch the data store. After `sdm` is updated, `sdm datastore` (`sdm ds`)
+rewrites `data_store_<orm>.go` in the DAO folder of `settings.xml` with the one of this version: the
+data store found there, for the database of `<go-db url>` (or `-db pg|mysql|sqlite`), with the package
+of the file. `_ex` is yours and is never touched; your own edits of `data_store_<orm>.go` are lost, so
+keep them in `_ex`. Regenerate the DAO along with it (`sdm gen`): the generated code and the data
+store change together.
 
 ## Type map
 

@@ -105,23 +105,29 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 		err = ErrMapToErr(errMap)
 	}
 {{- else if eq .AssignMode 1}}
-	_onRow := func() (any, func()) {
+	_onRow := func(scan func(any) error) error {
 		item := &{{.ReturnedTypeName}}{}
-		return []any{
+		err := scan([]any{
 {{- range .Fields}}
-				&item.{{.Name}},
+			&item.{{.Name}},
 {{- end}}
-			}, func() {
-				res = append(res, item)
-			}
+		})
+		if err != nil {
+			return err
+		}
+		res = append(res, item)
+		return nil
 	}
 	err = ds.Select(ctx, sql, _onRow{{template "args" .}})
 {{- else if eq .AssignMode 2}}
-	_onRow := func() (any, func()) {
+	_onRow := func(scan func(any) error) error {
 		item := &{{.ReturnedTypeName}}{}
-		return item, func() {
-			res = append(res, item)
+		err := scan(item)
+		if err != nil {
+			return err
 		}
+		res = append(res, item)
+		return nil
 	}
 	err = ds.Select(ctx, sql, _onRow{{template "args" .}})
 {{- else if eq .AssignMode 3}}
@@ -229,22 +235,22 @@ var {{.MethodName}} = func(ctx context.Context{{template "param_decls" .}}) (res
 {{- else}}
 {{- $assign := .AssignMode}}
 {{- range .Mappings}}
-	{{.ExecDmlParamName}} := func() (any, func()) {
-{{- if eq $assign 1}}
-		item := {{.DtoClassName}}{}
-		return []any{
-{{- range .Fields}}
-				&item.{{.Name}},
-{{- end}}
-			}, func() {
-				{{.MethodParamName}}(&item)
-			}
-{{- else}}
+	{{.ExecDmlParamName}} := func(scan func(any) error) error {
 		item := &{{.DtoClassName}}{}
-		return item, func() {
-			{{.MethodParamName}}(item)
-		}
+{{- if eq $assign 1}}
+		err := scan([]any{
+{{- range .Fields}}
+			&item.{{.Name}},
 {{- end}}
+		})
+{{- else}}
+		err := scan(item)
+{{- end}}
+		if err != nil {
+			return err
+		}
+		{{.MethodParamName}}(item)
+		return nil
 	}
 {{- end}}
 {{- end}}

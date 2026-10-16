@@ -22,7 +22,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.0.5"
+const version = "1.0.6"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 
@@ -32,24 +32,33 @@ usage:
                                   (database/sql, sqlx or gorm; no_orm by default),
                                   type map and url for pg (default), mysql or sqlite;
                                   an error if any of them exists, nothing is overwritten
-  sdm generate|gen [-dir go-sdm] [-m] [-d] [class ...]
+  sdm generate|gen [-dir go-sdm|-c N|all] [-m] [-d] [class ...]
                                   generate models and DAO into the folders of settings.xml
-  sdm validate|val [-dir go-sdm] [-m] [-d] [class ...]
+  sdm validate|val [-dir go-sdm|-c N|all] [-m] [-d] [class ...]
                                   exit 1 if the generated code is out of date (for CI)
-  sdm list|ls [-dir go-sdm] [-m] [-d] [-l] [class ...]
+  sdm list|ls [-dir go-sdm|-c N|all] [-m] [-d] [-l] [class ...]
                                   numbered classes of sdm.xml in the order of declaration,
                                   -l: a table with files and dates
-  sdm xml -orm no_orm|sqlx|gorm [-dir go-sdm] [-m] [-d] [-force]
+  sdm xml -orm no_orm|sqlx|gorm [-dir go-sdm|-c N] [-m] [-d] [-force]
                                   starting XML from the database schema, to the console:
                                   -m <dto-class> for each table and view, -d <dao-class>
                                   for each, named by the table, with <crud/> and FK access;
                                   -orm (required): DTO classes Task, sqlx-Task or gorm-Task;
                                   classes already in sdm.xml are skipped, -force: not;
                                   to a file: sdm xml -orm gorm -m > models.xml
+  sdm datastore|ds [-dir go-sdm|-c N|all] [-db pg|mysql|sqlite]
+                                  update data_store_<orm>.go in the DAO folder to this sdm
+                                  version (the database of <go-db url>, or -db);
+                                  data_store_<orm>_ex.go, your connection, is not touched
   sdm version|-v|--version
   sdm help
 
 -m: models only, -d: DAO only.
+
+-c N: the configuration N of .sdm, the root file of the IDE plug-ins next to go.mod (its lines
+<dir>/go.dal, numbered from 1); -c all: each of them, one after another (not for xml). Without -dir and -c: the only one of .sdm; several are printed as
+a table with the command for each, and the console asks for the number; no go.dal in .sdm
+(or no .sdm): -dir go-sdm.
 
 class: a number of sdm ls or a name; several, by spaces or commas: sdm gen 1,3 5 TasksDao.
 None: all classes.
@@ -80,13 +89,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		return runInit(o, stdout, stderr)
 	case "generate", "gen":
-		return runGenerate(args, true, stdout, stderr)
+		return runGenerate(cmd, args, true, stdout, stderr)
 	case "validate", "val":
-		return runGenerate(args, false, stdout, stderr)
+		return runGenerate(cmd, args, false, stdout, stderr)
 	case "list", "ls":
-		return runList(args, stdout, stderr)
+		return runList(cmd, args, stdout, stderr)
 	case "xml":
-		return runXML(args, stdout, stderr)
+		return runXML(cmd, args, stdout, stderr)
+	case "datastore", "ds":
+		return runDataStore(cmd, args, stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, version)
 		return 0
@@ -149,30 +160,76 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 	return 0
 }
 
+// runDataStore updates the data store of the DAO folder to this sdm version.
+func runDataStore(cmd string, args []string, stdout, stderr io.Writer) int {
+	fs, dir := newFlags("datastore", stderr)
+	db := fs.String("db", "", "database of the data store, by <go-db url> if not given: "+strings.Join(skeleton.DBs, ", "))
+	c := configFlag(fs)
+	rest, err := parse(fs, args)
+	if err != nil {
+		return 2
+	}
+	if len(rest) > 0 {
+		printErr(stderr, fmt.Errorf("datastore takes no classes: %s", strings.Join(rest, " ")))
+		return 2
+	}
+	if *db != "" && !slices.Contains(skeleton.DBs, *db) {
+		printErr(stderr, fmt.Errorf("datastore: -db %s expected", strings.Join(skeleton.DBs, "|")))
+		return 2
+	}
+	return forEachConfig(fs, *dir, *c, cmd, args, stdout, stderr, func(sdmDir string) int {
+		found, err := skeleton.RefreshDataStore(".", sdmDir, *db)
+		for _, f := range found {
+			state := "up to date"
+			if f.Updated {
+				state = "updated"
+			}
+			// which one and why: ORM by the file name, DB by <go-db url> or -db
+			fmt.Fprintf(stdout, "%s: %s (%s for %s)\n", state, f.Path, f.ORM, f.DB)
+		}
+		if err != nil {
+			printErr(stderr, err)
+			return 1
+		}
+		return 0
+	})
+}
+
 // runGenerate is generate (write == true) or validate.
-func runGenerate(args []string, write bool, stdout, stderr io.Writer) int {
+func runGenerate(cmd string, args []string, write bool, stdout, stderr io.Writer) int {
 	fs, dir := newFlags(map[bool]string{true: "generate", false: "validate"}[write], stderr)
 	models, daos := kindFlags(fs)
+	c := configFlag(fs)
 	classes, err := parse(fs, args)
 	if err != nil {
 		return 2
 	}
-	return generate(cleanRel(*dir), classes, *models, *daos, write, stdout, stderr)
+	return forEachConfig(fs, *dir, *c, cmd, args, stdout, stderr, func(sdmDir string) int {
+		return generate(sdmDir, classes, *models, *daos, write, stdout, stderr)
+	})
 }
 
 func kindFlags(fs *flag.FlagSet) (models, daos *bool) {
 	return fs.Bool("m", false, "models only"), fs.Bool("d", false, "DAO only")
 }
 
-func runList(args []string, stdout, stderr io.Writer) int {
+func runList(cmd string, args []string, stdout, stderr io.Writer) int {
 	fs, dir := newFlags("list", stderr)
 	models, daos := kindFlags(fs)
 	long := fs.Bool("l", false, "a table with files and dates")
+	c := configFlag(fs)
 	classes, err := parse(fs, args)
 	if err != nil {
 		return 2
 	}
-	entries, err := gen.List(".", cleanRel(*dir))
+	return forEachConfig(fs, *dir, *c, cmd, args, stdout, stderr, func(sdmDir string) int {
+		return list(sdmDir, classes, *models, *daos, *long, stdout, stderr)
+	})
+}
+
+// list prints the classes of one configuration.
+func list(sdmDir string, classes []string, models, daos, long bool, stdout, stderr io.Writer) int {
+	entries, err := gen.List(".", sdmDir)
 	if err != nil {
 		printErr(stderr, err)
 		return 1
@@ -181,7 +238,7 @@ func runList(args []string, stdout, stderr io.Writer) int {
 	for i, e := range entries {
 		all[i] = e.Class
 	}
-	only, err := gen.Select(all, classes, *models, *daos)
+	only, err := gen.Select(all, classes, models, daos)
 	if err != nil {
 		printErr(stderr, err)
 		return 2
@@ -192,7 +249,7 @@ func runList(args []string, stdout, stderr io.Writer) int {
 			shown = append(shown, e)
 		}
 	}
-	if !*long {
+	if !long {
 		items := make([]string, len(shown))
 		for i, e := range shown {
 			items[i] = fmt.Sprintf("%d:%s", e.N, e.Name)
@@ -292,7 +349,10 @@ func loadSettings(dir string) (*sdmxml.Settings, error) {
 		return nil, err
 	}
 	if s.GoDB == nil {
-		return nil, fmt.Errorf("%s/settings.xml: <go-db url=\"...\" user=\"...\" pwd=\"...\"/> expected (<jdbc> is for the IDE plug-ins)", dir)
+		return nil, fmt.Errorf("%s/settings.xml has no <go-db>, the database to generate from. Add one of:\n\n"+
+			"    <go-db url=\"postgres://localhost:5432/db\" user=\"postgres\" pwd=\"\"/>\n"+
+			"    <go-db url=\"mysql://localhost:3306/db\" user=\"root\" pwd=\"\"/>\n"+
+			"    <go-db url=\"sqlite:app.sqlite3\" user=\"\" pwd=\"\"/>   (the file is relative to go.mod)", dir)
 	}
 	return s, nil
 }
@@ -316,11 +376,12 @@ func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
 
 // runXML prints the starting XML from the database schema: <dto-class> (-m) and <dao-class>
 // with <crud> and FK access (-d), both if neither or both are given.
-func runXML(args []string, stdout, stderr io.Writer) int {
+func runXML(cmd string, args []string, stdout, stderr io.Writer) int {
 	fs, dir := newFlags("xml", stderr)
 	models, daos := kindFlags(fs)
 	orm := fs.String("orm", "", "the model of DTO classes, required: "+strings.Join(datastore.Variants, ", "))
 	force := fs.Bool("force", false, "all tables and views, sdm.xml is not read")
+	c := configFlag(fs)
 	rest, err := parse(fs, args)
 	if err != nil {
 		return 2
@@ -340,7 +401,14 @@ func runXML(args []string, stdout, stderr io.Writer) int {
 	if !*models && !*daos {
 		*models, *daos = true, true
 	}
-	sdmDir := cleanRel(*dir)
+	if strings.EqualFold(*c, allConfigs) {
+		printErr(stderr, errors.New("xml: -c all is not for xml, it prints one configuration"))
+		return 2
+	}
+	sdmDir := ""
+	if code := forEachConfig(fs, *dir, *c, cmd, args, stdout, stderr, func(d string) int { sdmDir = d; return 0 }); code != 0 {
+		return code
+	}
 	s, err := loadSettings(sdmDir)
 	if err != nil {
 		printErr(stderr, err)

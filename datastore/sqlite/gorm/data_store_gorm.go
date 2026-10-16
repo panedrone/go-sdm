@@ -409,7 +409,7 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 		}
 		return nil
 	}
-	onRow, ok := dest.(func() (any, func()))
+	onRow, ok := dest.(func(func(any) error) error)
 	if ok {
 		rows, err := ds.rawQuery(ctx, sqlString, args...)
 		if err != nil {
@@ -429,20 +429,20 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 	return raw.Take(dest).Error
 }
 
-func fetchAll(rows *sql.Rows, onRow func() (any, func())) (err error) {
+func fetchAll(rows *sql.Rows, onRow func(func(any) error) error) (err error) {
+	scan := func(fa any) error {
+		faArr, ok := fa.([]any)
+		if !ok {
+			return errUnexpectedType(fa)
+		}
+		return rows.Scan(faArr...)
+	}
 	for {
 		for rows.Next() {
-			fa, onRowComplete := onRow()
-			faArr, ok := fa.([]any)
-			if ok {
-				err = rows.Scan(faArr...)
-			} else {
-				err = errUnexpectedType(fa)
-			}
+			err = onRow(scan)
 			if err != nil {
 				return
 			}
-			onRowComplete()
 		}
 		if !rows.NextResultSet() {
 			return

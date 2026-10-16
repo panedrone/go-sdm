@@ -225,11 +225,11 @@ func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) 
 			}
 			hasParamsImplRc = true
 			for _, fn := range param {
-				_, ok1 := fn.(func() (any, func()))
+				_, ok1 := fn.(func(func(any) error) error)
 				_, ok2 := fn.(func(map[string]any))
 				if !ok1 && !ok2 {
 					err = errors.New(fmt.Sprintf("Expected: 'func(map[string]any)' || "+
-						"'func() (any, func())'. Got: %v", reflect.TypeOf(fn)))
+						"'func(func(any) error) error'. Got: %v", reflect.TypeOf(fn)))
 					return
 				}
 				*onRowArr = append(*onRowArr, fn)
@@ -269,19 +269,19 @@ func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) 
 	return
 }
 
-func (ds *_DS) fetchRows(rows *sql.Rows, onRow func() (any, func())) (err error) {
-	for rows.Next() {
-		fa, onRowCompleted := onRow()
-		switch _fa := fa.(type) {
-		case []any:
-			err = rows.Scan(_fa...)
-		default:
-			err = errUnexpectedType(_fa)
+func (ds *_DS) fetchRows(rows *sql.Rows, onRow func(func(any) error) error) (err error) {
+	scan := func(fa any) error {
+		faArr, ok := fa.([]any)
+		if !ok {
+			return errUnexpectedType(fa)
 		}
+		return rows.Scan(faArr...)
+	}
+	for rows.Next() {
+		err = onRow(scan)
 		if err != nil {
 			return
 		}
-		onRowCompleted()
 	}
 	return
 }
@@ -313,7 +313,7 @@ func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []any
 				}
 				onRow(data)
 			}
-		case func() (any, func()):
+		case func(func(any) error) error:
 			err = ds.fetchRows(rows, onRow)
 			if err != nil {
 				return err
@@ -564,7 +564,7 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 		return
 	}
 	defer _close(rows)
-	onRow, ok := dest.(func() (any, func()))
+	onRow, ok := dest.(func(func(any) error) error)
 	if ok {
 		return ds.fetchAll(rows, onRow)
 	}
@@ -588,20 +588,20 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 	return
 }
 
-func (ds *_DS) fetchAll(rows *sql.Rows, onRow func() (any, func())) (err error) {
+func (ds *_DS) fetchAll(rows *sql.Rows, onRow func(func(any) error) error) (err error) {
+	scan := func(fa any) error {
+		faArr, ok := fa.([]any)
+		if !ok {
+			return errUnexpectedType(fa)
+		}
+		return rows.Scan(faArr...)
+	}
 	for {
 		for rows.Next() {
-			fa, onRowComplete := onRow()
-			faArr, isUntypedSlice := fa.([]any)
-			if isUntypedSlice {
-				err = rows.Scan(faArr...)
-			} else {
-				err = errUnexpectedType(fa)
-			}
+			err = onRow(scan)
 			if err != nil {
 				return
 			}
-			onRowComplete()
 		}
 		if !rows.NextResultSet() {
 			return

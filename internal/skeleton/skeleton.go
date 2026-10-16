@@ -2,7 +2,8 @@
 //
 // Init overwrites nothing: if any of its files already exists, it is an error,
 // and nothing is created (running it by mistake in a ready project is harmless). The XSD belong
-// to the sdm version, RefreshXSD updates them on every generation.
+// to the sdm version, RefreshXSD updates them on every generation. The data store too, but only on
+// request (sdm datastore): RefreshDataStore.
 package skeleton
 
 import (
@@ -11,6 +12,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"go/parser"
 	"go/token"
 	"os"
 	"path"
@@ -18,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/panedrone/go-sdm/datastore"
+	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
 //go:embed files
@@ -163,6 +166,92 @@ func RefreshXSD(projectDir, sdmDir string) ([]string, error) {
 		res = append(res, dst)
 	}
 	return res, nil
+}
+
+// DataStoreFile is a data store found by RefreshDataStore: ORM by its name data_store_<orm>.go, DB by
+// <go-db url> (or -db).
+type DataStoreFile struct {
+	Path    string
+	ORM, DB string
+	Updated bool // false: it matched this sdm version
+}
+
+// RefreshDataStore rewrites data_store_<orm>.go in the DAO folder of settings.xml with the one of this
+// sdm version, for each data store found there. data_store_<orm>_ex.go (connection) is yours, it is not
+// touched. db "" means the database of <go-db url>. It returns the data stores found; the matching ones
+// are not touched.
+func RefreshDataStore(projectDir, sdmDir, db string) ([]DataStoreFile, error) {
+	dir := filepath.Join(projectDir, filepath.FromSlash(sdmDir))
+	s, err := sdmxml.LoadSettings(dir)
+	if err != nil {
+		return nil, err
+	}
+	if db == "" {
+		if s.GoDB == nil {
+			return nil, fmt.Errorf("%s/settings.xml: no <go-db url>, the database is unknown (-db %s)", sdmDir, strings.Join(DBs, "|"))
+		}
+		if db, err = dbOf(s.GoDB.URL); err != nil {
+			return nil, err
+		}
+	}
+	daoDir := filepath.Join(projectDir, filepath.FromSlash(s.Dao.Scope))
+	var res []DataStoreFile
+	found := false
+	for _, orm := range datastore.Variants {
+		name := "data_store_" + orm + ".go"
+		dst := filepath.Join(daoDir, name)
+		got, err := os.ReadFile(dst)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return res, err
+		}
+		found = true
+		pkg, err := packageName(dst, got)
+		if err != nil {
+			return res, err
+		}
+		ds, err := datastore.Files(orm, db, pkg)
+		if err != nil {
+			return res, err
+		}
+		f := DataStoreFile{Path: dst, ORM: orm, DB: db}
+		if string(got) != ds[name] {
+			if err := os.WriteFile(dst, []byte(ds[name]), 0o644); err != nil {
+				return res, err
+			}
+			f.Updated = true
+		}
+		res = append(res, f)
+	}
+	if !found {
+		return nil, fmt.Errorf("no data_store_{%s}.go in %s (sdm init creates it)", strings.Join(datastore.Variants, ","), daoDir)
+	}
+	return res, nil
+}
+
+// dbOf maps <go-db url> to pg, mysql or sqlite.
+func dbOf(url string) (string, error) {
+	u := strings.TrimPrefix(strings.TrimSpace(url), "jdbc:")
+	switch {
+	case strings.HasPrefix(u, "sqlite:"):
+		return "sqlite", nil
+	case strings.HasPrefix(u, "mysql:"):
+		return "mysql", nil
+	case strings.HasPrefix(u, "postgres:"), strings.HasPrefix(u, "postgresql:"):
+		return "pg", nil
+	}
+	return "", fmt.Errorf("the database of <go-db url=%q> is unknown (-db %s)", url, strings.Join(DBs, "|"))
+}
+
+// packageName is the package clause of a Go file: the data store keeps the package of the DAO folder.
+func packageName(file string, src []byte) (string, error) {
+	f, err := parser.ParseFile(token.NewFileSet(), file, src, parser.PackageClauseOnly)
+	if err != nil {
+		return "", err
+	}
+	return f.Name.Name, nil
 }
 
 // readModule returns the "module" value of go.mod.

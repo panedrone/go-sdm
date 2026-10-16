@@ -39,6 +39,9 @@ func TestSpecific(t *testing.T) {
 		{"mysql", "no_orm", []string{"LastInsertId", "queryImplRc", `sql.Open("mysql"`, "type Out", "type InOut", "validateDest"}, []string{"RETURNING", "FetchPg", "exec2"}},
 		{"sqlite", "no_orm", []string{"LastInsertId", `sql.Open("sqlite3"`}, []string{"RETURNING", "queryImplRc", "processExecParams", "type Out"}},
 		{"sqlite", "gorm", []string{"sqlite.Open"}, []string{"FetchSql", "queryImplRc", "processExecParams"}},
+		// the same DAO compile with any of the three: Out/InOut wherever there are procedures
+		{"mysql", "gorm", []string{"queryImplRc", "type Out", "type InOut", "validateDest"}, []string{"FetchSql", "exec2"}},
+		{"pg", "gorm", []string{"FetchSql", "exec2", "type Out", "type InOut", "validateDest"}, nil},
 		{"pg", "sqlx", []string{"Rebind", "RETURNING"}, nil},
 		{"mysql", "sqlx", []string{"LastInsertId", "queryImplRc", "type Out", "type InOut", "validateDest"}, []string{"RETURNING", "FetchPg", "exec2"}},
 	}

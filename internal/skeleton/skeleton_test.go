@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/panedrone/go-sdm/datastore"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
@@ -51,6 +52,9 @@ func TestInit(t *testing.T) {
 		s.Dto.Scope != "internal/dbal/models" || s.Dao.Scope != "internal/dbal" {
 		t.Errorf("settings: %+v / %+v / %+v", s.Folders, s.Dto, s.Dao)
 	}
+	if s.Dao.FieldAssignMode != 0 {
+		t.Errorf("no_orm: field-assign-mode %d, want 0", s.Dao.FieldAssignMode)
+	}
 	if _, err := sdmxml.LoadSdm(filepath.Join(dir, "go-sdm")); err != nil {
 		t.Error(err)
 	}
@@ -62,7 +66,7 @@ func TestInit(t *testing.T) {
 		t.Error("data_store_no_orm.go: package dbal, no build constraint expected")
 	}
 
-	// -orm sqlx: only the sqlx pair, field-assign-mode="2"
+	// -orm sqlx: only the sqlx pair, field-assign-mode="3"
 	dir = newProject(t)
 	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "store", ORM: "sqlx"}); err != nil {
 		t.Fatal(err)
@@ -75,8 +79,10 @@ func TestInit(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "store", "data_store_no_orm.go")); err == nil {
 		t.Error("data_store_no_orm.go not expected")
 	}
-	if s, err := sdmxml.LoadSettings(filepath.Join(dir, "go-sdm")); err != nil || s.Dao.FieldAssignMode != 2 {
-		t.Errorf("sqlx: field-assign-mode: %v", err)
+	if s, err := sdmxml.LoadSettings(filepath.Join(dir, "go-sdm")); err != nil {
+		t.Error(err)
+	} else if s.Dao.FieldAssignMode != 3 {
+		t.Errorf("sqlx: field-assign-mode %d, want 3", s.Dao.FieldAssignMode)
 	}
 	if _, err := Init(Options{ProjectDir: newProject(t), SdmDir: "go-sdm", DaoDir: "dbal", ORM: "ent"}); err == nil {
 		t.Error("unknown -orm accepted")
@@ -165,5 +171,66 @@ func TestInitNoGoMod(t *testing.T) {
 func TestInitBadPackage(t *testing.T) {
 	if _, err := Init(Options{ProjectDir: newProject(t), SdmDir: "go-sdm", DaoDir: "my-dbal"}); err == nil {
 		t.Fatal("error expected for 'my-dbal'")
+	}
+}
+
+func TestRefreshDataStore(t *testing.T) {
+	dir := newProject(t)
+	if _, err := Init(Options{ProjectDir: dir, SdmDir: "go-sdm", DaoDir: "internal/store", ORM: "sqlx", DB: "mysql"}); err != nil {
+		t.Fatal(err)
+	}
+	ds := filepath.Join(dir, "internal", "store", "data_store_sqlx.go")
+	ex := filepath.Join(dir, "internal", "store", "data_store_sqlx_ex.go")
+	fresh := DataStoreFile{Path: ds, ORM: "sqlx", DB: "mysql"}
+	if res, err := RefreshDataStore(dir, "go-sdm", ""); err != nil || len(res) != 1 || res[0] != fresh {
+		t.Fatalf("fresh data store rewritten: %v %v", res, err)
+	}
+	for f, text := range map[string]string{ds: "package store\n\n// old\n", ex: "package store\n\n// mine\n"} {
+		if err := os.WriteFile(f, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	updated := DataStoreFile{Path: ds, ORM: "sqlx", DB: "mysql", Updated: true}
+	if res, err := RefreshDataStore(dir, "go-sdm", ""); err != nil || len(res) != 1 || res[0] != updated {
+		t.Fatalf("outdated data store: %v %v", res, err)
+	}
+	want, err := datastore.Files("sqlx", "mysql", "store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(ds); string(b) != want["data_store_sqlx.go"] {
+		t.Error("data_store_sqlx.go: not the mysql/sqlx data store of package store")
+	}
+	if b, _ := os.ReadFile(ex); string(b) != "package store\n\n// mine\n" {
+		t.Error("data_store_sqlx_ex.go touched")
+	}
+	// -db wins over <go-db url>
+	if res, err := RefreshDataStore(dir, "go-sdm", "pg"); err != nil || len(res) != 1 || res[0].DB != "pg" || !res[0].Updated {
+		t.Fatalf("-db pg: %v %v", res, err)
+	}
+	if err := os.Remove(ds); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RefreshDataStore(dir, "go-sdm", ""); err == nil || !strings.Contains(err.Error(), "sdm init") {
+		t.Fatalf("no data store: %v", err)
+	}
+}
+
+func TestDbOf(t *testing.T) {
+	for url, want := range map[string]string{
+		"postgres://localhost:5432/db":   "pg",
+		"postgresql://localhost/db":      "pg",
+		"jdbc:postgresql://localhost/db": "pg",
+		"mysql://localhost:3306/db":      "mysql",
+		"jdbc:mysql://localhost/db":      "mysql",
+		"sqlite:app.sqlite3":             "sqlite",
+		"jdbc:sqlite:$PROJECT_DIR$/a.db": "sqlite",
+	} {
+		if got, err := dbOf(url); err != nil || got != want {
+			t.Errorf("%s: %q %v, want %q", url, got, err, want)
+		}
+	}
+	if _, err := dbOf("oracle:thin"); err == nil {
+		t.Error("oracle: error expected")
 	}
 }

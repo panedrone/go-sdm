@@ -255,16 +255,16 @@ func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) 
 			}
 			hasParamsImplRc = true
 			for _, fn := range param {
-				_, ok1 := fn.(func() (any, func()))
+				_, ok1 := fn.(func(func(any) error) error)
 				_, ok2 := fn.(func(map[string]any))
 				if !ok1 && !ok2 {
 					err = errors.New(fmt.Sprintf("Expected: 'func(map[string]any)' || "+
-						"'func() (any, func())'. Got: %v", reflect.TypeOf(fn)))
+						"'func(func(any) error) error'. Got: %v", reflect.TypeOf(fn)))
 					return
 				}
 				*onRowArr = append(*onRowArr, fn)
 			}
-		case func() (any, func()), func() ([]any, func()):
+		case func(func(any) error) error:
 			if hasParamsImplRc {
 				err = errUnexpectedType(args)
 				return
@@ -328,7 +328,7 @@ func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []any
 				}
 				onRow(row)
 			}
-		case func() (any, func()):
+		case func(func(any) error) error:
 			err = ds.fetchSqlxRows(rows, onRow)
 			if err != nil {
 				return err
@@ -343,15 +343,16 @@ func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []any
 	return nil
 }
 
-func (ds *_DS) fetchSqlxRows(rows *sqlx.Rows, onRow func() (any, func())) error {
+func (ds *_DS) fetchSqlxRows(rows *sqlx.Rows, onRow func(func(any) error) error) error {
 	sc := scanner{m: ds.db.Mapper}
+	scan := func(fa any) error {
+		return sc.Scan(rows, fa)
+	}
 	for rows.Next() {
-		fa, onRowCompleted := onRow()
-		err := sc.Scan(rows, fa)
+		err := onRow(scan)
 		if err != nil {
 			return err
 		}
-		onRowCompleted()
 	}
 	return nil
 }
@@ -424,20 +425,20 @@ func (ds *_DS) fetchDriverRows(dr driver.Rows, onRowFunc any) error {
 			rx.toMap(data)
 			onRow(data)
 		}
-	case func() (any, func()):
-		for rx.Next() {
-			fa, onRowCompleted := onRow()
-			var err error
+	case func(func(any) error) error:
+		scan := func(fa any) error {
 			switch _fa := fa.(type) {
 			case []any:
-				err = rx.toSlice(_fa)
+				return rx.toSlice(_fa)
 			default:
-				err = rx.toStruct(ds.db.Mapper, fa)
+				return rx.toStruct(ds.db.Mapper, fa)
 			}
+		}
+		for rx.Next() {
+			err := onRow(scan)
 			if err != nil {
 				return err
 			}
-			onRowCompleted()
 		}
 	default:
 		return errUnexpectedType(onRow)
@@ -776,7 +777,7 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 		return err
 	}
 	defer _close(rows)
-	onRow, ok := dest.(func() (any, func()))
+	onRow, ok := dest.(func(func(any) error) error)
 	if ok {
 		for {
 			err := ds.fetchSqlxRows(rows, onRow)

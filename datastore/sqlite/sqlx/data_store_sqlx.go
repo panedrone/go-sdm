@@ -165,15 +165,16 @@ func (ds *_DS) Insert(ctx context.Context, sqlString string, aiNames string, arg
 	return ds.insert(ctx, ds.formatSQL(sqlString), aiNames, args...)
 }
 
-func (ds *_DS) fetchSqlxRows(rows *sqlx.Rows, onRow func() (any, func())) error {
+func (ds *_DS) fetchSqlxRows(rows *sqlx.Rows, onRow func(func(any) error) error) error {
 	sc := scanner{m: ds.db.Mapper}
+	scan := func(fa any) error {
+		return sc.Scan(rows, fa)
+	}
 	for rows.Next() {
-		fa, onRowCompleted := onRow()
-		err := sc.Scan(rows, fa)
+		err := onRow(scan)
 		if err != nil {
 			return err
 		}
-		onRowCompleted()
 	}
 	return nil
 }
@@ -431,7 +432,7 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 		return err
 	}
 	defer _close(rows)
-	onRow, ok := dest.(func() (any, func()))
+	onRow, ok := dest.(func(func(any) error) error)
 	if ok {
 		for {
 			err := ds.fetchSqlxRows(rows, onRow)

@@ -71,6 +71,35 @@ type DataStore interface {
 	Select(ctx context.Context, sqlString string, fa any, args ...any) error
 }
 
+type Out struct {
+	/*
+		var outParam float64 // no need to init
+		cxDao.SpTestOutParams(47, Out{Dest: &outParam})
+		// cxDao.SpTestOutParams(47, &outParam) // <- this one is also ok for OUT parameters
+		fmt.Println(outParam)
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+	*/
+
+	// Dest is a pointer to the value that will be set to the result of the
+	// stored procedure's OUT parameter.
+	Dest any
+}
+
+type InOut struct {
+	/*
+		inOutParam := 123.0 // must be initialized for INOUT
+		cxDao.SpTestInoutParams(InOut{Dest: &inOutParam})
+		fmt.Println(inOutParam)
+
+		// not working in MySQL, see https://sqldalmaker.sourceforge.net/sp-udf.html#mysql_out_params
+	*/
+
+	// Dest is a pointer to the value that will be set to the result of the
+	// stored procedure's OUT parameter.
+	Dest any
+}
+
 type _DS struct {
 	rootDb *gorm.DB
 }
@@ -206,6 +235,17 @@ func pointsToNil(p any) bool {
 	return false
 }
 
+func validateDest(dest any) (err error) {
+	if dest == nil {
+		err = errors.New("Out/InOut -> Dest is nil")
+	} else if !isPtr(dest) {
+		err = errors.New("Out/InOut -> Dest must be a Ptr")
+	} else if pointsToNil(dest) {
+		err = errors.New("Out/InOut -> Dest points to nil")
+	}
+	return
+}
+
 func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) (hasParamsImplRc bool, hasParamsOutRc bool, err error) {
 	for _, arg := range args {
 		switch param := arg.(type) {
@@ -225,15 +265,39 @@ func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) 
 			}
 			hasParamsImplRc = true
 			for _, fn := range param {
-				_, ok1 := fn.(func() (any, func()))
+				_, ok1 := fn.(func(func(any) error) error)
 				_, ok2 := fn.(func(map[string]any))
 				if !ok1 && !ok2 {
 					err = errors.New(fmt.Sprintf("Expected: 'func(map[string]any)' || "+
-						"'func() (any, func())'. Got: %v", reflect.TypeOf(fn)))
+						"'func(func(any) error) error'. Got: %v", reflect.TypeOf(fn)))
 					return
 				}
 				*onRowArr = append(*onRowArr, fn)
 			}
+		case *Out:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: false})
+		case Out:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: false})
+		case *InOut:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: true})
+		case InOut:
+			err = validateDest(param.Dest)
+			if err != nil {
+				return
+			}
+			*queryArgs = append(*queryArgs, sql.Out{Dest: param.Dest, In: true})
 		default:
 			if isPtr(arg) && pointsToNil(arg) {
 				err = errors.New("arg points to nil")
@@ -246,19 +310,19 @@ func (ds *_DS) processExecParams(args []any, onRowArr *[]any, queryArgs *[]any) 
 	return
 }
 
-func fetchRows(rows *sql.Rows, onRow func() (any, func())) (err error) {
-	for rows.Next() {
-		fa, onRowCompleted := onRow()
-		switch _fa := fa.(type) {
-		case []any:
-			err = rows.Scan(_fa...)
-		default:
-			err = errUnexpectedType(_fa)
+func fetchRows(rows *sql.Rows, onRow func(func(any) error) error) (err error) {
+	scan := func(fa any) error {
+		faArr, ok := fa.([]any)
+		if !ok {
+			return errUnexpectedType(fa)
 		}
+		return rows.Scan(faArr...)
+	}
+	for rows.Next() {
+		err = onRow(scan)
 		if err != nil {
 			return
 		}
-		onRowCompleted()
 	}
 	return
 }
@@ -289,7 +353,7 @@ func (ds *_DS) queryImplRc(ctx context.Context, sqlString string, onRowArr []any
 				}
 				onRow(data)
 			}
-		case func() (any, func()):
+		case func(func(any) error) error:
 			err = fetchRows(rows, onRow)
 			if err != nil {
 				return err
@@ -558,7 +622,7 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 		}
 		return nil
 	}
-	onRow, ok := dest.(func() (any, func()))
+	onRow, ok := dest.(func(func(any) error) error)
 	if ok {
 		rows, err := ds.rawQuery(ctx, sqlString, args...)
 		if err != nil {
@@ -578,20 +642,20 @@ func (ds *_DS) Select(ctx context.Context, sqlString string, dest any, args ...a
 	return raw.Take(dest).Error
 }
 
-func fetchAll(rows *sql.Rows, onRow func() (any, func())) (err error) {
+func fetchAll(rows *sql.Rows, onRow func(func(any) error) error) (err error) {
+	scan := func(fa any) error {
+		faArr, ok := fa.([]any)
+		if !ok {
+			return errUnexpectedType(fa)
+		}
+		return rows.Scan(faArr...)
+	}
 	for {
 		for rows.Next() {
-			fa, onRowComplete := onRow()
-			faArr, ok := fa.([]any)
-			if ok {
-				err = rows.Scan(faArr...)
-			} else {
-				err = errUnexpectedType(fa)
-			}
+			err = onRow(scan)
 			if err != nil {
 				return
 			}
-			onRowComplete()
 		}
 		if !rows.NextResultSet() {
 			return
