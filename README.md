@@ -271,7 +271,22 @@ rewrites `data_store_<orm>.go` in the DAO folder of `settings.xml` with the one 
 data store found there, for the database of `<go-db url>` (or `-db pg|mysql|sqlite`), with the package
 of the file. `_ex` is yours and is never touched; your own edits of `data_store_<orm>.go` are lost, so
 keep them in `_ex`. Regenerate the DAO along with it (`sdm gen`): the generated code and the data
-store change together.
+store change together. It prints which one it took and why: the ORM by the file name, the database
+by `<go-db url>` (or `-db`):
+
+```
+$ sdm ds -c all
+--- 1:gorm/sdm/go.dal
+updated: gorm/dbal/data_store_gorm.go (gorm for mysql)
+
+--- 2:sqlx/sdm/go.dal
+up to date: sqlx/dbal/data_store_sqlx.go (sqlx for mysql)
+```
+
+A data store of the IDE plug-in (one file for all databases) becomes the one for your database
+only, so the first `sdm ds` shows a large diff. `Out` and `InOut` are in every data store of
+PostgreSQL and MySQL: the same DAO compile with no_orm, sqlx and gorm, even where MySQL cannot
+fill OUT parameters.
 
 ## Type map
 
