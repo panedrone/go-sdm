@@ -22,7 +22,7 @@ import (
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.0.6"
+const version = "1.0.7"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 

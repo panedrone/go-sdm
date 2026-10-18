@@ -28,6 +28,18 @@ func TestVariantsUpToDate(t *testing.T) {
 	}
 }
 
+// The sources in a checkout with core.autocrlf=true have CRLF.
+func TestWithPackageCRLF(t *testing.T) {
+	src := "//go:build ignore\r\n\r\n// header\r\npackage dbal\r\n\r\nfunc f() {}\r\n"
+	got, ok := withPackage(src, "store")
+	if !ok {
+		t.Fatal("'package dbal' not found")
+	}
+	if want := "package store\n\nfunc f() {}\n"; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 // SQLite and MySQL have no PostgreSQL cursor code, SQLite has no procedure code either.
 func TestSpecific(t *testing.T) {
 	cases := []struct {

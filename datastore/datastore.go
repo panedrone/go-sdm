@@ -58,13 +58,24 @@ func Files(variant, db, pkg string) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, body, ok := strings.Cut(string(data), "\npackage dbal\n")
+		text, ok := withPackage(string(data), pkg)
 		if !ok {
 			return nil, fmt.Errorf("%s/%s/%s: 'package dbal' not found", db, variant, name)
 		}
-		res[name] = "package " + pkg + "\n" + body
+		res[name] = text
 	}
 	return res, nil
+}
+
+// withPackage drops everything before "package dbal" and renames the package to pkg.
+// A checkout with core.autocrlf=true embeds CRLF: the result is LF.
+func withPackage(src, pkg string) (string, bool) {
+	src = strings.ReplaceAll(src, "\r\n", "\n")
+	_, body, ok := strings.Cut(src, "\npackage dbal\n")
+	if !ok {
+		return "", false
+	}
+	return "package " + pkg + "\n" + body, true
 }
 
 // Generate returns the files of variant db/variant from the templates: file name -> text.
