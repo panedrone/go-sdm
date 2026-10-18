@@ -20,7 +20,7 @@ It works like the [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.n
     
     <crud dto="Test" table="tests"/>
     
-    <query-dto-list dto="Test" method="GetTestsByRating(t_rating)" ref="select * from get_tests_by_rating(?)"/>
+    <query-dto-list dto="Test" method="GetTestsByRating(t_rating)" ref="tests_by_rating.sql"/>
   
     <exec-dml method="SetTestRating(t_id, t_rating)" ref="call set_test_rating(?, ?)"/>
 
