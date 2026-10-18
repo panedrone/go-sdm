@@ -9,7 +9,10 @@
 
     <folders target="{{module}}" sql="{{sql}}"/>
 
-    <!-- scope: folder of generated models; field-names-mode: 0 - TitleCase -->
+    <!-- scope: folder of generated models
+
+         field-names-mode: the IDE plug-in only; go-sdm ignores it. The names always follow
+            the Go conventions: TitleCase fields (task_id -> TaskID), camelCase parameters (taskID). -->
 
     <dto scope="{{dto}}" inheritance="" field-names-mode="0" macro=""/>
 

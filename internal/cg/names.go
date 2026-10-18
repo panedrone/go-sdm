@@ -16,18 +16,6 @@ const (
 	TitleCase
 )
 
-// FieldNamesModeOf maps <dto field-names-mode>: 0 is TitleCase, 1 is camelCase, otherwise snake_case.
-func FieldNamesModeOf(mode int) FieldNamesMode {
-	switch mode {
-	case 0:
-		return TitleCase
-	case 1:
-		return LowerCamelCase
-	default:
-		return SnakeCase
-	}
-}
-
 func CamelCaseToLowerSnakeCase(src string) string {
 	return strings.ToLower(reCamel.ReplaceAllString(src, "${1}_${2}"))
 }

@@ -150,8 +150,8 @@ func TestListByConfig(t *testing.T) {
 	}
 	var out, errOut bytes.Buffer
 	for _, args := range [][]string{
-		{"init", "-dir", "one/sdm", "-dao", "one/dbal", "-db", "sqlite"},
-		{"init", "-dir", "two/sdm", "-dao", "two/dbal", "-db", "sqlite"},
+		{"init", "-dir", "one/sdm", "-dao", "one/dbal", "-orm", "no_orm", "-db", "sqlite"},
+		{"init", "-dir", "two/sdm", "-dao", "two/dbal", "-orm", "no_orm", "-db", "sqlite"},
 	} {
 		if code := run(args, &out, &errOut); code != 0 {
 			t.Fatalf("%v: %d %s", args, code, errOut.String())
@@ -195,5 +195,33 @@ func TestListByConfig(t *testing.T) {
 	errOut.Reset()
 	if code := run([]string{"xml", "-orm", "sqlx", "-c", "all"}, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "xml") {
 		t.Errorf("xml -c all: %d %q", code, errOut.String())
+	}
+}
+
+// the folder of a go.dal line has no settings.xml: the error names the line of .sdm.
+func TestConfigWithoutSettings(t *testing.T) {
+	t.Chdir(t.TempDir())
+	console(t, false, "")
+	if err := os.WriteFile("go.mod", []byte("module m\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"init", "-dir", "huy", "-dao", "huy/dbal", "-orm", "no_orm", "-db", "sqlite"}, &out, &errOut); code != 0 {
+		t.Fatalf("init: %d %s", code, errOut.String())
+	}
+	if err := os.WriteFile(sdmFile, []byte("huy/sdm/go.dal\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	errOut.Reset()
+	if code := run([]string{"ds"}, &out, &errOut); code != 1 ||
+		!strings.Contains(errOut.String(), "1:huy/sdm/go.dal in .sdm: no settings.xml in huy/sdm; fix the line (<folder of settings.xml>/go.dal) or run sdm init with -dir huy/sdm") {
+		t.Errorf("ds: %d %q", code, errOut.String())
+	}
+	if err := os.WriteFile(sdmFile, []byte("huy/go.dal\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	errOut.Reset()
+	if code := run([]string{"ds"}, &out, &errOut); code != 0 {
+		t.Errorf("ds, fixed line: %d %q", code, errOut.String())
 	}
 }

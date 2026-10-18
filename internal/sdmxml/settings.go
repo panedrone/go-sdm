@@ -24,7 +24,7 @@ type Folders struct {
 type Dto struct {
 	Scope          string `xml:"scope,attr"`
 	Inheritance    string `xml:"inheritance,attr"`
-	FieldNamesMode int    `xml:"field-names-mode,attr"`
+	FieldNamesMode int    `xml:"field-names-mode,attr"` // IDE plug-ins; go-sdm ignores it: Go naming only
 	Macro          string `xml:"macro,attr"`
 }
 

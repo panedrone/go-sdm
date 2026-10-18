@@ -88,7 +88,7 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 	}
 	picked := func(name string) bool { return only == nil || only[name] }
 	sqlRoot := projectDir + "/" + s.Folders.SQL
-	dtoMode := cg.FieldNamesModeOf(s.Dto.FieldNamesMode)
+	dtoMode := cg.TitleCase // Go naming only, <dto field-names-mode> is ignored
 	// the Java plug-in has DTO and DAO as two separate runs with their own JdbcUtils
 	dtoGen, err := gogen.NewDTO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
 	if err != nil {

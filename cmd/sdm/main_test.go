@@ -19,7 +19,7 @@ func TestInitGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "pg"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	if !strings.Contains(out.String(), "created: ") || !strings.Contains(out.String(), "next: ") {
@@ -78,7 +78,7 @@ func TestListAndSelect(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init", "-db", "sqlite"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "sqlite"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	db, err := sqlite.Open("app.sqlite3")
@@ -200,7 +200,7 @@ func TestXML(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init", "-db", "sqlite"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "sqlite"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	db, err := sqlite.Open("app.sqlite3")
@@ -293,7 +293,7 @@ func TestInitExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "pg"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	sdmXML := filepath.Join("go-sdm", "sdm.xml")
@@ -302,7 +302,7 @@ func TestInitExisting(t *testing.T) {
 	}
 	out.Reset()
 	errOut.Reset()
-	if code := run([]string{"init"}, &out, &errOut); code != 1 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "pg"}, &out, &errOut); code != 1 {
 		t.Errorf("exit %d, want 1", code)
 	}
 	if !strings.Contains(errOut.String(), "already exists") || out.Len() != 0 {
@@ -440,7 +440,7 @@ func TestNoGoDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init", "-db", "sqlite"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "no_orm", "-db", "sqlite"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	settings := filepath.Join("go-sdm", "settings.xml")
@@ -471,7 +471,7 @@ func TestDataStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"init", "-orm", "gorm", "-db", "sqlite"}, &out, &errOut); code != 0 {
+	if code := run([]string{"init", "-dir", "go-sdm", "-dao", "internal/dbal", "-orm", "gorm", "-db", "sqlite"}, &out, &errOut); code != 0 {
 		t.Fatalf("init: %d %s", code, errOut.String())
 	}
 	out.Reset()
@@ -496,5 +496,43 @@ func TestDataStore(t *testing.T) {
 	errOut.Reset()
 	if code := run([]string{"ds", "-db", "oracle"}, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "-db") {
 		t.Errorf("-db oracle: %d %q", code, errOut.String())
+	}
+}
+
+// init without all of its options writes nothing and prints its own help: an example, then the options.
+func TestInitRequiresAll(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"init"}, "missing -dir, -dao, -orm, -db"},
+		{[]string{"init", "-dir", "x/sdm", "-dao", "x/dbal", "-db", "pg"}, "missing -orm"},
+		{[]string{"init", "-dir", "x/sdm", "-dao", "x/dbal", "-orm", "hibernate", "-db", "pg"}, "-orm hibernate: expected"},
+		{[]string{"init", "-dir", "x/sdm", "-dao", "x/dbal", "-orm", "gorm", "-db", "oracle"}, "-db oracle: expected"},
+		{[]string{"init", "-dir", "", "-dao", "x/dbal", "-orm", "gorm", "-db", "pg"}, "missing -dir"},
+	} {
+		var out, errOut bytes.Buffer
+		if code := run(c.args, &out, &errOut); code != 2 ||
+			!strings.Contains(errOut.String(), c.want) ||
+			!strings.Contains(errOut.String(), "sdm init -dir huy/sdm -dao huy/internal/dbal -orm gorm -db pg") ||
+			!strings.Contains(errOut.String(), "-orm     no_orm | sqlx | gorm") ||
+			strings.Contains(errOut.String(), "sdm generate") {
+			t.Errorf("%v: %d %q", c.args, code, errOut.String())
+		}
+	}
+	if entries, err := os.ReadDir("."); err != nil || len(entries) != 1 {
+		t.Errorf("init wrote files: %v %v", entries, err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"help", "init"}, &out, &errOut); code != 0 || !strings.HasPrefix(out.String(), "sdm init: ") {
+		t.Errorf("help init: %d %q", code, out.String())
+	}
+	if code := run([]string{"init", "-dir", "x/sdm", "-dao", "x/dbal", "-orm", "gorm", "-db", "pg"}, &out, &errOut); code != 0 ||
+		!strings.Contains(out.String(), ".sdm (IDE plug-ins, sdm -c N): the line x/sdm/go.dal") {
+		t.Errorf("init: %d %q %q", code, out.String(), errOut.String())
 	}
 }

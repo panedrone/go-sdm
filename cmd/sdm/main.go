@@ -22,16 +22,14 @@ import (
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.0.7"
+const version = "1.0.8"
 
 const usage = `sdm %s — SQL DAL Maker for Go
 
 usage:
-  sdm init [-dir go-sdm] [-dao internal/dbal] [-orm no_orm|sqlx|gorm] [-db pg|mysql|sqlite]
-                                  create sdm.xml, settings.xml, XSD and the data store
-                                  (database/sql, sqlx or gorm; no_orm by default),
-                                  type map and url for pg (default), mysql or sqlite;
-                                  an error if any of them exists, nothing is overwritten
+  sdm init -dir <folder> -dao <folder> -orm no_orm|sqlx|gorm -db pg|mysql|sqlite
+                                  create sdm.xml, settings.xml, XSD and the data store;
+                                  all options are required, see sdm help init
   sdm generate|gen [-dir go-sdm|-c N|all] [-m] [-d] [class ...]
                                   generate models and DAO into the folders of settings.xml
   sdm validate|val [-dir go-sdm|-c N|all] [-m] [-d] [class ...]
@@ -51,7 +49,7 @@ usage:
                                   version (the database of <go-db url>, or -db);
                                   data_store_<orm>_ex.go, your connection, is not touched
   sdm version|-v|--version
-  sdm help
+  sdm help [init]
 
 -m: models only, -d: DAO only.
 
@@ -102,6 +100,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, version)
 		return 0
 	case "help":
+		if len(args) > 0 && args[0] == "init" {
+			printInitUsage(stdout)
+			return 0
+		}
 		fmt.Fprintf(stdout, usage, version)
 		return 0
 	default:
@@ -119,12 +121,64 @@ func newFlags(name string, stderr io.Writer) (*flag.FlagSet, *string) {
 	return fs, dir
 }
 
+// printInitUsage is the help of init: an example first, then the options; all of them are required.
+func printInitUsage(w io.Writer) {
+	_, _ = io.WriteString(w, `sdm init: create sdm.xml, settings.xml, XSD and the data store; nothing is overwritten
+
+example:
+  sdm init -dir huy/sdm -dao huy/internal/dbal -orm gorm -db pg
+
+all options are required:
+
+`)
+	rows := []string{
+		"  option\tvalue\tmeaning",
+		"  -dir\t<folder>\tthe folder of sdm.xml and settings.xml, relative to go.mod;",
+		"  \t\tits line in .sdm (IDE plug-ins, sdm -c N): <folder>/go.dal",
+		"  -dao\t<folder>\tthe folder of the generated DAO, relative to go.mod; models go to",
+		"  \t\t<folder>/models; the last element is the Go package name",
+		"  -orm\t" + strings.Join(datastore.Variants, " | ") + "\tthe data store: database/sql, sqlx or gorm",
+		"  -db\t" + strings.Join(skeleton.DBs, " | ") + "\tthe database: type map and url of settings.xml, its data store",
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 3, ' ', 0)
+	_, _ = io.WriteString(tw, strings.Join(rows, "\n")+"\n")
+	_ = tw.Flush()
+}
+
 func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, bool) {
 	fs, dir := newFlags(name, stderr)
-	dao := fs.String("dao", "internal/dbal", "folder of generated DAO, relative to go.mod; models go to <dao>/models")
-	orm := fs.String("orm", datastore.Variants[0], "data store: "+strings.Join(datastore.Variants, ", "))
-	db := fs.String("db", skeleton.DBs[0], "database of the type map and url: "+strings.Join(skeleton.DBs, ", "))
+	fs.Usage = func() { printInitUsage(stderr) }
+	dao := fs.String("dao", "", "")
+	orm := fs.String("orm", "", "")
+	db := fs.String("db", "", "")
 	if err := fs.Parse(args); err != nil {
+		return skeleton.Options{}, false
+	}
+	// no defaults: init writes files, a forgotten option must not put them somewhere
+	set := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) { set[f.Name] = strings.TrimSpace(f.Value.String()) != "" })
+	var problems []string
+	for _, f := range []string{"dir", "dao", "orm", "db"} {
+		if !set[f] {
+			problems = append(problems, "-"+f)
+		}
+	}
+	if len(problems) > 0 {
+		problems = []string{"missing " + strings.Join(problems, ", ")}
+	}
+	if set["orm"] && !slices.Contains(datastore.Variants, *orm) {
+		problems = append(problems, fmt.Sprintf("-orm %s: expected %s", *orm, strings.Join(datastore.Variants, ", ")))
+	}
+	if set["db"] && !slices.Contains(skeleton.DBs, *db) {
+		problems = append(problems, fmt.Sprintf("-db %s: expected %s", *db, strings.Join(skeleton.DBs, ", ")))
+	}
+	if fs.NArg() > 0 {
+		problems = append(problems, "unexpected: "+strings.Join(fs.Args(), " "))
+	}
+	if len(problems) > 0 {
+		printErr(stderr, errors.New("init: "+strings.Join(problems, "; ")))
+		fmt.Fprintln(stderr)
+		printInitUsage(stderr)
 		return skeleton.Options{}, false
 	}
 	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
@@ -157,6 +211,7 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, then sdm gen\n",
 		o.SdmDir, o.SdmDir)
+	fmt.Fprintf(stdout, "%s (IDE plug-ins, sdm -c N): the line %s/go.dal\n", sdmFile, o.SdmDir)
 	return 0
 }
 

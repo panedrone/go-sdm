@@ -64,10 +64,12 @@ go install github.com/panedrone/go-sdm/cmd/sdm@latest
 In the folder of `go.mod`:
 
 ```bash
-sdm init -db pg         # PostgreSQL
-sdm init -db mysql      # or MySQL
-sdm init -db sqlite     # or SQLite
+sdm init -dir go-sdm -dao internal/dbal -orm no_orm -db pg
 ```
+
+All four options are required (see [Options of `init`](#options-of-init)): `init` writes files, and
+a forgotten option must not put them somewhere else. Without one of them nothing is written, and
+`sdm` prints the help of `init`, an example and the table of options; `sdm help init` prints it too.
 
 `init` creates the configuration:
 
@@ -79,9 +81,12 @@ internal/dbal/data_store_no_orm.go     the data store used by the generated code
 internal/dbal/data_store_no_orm_ex.go  your part: connection
 ```
 
+and prints the line for `.sdm`, the root file of the IDE plug-ins: `go-sdm/go.dal` (see
+[Several configurations](#several-configurations-sdm)).
+
 The generated code goes under `internal/`: the DAO and the models are the data layer of your
 application, not an API for other modules, and the Go compiler keeps them so. Deeper folders work
-the same way, for example `internal/noorm/dbal` (`sdm init -dao internal/noorm/dbal` or
+the same way, for example `internal/noorm/dbal` (`-dao internal/noorm/dbal` of `init` or
 `scope` in `settings.xml`).
 
 Describe classes in `go-sdm/sdm.xml`, set `<go-db url>` in `go-sdm/settings.xml` and run
@@ -170,15 +175,27 @@ sdm xml -orm sqlx -m | Out-File -Encoding utf8 models.xml
 As in the plug-ins, the names of DTO classes are English singulars of the table names, and
 all schemas but the system ones are read, without the schema in the XML.
 
-Options of `init`:
+### Options of `init`
+
+All of them are required, `init` has no defaults:
+
+```bash
+sdm init -dir huy/sdm -dao huy/internal/dbal -orm gorm -db pg
+```
+
+| option                    |                                                                                                    |
+|---------------------------|----------------------------------------------------------------------------------------------------|
+| `-dir <folder>`           | the folder of `sdm.xml` and `settings.xml`, relative to `go.mod`; its line in `.sdm`: `<folder>/go.dal` |
+| `-dao <folder>`           | the folder of the DAO, models go to `<folder>/models`; the last element is the Go package name     |
+| `-orm no_orm\|sqlx\|gorm` | database/sql, sqlx or gorm: the data store; `field-assign-mode="0"` for `no_orm`, `"3"` for `sqlx` and `gorm` |
+| `-db pg\|mysql\|sqlite`   | the database: type map and url in `settings.xml`, the data store for it                            |
+
+Options of the other commands:
 
 | option                    | default         |                                                                                     |
 |---------------------------|-----------------|-------------------------------------------------------------------------------------|
-| `-db pg\|mysql\|sqlite`   | `pg`            | the database: type map and url in `settings.xml`, the data store for it             |
-| `-orm no_orm\|sqlx\|gorm` | `no_orm`        | database/sql, sqlx or gorm: the data store; `field-assign-mode="0"` for `no_orm`, `"3"` for `sqlx` and `gorm` |
-| `-dao <folder>`           | `internal/dbal` | the folder of the DAO, models go to `<folder>/models`                               |
-| `-dir <folder>`           | `go-sdm`        | the folder of `sdm.xml` and `settings.xml` (for all commands)                       |
-| `-c N\|all`               | from `.sdm`     | the configuration N of `.sdm`, or each of them, instead of `-dir` (not for `init`)  |
+| `-dir <folder>`           | `go-sdm`        | the folder of `sdm.xml` and `settings.xml`                                          |
+| `-c N\|all`               | from `.sdm`     | the configuration N of `.sdm`, or each of them, instead of `-dir`                   |
 
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
 
@@ -307,7 +324,7 @@ and the function that reads it from a row:
 <type detected="int4" target="int32${json} -> SetInt32"/>
 ```
 
-`sdm init` writes the keys of PostgreSQL, `sdm init -db mysql` or `-db sqlite` those of MySQL or SQLite. To see which
+`sdm init -db pg` writes the keys of PostgreSQL, `-db mysql` or `-db sqlite` those of MySQL or SQLite. To see which
 names your database gives, empty the
 type map (`<type-map default=""/>`) and generate: the code then has the raw names of the
 driver instead of Go types. Where the driver says nothing about the type (MySQL parameters, SQLite expressions), the key

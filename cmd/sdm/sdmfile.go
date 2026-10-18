@@ -164,6 +164,19 @@ func commandLine(cmd string, args []string) string {
 	return strings.Join(parts, " ")
 }
 
+// checkConfig: the folder of a configuration of .sdm is the folder of its go.dal line, settings.xml
+// has to be there. Without it the error names the line of .sdm, not only the missing file.
+func checkConfig(cfg config) error {
+	if cfg.label == "" {
+		return nil // -dir or the default: the error of the command is clear enough
+	}
+	if _, err := os.Stat(path.Join(cfg.dir, "settings.xml")); err == nil || !errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return fmt.Errorf("%s in %s: no settings.xml in %s; fix the line (<folder of settings.xml>/go.dal) or run sdm init with -dir %s",
+		cfg.label, sdmFile, cfg.dir, cfg.dir)
+}
+
 // forEachConfig runs a command for each of its configurations (configDirs): several get a header
 // "--- N:<dir>/go.dal" each, they go on after a failure; the exit code is the worst of them.
 func forEachConfig(fs *flag.FlagSet, dir, c, cmd string, args []string, stdout, stderr io.Writer, run func(sdmDir string) int) int {
@@ -182,6 +195,11 @@ func forEachConfig(fs *flag.FlagSet, dir, c, cmd string, args []string, stdout, 
 				fmt.Fprintln(stdout)
 			}
 			fmt.Fprintln(stdout, "--- "+cfg.label)
+		}
+		if err := checkConfig(cfg); err != nil {
+			printErr(stderr, err)
+			worst = max(worst, 1)
+			continue
 		}
 		worst = max(worst, run(cfg.dir))
 	}
