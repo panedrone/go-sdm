@@ -2,7 +2,8 @@
 
 SQL DAL Maker for Go generates the data access layer — models and DAO — from an XML manifest
 and the metadata of a **live database**. One static binary, no runtime dependencies.
-PostgreSQL, MySQL and SQLite.
+PostgreSQL, MySQL and SQLite. The same binary generates Python too, without ORM (see
+[Python](#python)).
 
 It works like the [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.net/):
 
@@ -85,7 +86,7 @@ application, not an API for other modules, and the Go compiler keeps them so. De
 the same way, for example `internal/noorm/dbal` (`-dao internal/noorm/dbal` of `init` or
 `scope` in `settings.xml`).
 
-Describe classes in `go-sdm/sdm.xml`, set `<go-db url>` in `go-sdm/settings.xml` and run
+Describe classes in `go-sdm/sdm.xml`, set `<db url>` in `go-sdm/settings.xml` and run
 `sdm gen`: it generates models and DAO. It also keeps the XSD in step with the version of `sdm`.
 `sdm` without a command only prints the usage.
 
@@ -176,7 +177,7 @@ all schemas but the system ones are read, without the schema in the XML.
 All of them are required, `init` has no defaults:
 
 ```bash
-sdm init -dir huy/sdm -dao huy/internal/dbal -orm gorm -db pg
+sdm init -dir sdm -dao internal/dbal -orm gorm -db pg
 ```
 
 | option                    |                                                                                                    |
@@ -199,8 +200,8 @@ Options of the other commands:
 
 A project may have more than one configuration, for example one per ORM. The IDE plug-ins keep
 them in `.sdm`, a text file next to `go.mod`: their tool window shows its lines. `sdm` reads the
-lines `<dir>/go.dal` of it, numbered from 1 in their order; `#` comments, `---` separators and
-the other files are skipped, `|title` at the end is ignored:
+lines `<dir>/go.dal` and `<dir>/python.dal` of it, numbered from 1 in their order; `#` comments,
+`---` separators and the other files are skipped, `|title` at the end is ignored:
 
 ```
 --- sdm
@@ -239,6 +240,8 @@ configuration only.
 Without a console (CI, a pipe) the table is all, exit 2: copy the command you need. No `go.dal` in
 `.sdm` (or no `.sdm`) means `-dir go-sdm`, as before. `-dir` wins over `.sdm`; `-dir` together
 with `-c` is an error. `go.dal` is the root file of the plug-in, `sdm` needs only its folder.
+The language of a folder is its root file, as in the plug-in: `python.dal` there means Python,
+any other folder is Go.
 
 ## database/sql, sqlx or gorm
 
@@ -254,8 +257,11 @@ name in `sdm.xml`:
 
 ## Data store
 
-The generated DAO need a data store in their folder: two files, the code and your part (`_ex`, the connection). Each
-database has its own, with only what it can do:
+Two parts: the generated code (models and DAO) and the engine they run on, the data store in
+their folder. The only thing you must not change in the engine is its adapter for the generated
+DAO: `DS`, the `DataStore` interface and the `Set...` functions the DAO call. Everything else is
+yours: the connection, logging, retries, whatever you need. `_ex` is the file for the connection;
+keep it or not. Each database has its own data store, with only what it can do:
 
 |                         | PostgreSQL           | MySQL               | SQLite           |
 |-------------------------|----------------------|---------------------|------------------|
@@ -281,11 +287,11 @@ fails if they differ.
 
 `sdm gen` does not touch the data store. After `sdm` is updated, `sdm datastore` (`sdm ds`)
 rewrites `data_store_<orm>.go` in the DAO folder of `settings.xml` with the one of this version: the
-data store found there, for the database of `<go-db url>` (or `-db pg|mysql|sqlite`), with the package
-of the file. `_ex` is yours and is never touched; your own edits of `data_store_<orm>.go` are lost, so
-keep them in `_ex`. Regenerate the DAO along with it (`sdm gen`): the generated code and the data
-store change together. It prints which one it took and why: the ORM by the file name, the database
-by `<go-db url>` (or `-db`):
+data store found there, for the database of `<db url>` (or `-db pg|mysql|sqlite`), with the package
+of the file. `_ex` is never touched. `data_store_<orm>.go` is rewritten as a whole: if you changed it,
+look at the diff and bring your changes back. Regenerate the DAO along with it (`sdm gen`): the
+generated code and the adapter change together. It prints which one it took and why: the ORM by the file name, the database
+by `<db url>` (or `-db`):
 
 ```
 $ sdm ds -c all
@@ -333,6 +339,67 @@ is replaced by the type of the column from the database, or by `unknown` if ther
 
 The XML files are meant to be edited in an IDE with XML Schema support:
 GoLand out of the box, VS Code with the "XML" extension by Red Hat.
+
+## Python
+
+The same `sdm`, the same manifest and the same reverse engineering of the live database; the
+output is Python without ORM: plain DB-API 2.0 (sqlite3, psycopg2/psycopg, mysql-connector-python)
+behind a data store. It is what the Python target of the IDE plug-ins generates for no ORM, byte
+for byte. Run `sdm` in the project folder, no `go.mod` is needed:
+
+```bash
+sdm init -lang python -dir sdm -dao dbal -db sqlite
+```
+
+`-dir`, `-dao` and `-db` are required, `-orm` is not for Python. `init` creates:
+
+```
+sdm/sdm.xml                classes to generate
+sdm/settings.xml           folders, database URL, Python type map of the database
+sdm/python.dal             the root file of the IDE plug-in: this folder is Python
+sdm/*.xsd                  completion and validation in the IDE
+dbal/data_store_no_orm.py  the data store for the database
+```
+
+and prints the line for `.sdm`: `sdm/python.dal`. The models and the DAO go to one package,
+`<folders target>` of `settings.xml` (`dbal`; `app/dbal` is `from app.dbal.task import Task`).
+The other commands are the same as for Go: `gen`, `val`, `ls`, `ds`, `-c N`; `sdm xml` needs no
+`-orm` and names the FK access in snake_case.
+
+The names follow the Python conventions: `snake_case` fields, parameters and methods, as in the
+plug-in, whatever `field-names-mode` says. A DAO is a class over the data store:
+
+```python
+ds = create_ds(sqlite3.connect('app.sqlite3'))
+dao = TasksDao(ds)
+task = Task()
+task.t_subject = 'subject'
+dao.create_task(task)          # task.t_id is the generated value
+tasks = dao.get_tasks_by_group(1)
+ds.commit()
+```
+
+A class with a model (`sa-Task`, `dj-Task`) is an ORM class of the plug-in: `sdm` reports it as
+an error of the class. `target` of the type map is the Python type in the docstrings of the
+models and DAO (`int`, `str`, `Decimal`, `datetime`, ...), what the driver returns for the column.
+
+The data store is the same deal as in Go: the generated part and the engine. Do not change the
+adapter of the generated DAO in it, the methods of `DataStore` (`insert_row`, `exec_dml`,
+`query_scalar`, `query_all_scalars`, `query_row`, `query_all_rows`) and `OutParam`; everything else
+is yours, the connection included (`create_ds(conn)`). There is no `_ex` file: keep your part
+where you like. Each database has its own data store, with only what it can do, made from
+[`datastore/templates/data_store_no_orm.py.txt`](datastore/templates/data_store_no_orm.py.txt) by
+`go run ./cli/dsgen`:
+
+|                         | PostgreSQL                                   | MySQL                                          | SQLite                                           |
+|-------------------------|----------------------------------------------|------------------------------------------------|--------------------------------------------------|
+| file                    | [python/pg](datastore/python/pg)             | [python/mysql](datastore/python/mysql)         | [python/sqlite](datastore/python/sqlite)         |
+| generated keys          | `RETURNING`                                  | `lastrowid`                                    | `lastrowid`                                      |
+| parameters              | `?` -> `%s`                                  | `?` -> `%s`                                    | `?`                                              |
+| procedures              | `call`, OUT and INOUT by `OutParam`          | `callproc`: result sets, OUT and INOUT         | —                                                |
+
+`sdm ds` rewrites `data_store_no_orm.py` as a whole: if you changed it, look at the diff and bring
+your changes back.
 
 ## Syntax of XML manifest
 
