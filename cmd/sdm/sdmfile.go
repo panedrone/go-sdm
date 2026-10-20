@@ -14,7 +14,7 @@ import (
 )
 
 // sdmFile is the root file of the IDE plug-ins in the folder of go.mod: their tool window shows its
-// lines. sdm takes the configurations from it: the lines <dir>/go.dal.
+// lines. sdm takes the configurations from it: the lines <dir>/go.dal and <dir>/python.dal.
 const sdmFile = ".sdm"
 
 // stdin and stdinIsTerminal serve the choice of a configuration in the console; tests replace them.
@@ -22,9 +22,9 @@ var stdin io.Reader = os.Stdin
 
 var stdinIsTerminal = func() bool { return isTerminal(os.Stdin) }
 
-// goDals returns the paths <dir>/go.dal of .sdm in their order. "# comment", "--- separator" and the
-// other files are skipped; "path|title" is path.
-func goDals(text string) []string {
+// dalFiles returns the paths <dir>/go.dal and <dir>/python.dal of .sdm in their order. "# comment",
+// "--- separator" and the other files are skipped; "path|title" is path.
+func dalFiles(text string) []string {
 	var res []string
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSpace(line)
@@ -33,7 +33,7 @@ func goDals(text string) []string {
 		}
 		p, _, _ := strings.Cut(line, "|")
 		p = cleanRel(strings.TrimSpace(p))
-		if path.Base(p) == "go.dal" {
+		if b := path.Base(p); b == "go.dal" || b == "python.dal" {
 			res = append(res, p)
 		}
 	}
@@ -42,7 +42,7 @@ func goDals(text string) []string {
 
 // configFlag adds -c to a command that reads a configuration: a number of .sdm or "all".
 func configFlag(fs *flag.FlagSet) *string {
-	return fs.String("c", "", "number of the configuration (go.dal) in "+sdmFile+", or all")
+	return fs.String("c", "", "number of the configuration (go.dal, python.dal) in "+sdmFile+", or all")
 }
 
 // allConfigs is the value of -c for every configuration of .sdm, one after another.
@@ -71,10 +71,10 @@ func configDirs(fs *flag.FlagSet, dir, c, cmdline string, stderr io.Writer) ([]c
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
-	dals := goDals(string(text))
+	dals := dalFiles(string(text))
 	switch {
 	case len(dals) == 0 && c != "":
-		return nil, fmt.Errorf("-c %s: no <dir>/go.dal in %s", c, sdmFile)
+		return nil, fmt.Errorf("-c %s: no <dir>/go.dal or <dir>/python.dal in %s", c, sdmFile)
 	case len(dals) == 0:
 		return []config{{dir: cleanRel(dir)}}, nil
 	case c != "":
@@ -173,8 +173,8 @@ func checkConfig(cfg config) error {
 	if _, err := os.Stat(path.Join(cfg.dir, "settings.xml")); err == nil || !errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
-	return fmt.Errorf("%s in %s: no settings.xml in %s; fix the line (<folder of settings.xml>/go.dal) or run sdm init with -dir %s",
-		cfg.label, sdmFile, cfg.dir, cfg.dir)
+	return fmt.Errorf("%s in %s: no settings.xml in %s; fix the line (<folder of settings.xml>/%s) or run sdm init with -dir %s",
+		cfg.label, sdmFile, cfg.dir, path.Base(cfg.label), cfg.dir)
 }
 
 // forEachConfig runs a command for each of its configurations (configDirs): several get a header

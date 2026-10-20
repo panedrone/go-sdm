@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <!-- The branches of python.vm (no ORM) that the demo projects do not reach. -->
+
+    <dto-class name="Task" ref="tasks">
+        <header><![CDATA[    # a header line]]></header>
+    </dto-class>
+
+    <dto-class name="NoAiPk" ref="_no_ai_pk"/>
+
+    <dto-class name="TaskUser" ref="task_users"/>
+
+    <dto-class name="Empty" ref=""/>
+
+    <dao-class name="BranchesDao">
+
+        <!-- create without generated values: exec_dml -->
+        <crud dto="NoAiPk" table="_no_ai_pk"/>
+
+        <!-- composite PK -->
+        <crud dto="TaskUser" table="task_users"/>
+
+        <query-list method="get_subjects(b_id)" ref="select t_subject from tasks where b_id = ?"/>
+
+        <query-list method="get_subjects_ext(b_id)" external-sql="true" ref="select t_subject from tasks where b_id = ?"/>
+
+        <query method="get_count(b_id, out_params)" ref="select count(*) from tasks where b_id = ?"/>
+
+        <query-list method="get_counts(b_id, out_params)" ref="select count(*) from tasks where b_id = ?"/>
+
+        <query-dto dto="Task" method="get_task(t_id)" ref="select * from tasks where t_id = ?"/>
+
+        <query-dto dto="Task" method="get_task_ext(t_id, out_params)" external-sql="true" ref="select * from tasks where t_id = ?"/>
+
+        <query-dto-list dto="Task" method="get_tasks_ext(b_id, out_params)" external-sql="true" ref="select * from tasks where b_id = ?"/>
+
+        <query method="get_odd" ref="select 'a\c &quot;q&quot; é ∑ 😀	tab' as v from tasks"/>
+
+        <exec-dml method="set_status(t_id, t_status)" ref="update tasks set t_status = ? where t_id = ?"/>
+
+        <exec-dml method="set_status_ext(t_id, t_status)" external-sql="true" ref="update tasks set t_status = ? where t_id = ?"/>
+
+        <exec-dml method="delete_url" ref="delete from tasks where t_subject = 'http://x//y'"/>
+
+    </dao-class>
+
+</sdm>

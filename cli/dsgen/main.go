@@ -1,5 +1,6 @@
 // dsgen is design-time: it builds the data store for each database from the templates datastore/templates
-// into datastore/<db>/<orm>/. Run it from the go-sdm root after editing the templates:
+// into datastore/<db>/<orm>/ (Go) and datastore/python/<db>/ (Python). Run it from the go-sdm root after
+// editing the templates:
 //
 //	go run ./cli/dsgen
 //
@@ -16,6 +17,20 @@ import (
 
 func main() {
 	for _, db := range datastore.DBs {
+		text, err := datastore.GeneratePython(db)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		dir := filepath.Join("datastore", "python", db)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if err := os.WriteFile(filepath.Join(dir, datastore.PythonFile), text, 0o644); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		for _, orm := range datastore.Variants {
 			files, err := datastore.Generate(orm, db)
 			if err != nil {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="Word" ref="WORDS" />
+    <dto-class name="RelatedWord" ref="thesaurus/getRelatedWords.sql"/>
+
+    <dao-class name="ThesaurusDao">
+        <query-dto-list ref="thesaurus/getWordsByKey.sql" dto="Word"
+                        method="get_words_by_key(key)"/>
+
+        <query-dto-list ref="thesaurus/getRelatedWords.sql" dto="RelatedWord"
+                        method="get_related_words(w_id)"/>
+
+        <query method="get_words_count" ref="thesaurus/get_words_count.sql" />
+
+    </dao-class>
+</sdm>

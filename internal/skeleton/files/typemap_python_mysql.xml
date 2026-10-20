@@ -1,0 +1,41 @@
+    <type-map default="">
+
+        <type detected="TINYINT" target="int"/>
+        <type detected="SMALLINT" target="int"/>
+        <type detected="MEDIUMINT" target="int"/>
+        <type detected="INT" target="int"/>
+        <type detected="UNSIGNED TINYINT" target="int"/>
+        <type detected="UNSIGNED SMALLINT" target="int"/>
+        <type detected="UNSIGNED MEDIUMINT" target="int"/>
+        <type detected="UNSIGNED INT" target="int"/>
+        <type detected="BIGINT" target="int"/>
+        <type detected="UNSIGNED BIGINT" target="int"/>
+        <type detected="FLOAT" target="float"/>
+        <type detected="DOUBLE" target="float"/>
+        <type detected="DECIMAL" target="Decimal"/>
+        <type detected="CHAR" target="str"/>
+        <type detected="VARCHAR" target="str"/>
+        <type detected="TEXT" target="str"/>
+        <type detected="TINYTEXT" target="str"/>
+        <type detected="MEDIUMTEXT" target="str"/>
+        <type detected="LONGTEXT" target="str"/>
+        <type detected="TIME" target="timedelta"/>
+        <type detected="GEOMETRY" target="bytes"/>
+        <type detected="ENUM" target="str"/>
+        <type detected="SET" target="set"/>
+        <type detected="JSON" target="str"/>
+        <type detected="BLOB" target="bytes"/>
+        <type detected="TINYBLOB" target="bytes"/>
+        <type detected="MEDIUMBLOB" target="bytes"/>
+        <type detected="LONGBLOB" target="bytes"/>
+        <type detected="NULL" target="object"/>
+        <type detected="BINARY" target="bytes"/>
+        <type detected="VARBINARY" target="bytes"/>
+        <type detected="BIT" target="int"/>
+        <type detected="DATE" target="date"/>
+        <type detected="DATETIME" target="datetime"/>
+        <type detected="TIMESTAMP" target="datetime"/>
+        <type detected="YEAR" target="int"/>
+        <type detected="unknown" target="object"/>
+
+    </type-map>

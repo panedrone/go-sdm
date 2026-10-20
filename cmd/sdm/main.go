@@ -1,4 +1,5 @@
-// sdm is a DAO generator for Go from sdm.xml and the metadata of a live database (PostgreSQL, MySQL, SQLite).
+// sdm is a DAO generator for Go and Python from sdm.xml and the metadata of a live database (PostgreSQL,
+// MySQL, SQLite).
 package main
 
 import (
@@ -22,12 +23,13 @@ import (
 	"github.com/panedrone/go-sdm/internal/skeleton"
 )
 
-const version = "1.0.8"
+const version = "1.0.9"
 
-const usage = `sdm %s — SQL DAL Maker for Go
+const usage = `sdm %s — SQL DAL Maker for Go and Python
 
 usage:
   sdm init -dir <folder> -dao <folder> -orm no_orm|sqlx|gorm -db pg|mysql|sqlite
+  sdm init -lang python -dir <folder> -dao <folder> -db pg|mysql|sqlite
                                   create sdm.xml, settings.xml, XSD and the data store;
                                   all options are required, see sdm help init
   sdm generate|gen [-dir go-sdm|-c N|all] [-m] [-d] [class ...]
@@ -41,28 +43,32 @@ usage:
                                   starting XML from the database schema, to the console:
                                   -m <dto-class> for each table and view, -d <dao-class>
                                   for each, named by the table, with <crud/> and FK access;
-                                  -orm (required): DTO classes Task, sqlx-Task or gorm-Task;
+                                  -orm (required for Go, not for Python): DTO classes Task,
+                                  sqlx-Task or gorm-Task;
                                   classes already in sdm.xml are skipped, -force: not;
                                   to a file: sdm xml -orm gorm -m > models.xml
   sdm datastore|ds [-dir go-sdm|-c N|all] [-db pg|mysql|sqlite]
-                                  update data_store_<orm>.go in the DAO folder to this sdm
-                                  version (the database of <go-db url>, or -db);
-                                  data_store_<orm>_ex.go, your connection, is not touched
+                                  update data_store_<orm>.go (Python: data_store_no_orm.py)
+                                  in the DAO folder to this sdm version (the database of
+                                  <db url>, or -db); data_store_<orm>_ex.go is not touched
   sdm version|-v|--version
   sdm help [init]
 
 -m: models only, -d: DAO only.
 
 -c N: the configuration N of .sdm, the root file of the IDE plug-ins next to go.mod (its lines
-<dir>/go.dal, numbered from 1); -c all: each of them, one after another (not for xml). Without -dir and -c: the only one of .sdm; several are printed as
-a table with the command for each, and the console asks for the number; no go.dal in .sdm
-(or no .sdm): -dir go-sdm.
+<dir>/go.dal and <dir>/python.dal, numbered from 1); -c all: each of them, one after another
+(not for xml). Without -dir and -c: the only one of .sdm; several are printed as a table with
+the command for each, and the console asks for the number; none in .sdm (or no .sdm):
+-dir go-sdm.
+
+A folder with python.dal is Python (sdm init -lang python creates it), any other is Go.
 
 class: a number of sdm ls or a name; several, by spaces or commas: sdm gen 1,3 5 TasksDao.
 None: all classes.
 
-Run it in the folder of go.mod. The database is <go-db url user pwd> of settings.xml;
-SDM_PWD, if set, overrides "pwd".
+Run it in the folder of go.mod (Python: the project folder). The database is
+<db url user pwd> of settings.xml; SDM_PWD, if set, overrides "pwd".
 `
 
 func main() {
@@ -117,7 +123,7 @@ func newFlags(name string, stderr io.Writer) (*flag.FlagSet, *string) {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() { fmt.Fprintf(stderr, usage, version) }
-	dir := fs.String("dir", "go-sdm", "folder of sdm.xml and settings.xml, relative to go.mod")
+	dir := fs.String("dir", "go-sdm", "folder of sdm.xml and settings.xml, relative to the project")
 	return fs, dir
 }
 
@@ -127,17 +133,20 @@ func printInitUsage(w io.Writer) {
 
 example:
   sdm init -dir huy/sdm -dao huy/internal/dbal -orm gorm -db pg
+  sdm init -lang python -dir sdm -dao dbal -db sqlite
 
-all options are required:
+all options are required, but -lang (go by default); Python has no -orm:
 
 `)
 	rows := []string{
 		"  option\tvalue\tmeaning",
-		"  -dir\t<folder>\tthe folder of sdm.xml and settings.xml, relative to go.mod;",
-		"  \t\tits line in .sdm (IDE plug-ins, sdm -c N): <folder>/go.dal",
-		"  -dao\t<folder>\tthe folder of the generated DAO, relative to go.mod; models go to",
-		"  \t\t<folder>/models; the last element is the Go package name",
-		"  -orm\t" + strings.Join(datastore.Variants, " | ") + "\tthe data store: database/sql, sqlx or gorm",
+		"  -lang\t" + strings.Join(skeleton.Langs, " | ") + "\tthe language of the generated code",
+		"  -dir\t<folder>\tthe folder of sdm.xml and settings.xml, relative to the project (go.mod);",
+		"  \t\tits line in .sdm (IDE plug-ins, sdm -c N): <folder>/go.dal, <folder>/python.dal",
+		"  -dao\t<folder>\tthe folder of the generated DAO, relative to the project; Go: models go to",
+		"  \t\t<folder>/models, the last element is the Go package name; Python: models",
+		"  \t\tgo there too, the folder is the package (dbal/x -> from dbal.x.task import Task)",
+		"  -orm\t" + strings.Join(datastore.Variants, " | ") + "\tGo: the data store, database/sql, sqlx or gorm",
 		"  -db\t" + strings.Join(skeleton.DBs, " | ") + "\tthe database: type map and url of settings.xml, its data store",
 	}
 	tw := tabwriter.NewWriter(w, 0, 0, 3, ' ', 0)
@@ -148,17 +157,24 @@ all options are required:
 func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, bool) {
 	fs, dir := newFlags(name, stderr)
 	fs.Usage = func() { printInitUsage(stderr) }
+	lang := fs.String("lang", "", "")
 	dao := fs.String("dao", "", "")
 	orm := fs.String("orm", "", "")
 	db := fs.String("db", "", "")
 	if err := fs.Parse(args); err != nil {
 		return skeleton.Options{}, false
 	}
-	// no defaults: init writes files, a forgotten option must not put them somewhere
+	// no defaults: init writes files, a forgotten option must not put them somewhere; -lang is go when
+	// forgotten, and Go init does nothing without go.mod
 	set := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { set[f.Name] = strings.TrimSpace(f.Value.String()) != "" })
+	py := *lang == string(gen.Python)
+	required := []string{"dir", "dao", "orm", "db"}
+	if py {
+		required = []string{"dir", "dao", "db"}
+	}
 	var problems []string
-	for _, f := range []string{"dir", "dao", "orm", "db"} {
+	for _, f := range required {
 		if !set[f] {
 			problems = append(problems, "-"+f)
 		}
@@ -166,7 +182,12 @@ func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, 
 	if len(problems) > 0 {
 		problems = []string{"missing " + strings.Join(problems, ", ")}
 	}
-	if set["orm"] && !slices.Contains(datastore.Variants, *orm) {
+	if *lang != "" && !slices.Contains(skeleton.Langs, *lang) {
+		problems = append(problems, fmt.Sprintf("-lang %s: expected %s", *lang, strings.Join(skeleton.Langs, ", ")))
+	}
+	if py && set["orm"] {
+		problems = append(problems, "-orm: not for Python, it has no ORM")
+	} else if set["orm"] && !slices.Contains(datastore.Variants, *orm) {
 		problems = append(problems, fmt.Sprintf("-orm %s: expected %s", *orm, strings.Join(datastore.Variants, ", ")))
 	}
 	if set["db"] && !slices.Contains(skeleton.DBs, *db) {
@@ -181,7 +202,7 @@ func parseInit(name string, args []string, stderr io.Writer) (skeleton.Options, 
 		printInitUsage(stderr)
 		return skeleton.Options{}, false
 	}
-	return skeleton.Options{ProjectDir: ".", SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
+	return skeleton.Options{ProjectDir: ".", Lang: gen.Lang(*lang), SdmDir: cleanRel(*dir), DaoDir: cleanRel(*dao), ORM: *orm, DB: *db}, true
 }
 
 // parse allows flags mixed with classes: sdm gen 1,3 -dir x 5 (the flag package stops
@@ -209,16 +230,20 @@ func runInit(o skeleton.Options, stdout, stderr io.Writer) int {
 		printErr(stderr, err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <go-db url> in %s/settings.xml, then sdm gen\n",
+	fmt.Fprintf(stdout, "next: describe classes in %s/sdm.xml, set <db url> in %s/settings.xml, then sdm gen\n",
 		o.SdmDir, o.SdmDir)
-	fmt.Fprintf(stdout, "%s (IDE plug-ins, sdm -c N): the line %s/go.dal\n", sdmFile, o.SdmDir)
+	root := gen.Go.RootFile()
+	if o.Lang == gen.Python {
+		root = gen.Python.RootFile()
+	}
+	fmt.Fprintf(stdout, "%s (IDE plug-ins, sdm -c N): the line %s/%s\n", sdmFile, o.SdmDir, root)
 	return 0
 }
 
 // runDataStore updates the data store of the DAO folder to this sdm version.
 func runDataStore(cmd string, args []string, stdout, stderr io.Writer) int {
 	fs, dir := newFlags("datastore", stderr)
-	db := fs.String("db", "", "database of the data store, by <go-db url> if not given: "+strings.Join(skeleton.DBs, ", "))
+	db := fs.String("db", "", "database of the data store, by <db url> if not given: "+strings.Join(skeleton.DBs, ", "))
 	c := configFlag(fs)
 	rest, err := parse(fs, args)
 	if err != nil {
@@ -239,7 +264,7 @@ func runDataStore(cmd string, args []string, stdout, stderr io.Writer) int {
 			if f.Updated {
 				state = "updated"
 			}
-			// which one and why: ORM by the file name, DB by <go-db url> or -db
+			// which one and why: ORM by the file name, DB by <db url> or -db
 			fmt.Fprintf(stdout, "%s: %s (%s for %s)\n", state, f.Path, f.ORM, f.DB)
 		}
 		if err != nil {
@@ -397,24 +422,27 @@ func generate(dir string, classes []string, models, daos, write bool, stdout, st
 	return 0
 }
 
-// loadSettings: settings.xml with <go-db>.
+// loadSettings: settings.xml with <db>.
 func loadSettings(dir string) (*sdmxml.Settings, error) {
 	s, err := sdmxml.LoadSettings(dir)
 	if err != nil {
 		return nil, err
 	}
-	if s.GoDB == nil {
-		return nil, fmt.Errorf("%s/settings.xml has no <go-db>, the database to generate from. Add one of:\n\n"+
-			"    <go-db url=\"postgres://localhost:5432/db\" user=\"postgres\" pwd=\"\"/>\n"+
-			"    <go-db url=\"mysql://localhost:3306/db\" user=\"root\" pwd=\"\"/>\n"+
-			"    <go-db url=\"sqlite:app.sqlite3\" user=\"\" pwd=\"\"/>   (the file is relative to go.mod)", dir)
+	if s.DB == nil && s.GoDB != nil {
+		return nil, sdmxml.RenamedGoDB(dir)
+	}
+	if s.DB == nil {
+		return nil, fmt.Errorf("%s/settings.xml has no <db>, the database to generate from. Add one of:\n\n"+
+			"    <db url=\"postgres://localhost:5432/db\" user=\"postgres\" pwd=\"\"/>\n"+
+			"    <db url=\"mysql://localhost:3306/db\" user=\"root\" pwd=\"\"/>\n"+
+			"    <db url=\"sqlite:app.sqlite3\" user=\"\" pwd=\"\"/>   (the file is relative to the project)", dir)
 	}
 	return s, nil
 }
 
-// connect opens the database of <go-db>; SDM_PWD overrides pwd.
+// connect opens the database of <db>; SDM_PWD overrides pwd.
 func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
-	db := *s.GoDB
+	db := *s.DB
 	if pwd, ok := os.LookupEnv("SDM_PWD"); ok {
 		db.Pwd = pwd
 	}
@@ -434,7 +462,7 @@ func connect(s *sdmxml.Settings, st *status) (meta.Metadata, error) {
 func runXML(cmd string, args []string, stdout, stderr io.Writer) int {
 	fs, dir := newFlags("xml", stderr)
 	models, daos := kindFlags(fs)
-	orm := fs.String("orm", "", "the model of DTO classes, required: "+strings.Join(datastore.Variants, ", "))
+	orm := fs.String("orm", "", "the model of DTO classes, required for Go: "+strings.Join(datastore.Variants, ", "))
 	force := fs.Bool("force", false, "all tables and views, sdm.xml is not read")
 	c := configFlag(fs)
 	rest, err := parse(fs, args)
@@ -444,14 +472,6 @@ func runXML(cmd string, args []string, stdout, stderr io.Writer) int {
 	if len(rest) > 0 {
 		printErr(stderr, fmt.Errorf("xml takes no classes: %s", strings.Join(rest, " ")))
 		return 2
-	}
-	if !slices.Contains(datastore.Variants, *orm) {
-		printErr(stderr, fmt.Errorf("xml: -orm %s expected", strings.Join(datastore.Variants, "|")))
-		return 2
-	}
-	model := *orm // the prefix of DTO class names: sqlx-Task, gorm-Task
-	if model == datastore.Variants[0] {
-		model = "" // database/sql: Task
 	}
 	if !*models && !*daos {
 		*models, *daos = true, true
@@ -463,6 +483,23 @@ func runXML(cmd string, args []string, stdout, stderr io.Writer) int {
 	sdmDir := ""
 	if code := forEachConfig(fs, *dir, *c, cmd, args, stdout, stderr, func(d string) int { sdmDir = d; return 0 }); code != 0 {
 		return code
+	}
+	lang, err := gen.LangOf(sdmDir)
+	if err != nil {
+		printErr(stderr, err)
+		return 1
+	}
+	model := *orm // the prefix of DTO class names: sqlx-Task, gorm-Task
+	switch {
+	case lang == gen.Python && *orm != "":
+		printErr(stderr, errors.New("xml: -orm is not for Python, it has no ORM: DTO classes are Task"))
+		return 2
+	case lang == gen.Python:
+	case !slices.Contains(datastore.Variants, *orm):
+		printErr(stderr, fmt.Errorf("xml: -orm %s expected", strings.Join(datastore.Variants, "|")))
+		return 2
+	case model == datastore.Variants[0]:
+		model = "" // database/sql: Task
 	}
 	s, err := loadSettings(sdmDir)
 	if err != nil {
@@ -503,7 +540,7 @@ func runXML(cmd string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 	if *daos {
-		x, err := assist.DaoClasses(cat, model, crudDtos(sdm), daoClasses(sdm))
+		x, err := assist.DaoClasses(cat, model, lang == gen.Python, crudDtos(sdm), daoClasses(sdm))
 		if err != nil {
 			st.clear()
 			printErr(stderr, err)

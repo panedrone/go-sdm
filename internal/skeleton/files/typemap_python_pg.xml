@@ -1,0 +1,25 @@
+    <type-map default="">
+
+        <type detected="int2" target="int"/>
+        <type detected="int4" target="int"/>
+        <type detected="int8" target="int"/>
+        <type detected="float4" target="float"/>
+        <type detected="float8" target="float"/>
+        <type detected="numeric" target="Decimal"/>
+        <type detected="varchar" target="str"/>
+        <type detected="text" target="str"/>
+        <type detected="bpchar" target="str"/>
+        <type detected="json" target="object"/>
+        <type detected="jsonb" target="object"/>
+        <type detected="bytea" target="bytes"/>
+        <type detected="bool" target="bool"/>
+        <type detected="date" target="date"/>
+        <type detected="timestamp" target="datetime"/>
+        <type detected="timestamptz" target="datetime"/>
+        <type detected="uuid" target="str"/>
+        <type detected="_text" target="list"/>
+        <type detected="_varchar" target="list"/>
+        <type detected="refcursor" target="str"/>
+        <type detected="unknown" target="object"/>
+
+    </type-map>

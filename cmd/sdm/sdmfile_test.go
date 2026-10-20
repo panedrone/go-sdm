@@ -15,10 +15,10 @@ func TestGoDals(t *testing.T) {
 		"internal/gorm/sdm/go.dal | gorm\r\n./internal/sqlx/sdm/go.dal\r\n\r\n---\r\n" +
 		"internal/sdm/java.dal\r\nalgo.dal\r\nREADME.md\r\n"
 	want := []string{"go-sdm/go.dal", "internal/gorm/sdm/go.dal", "internal/sqlx/sdm/go.dal"}
-	if got := goDals(text); !slices.Equal(got, want) {
+	if got := dalFiles(text); !slices.Equal(got, want) {
 		t.Errorf("got %q, want %q", got, want)
 	}
-	if got := goDals(""); got != nil {
+	if got := dalFiles(""); got != nil {
 		t.Errorf("empty: %q", got)
 	}
 }

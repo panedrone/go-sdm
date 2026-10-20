@@ -1,5 +1,6 @@
 // Package gen is a generation run for one project: settings.xml and sdm.xml from the sdm folder,
-// metadata from the database <jdbc url>, the result is the texts of DTO and DAO files.
+// metadata from the database <jdbc url>, the result is the texts of DTO and DAO files, in Go or in
+// Python (see LangOf).
 package gen
 
 import (
@@ -18,8 +19,70 @@ import (
 	"github.com/panedrone/go-sdm/internal/meta/mysql"
 	"github.com/panedrone/go-sdm/internal/meta/pg"
 	"github.com/panedrone/go-sdm/internal/meta/sqlite"
+	"github.com/panedrone/go-sdm/internal/pygen"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
+
+// Lang is the target language of a configuration.
+type Lang string
+
+const (
+	Go     Lang = "go"
+	Python Lang = "python"
+)
+
+// RootFile is the root file of the IDE plug-in in the sdm folder: go.dal, python.dal.
+func (l Lang) RootFile() string { return string(l) + ".dal" }
+
+// LangOf is the language of the sdm folder: python.dal there means Python, as in the IDE plug-ins.
+// Without it the folder is Go: go-sdm never needed go.dal.
+func LangOf(sdmDir string) (Lang, error) {
+	py := exists(filepath.Join(sdmDir, Python.RootFile()))
+	if py && exists(filepath.Join(sdmDir, Go.RootFile())) {
+		return "", fmt.Errorf("%s: both go.dal and python.dal, one folder is one language", sdmDir)
+	}
+	if py {
+		return Python, nil
+	}
+	return Go, nil
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// translator is the generator of one language: DTO by class name, DAO by class.
+type translator struct {
+	dto func(className string) (string, error)
+	dao func(dao sdmxml.DaoClass) (string, error)
+}
+
+// newTranslator: the Java plug-in has DTO and DAO as two separate runs with their own JdbcUtils.
+func newTranslator(lang Lang, md meta.Metadata, s *sdmxml.Settings, sdm *sdmxml.Sdm, sqlRoot string) (*translator, error) {
+	if lang == Python {
+		// PythonCG: snake_case for fields and parameters, <dto field-names-mode> is ignored
+		dtoGen, err := pygen.NewDTO(cg.NewCore(md, s, cg.SnakeCase, cg.SnakeCase, sqlRoot), s, sdm)
+		if err != nil {
+			return nil, err
+		}
+		daoGen, err := pygen.NewDAO(cg.NewCore(md, s, cg.SnakeCase, cg.SnakeCase, sqlRoot), s, sdm)
+		if err != nil {
+			return nil, err
+		}
+		return &translator{dto: dtoGen.Translate, dao: daoGen.Translate}, nil
+	}
+	dtoMode := cg.TitleCase // Go naming only, <dto field-names-mode> is ignored
+	dtoGen, err := gogen.NewDTO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
+	if err != nil {
+		return nil, err
+	}
+	daoGen, err := gogen.NewDAO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
+	if err != nil {
+		return nil, err
+	}
+	return &translator{dto: dtoGen.Translate, dao: daoGen.Translate}, nil
+}
 
 type File struct {
 	Class   string
@@ -33,7 +96,7 @@ type Result struct {
 	Dto, Dao       []File
 }
 
-// OpenMetadata opens the database of <go-db url user pwd> (or <jdbc>, for cli/genharness). $PROJECT_DIR$ and ${project_loc} are the project folder,
+// OpenMetadata opens the database of <db url user pwd> (or <jdbc>, for cli/genharness). $PROJECT_DIR$ and ${project_loc} are the project folder,
 // a relative SQLite path is relative to it too.
 func OpenMetadata(projectDir string, j sdmxml.DB) (meta.Metadata, error) {
 	url := strings.NewReplacer("$PROJECT_DIR$", projectDir, "${project_loc}", projectDir).Replace(strings.TrimSpace(j.URL))
@@ -74,6 +137,10 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 		progress = func(int, int, string) {}
 	}
 	md = meta.Cached(md) // the DTO and DAO passes ask for the same tables again and again
+	lang, err := LangOf(sdmDir)
+	if err != nil {
+		return nil, err
+	}
 	s, err := sdmxml.LoadSettings(sdmDir)
 	if err != nil {
 		return nil, err
@@ -83,14 +150,11 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 		return nil, err
 	}
 	res := &Result{}
-	if res.DtoDir, res.DaoDir, err = scopes(s); err != nil {
+	if res.DtoDir, res.DaoDir, err = scopes(lang, s); err != nil {
 		return nil, err
 	}
 	picked := func(name string) bool { return only == nil || only[name] }
-	sqlRoot := projectDir + "/" + s.Folders.SQL
-	dtoMode := cg.TitleCase // Go naming only, <dto field-names-mode> is ignored
-	// the Java plug-in has DTO and DAO as two separate runs with their own JdbcUtils
-	dtoGen, err := gogen.NewDTO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
+	tr, err := newTranslator(lang, md, s, sdm, projectDir+"/"+s.Folders.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -105,27 +169,32 @@ func Run(projectDir, sdmDir string, md meta.Metadata, only map[string]bool, prog
 			continue
 		}
 		progress(len(res.Dto)+1, total, c.Name)
-		f := File{Class: c.Name, Name: fileName(c.Name)}
-		f.Content, f.Err = dtoGen.Translate(c.Name)
+		f := File{Class: c.Name, Name: fileName(lang, c.Name)}
+		f.Content, f.Err = tr.dto(c.Name)
 		res.Dto = append(res.Dto, f)
-	}
-	daoGen, err := gogen.NewDAO(cg.NewCore(md, s, dtoMode, cg.LowerCamelCase, sqlRoot), s, sdm)
-	if err != nil {
-		return nil, err
 	}
 	for _, c := range sdm.DaoClasses {
 		if !picked(c.Name) {
 			continue
 		}
 		progress(len(res.Dto)+len(res.Dao)+1, total, c.Name)
-		f := File{Class: c.Name, Name: fileName(c.Name)}
-		f.Content, f.Err = daoGen.Translate(c)
+		f := File{Class: c.Name, Name: fileName(lang, c.Name)}
+		f.Content, f.Err = tr.dao(c)
 		res.Dao = append(res.Dao, f)
 	}
 	return res, nil
 }
 
-func scopes(s *sdmxml.Settings) (dto, dao string, err error) {
+// scopes are the folders of DTO and DAO, relative to the project. Python has both in <folders target>,
+// "" is the project folder.
+func scopes(lang Lang, s *sdmxml.Settings) (dto, dao string, err error) {
+	if lang == Python {
+		dir := strings.Trim(strings.TrimSpace(strings.ReplaceAll(s.Folders.Target, `\`, "/")), "/")
+		if dir == "" {
+			dir = "."
+		}
+		return dir, dir, nil
+	}
 	dto = strings.TrimSpace(strings.ReplaceAll(s.Dto.Scope, `\`, "/"))
 	dao = strings.TrimSpace(strings.ReplaceAll(s.Dao.Scope, `\`, "/"))
 	if dto == "" || dao == "" {
@@ -206,7 +275,11 @@ func List(projectDir, sdmDir string) ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	dtoDir, daoDir, err := scopes(s)
+	lang, err := LangOf(sdmDir)
+	if err != nil {
+		return nil, err
+	}
+	dtoDir, daoDir, err := scopes(lang, s)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +289,7 @@ func List(projectDir, sdmDir string) ([]Entry, error) {
 		if c.Dao {
 			dir = daoDir
 		}
-		e := Entry{N: i + 1, Class: c, Path: relPath(dir, fileName(c.Name))}
+		e := Entry{N: i + 1, Class: c, Path: relPath(dir, fileName(lang, c.Name))}
 		if fi, err := os.Stat(filepath.Join(projectDir, filepath.FromSlash(e.Path))); err == nil {
 			e.Modified = fi.ModTime()
 		}
@@ -226,9 +299,16 @@ func List(projectDir, sdmDir string) ([]Entry, error) {
 }
 
 func relPath(dir, name string) string {
+	if dir == "." {
+		return name
+	}
 	return strings.TrimSuffix(dir, "/") + "/" + name
 }
 
-func fileName(className string) string {
-	return cg.FileNameSnakeCase(cg.ClassNameWithoutModel(className), "go")
+func fileName(lang Lang, className string) string {
+	ext := "go"
+	if lang == Python {
+		ext = "py"
+	}
+	return cg.FileNameSnakeCase(cg.ClassNameWithoutModel(className), ext)
 }

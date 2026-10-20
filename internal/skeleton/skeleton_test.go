@@ -204,7 +204,7 @@ func TestRefreshDataStore(t *testing.T) {
 	if b, _ := os.ReadFile(ex); string(b) != "package store\n\n// mine\n" {
 		t.Error("data_store_sqlx_ex.go touched")
 	}
-	// -db wins over <go-db url>
+	// -db wins over <db url>
 	if res, err := RefreshDataStore(dir, "go-sdm", "pg"); err != nil || len(res) != 1 || res[0].DB != "pg" || !res[0].Updated {
 		t.Fatalf("-db pg: %v %v", res, err)
 	}

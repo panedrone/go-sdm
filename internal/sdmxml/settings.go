@@ -10,7 +10,8 @@ type Settings struct {
 	Dto     Dto     `xml:"dto"`
 	Dao     Dao     `xml:"dao"`
 	Jdbc    DB      `xml:"jdbc"`  // IDE plug-ins; go-sdm does not read it (cli/genharness does)
-	GoDB    *DB     `xml:"go-db"` // the database of go-sdm
+	DB      *DB     `xml:"db"`    // the database of go-sdm
+	GoDB    *DB     `xml:"go-db"` // the former name of <db>: only for RenamedGoDB
 	TypeMap TypeMap `xml:"type-map"`
 	Macros  []Macro `xml:"macros>macro"`
 	// <ide> is an IDE setting, the CLI does not read it
@@ -34,7 +35,7 @@ type Dao struct {
 	Macro           string `xml:"macro,attr"`
 }
 
-// DB is <go-db> and <jdbc>; <jdbc> needs no jar and class: the driver is built into the binary.
+// DB is <db> and <jdbc>; <jdbc> needs no jar and class: the driver is built into the binary.
 type DB struct {
 	URL  string `xml:"url,attr"`
 	User string `xml:"user,attr"`
@@ -64,6 +65,11 @@ type Macro struct {
 // IsVelocity reports a Velocity macro, which the Go version does not have.
 func (m *Macro) IsVelocity() bool {
 	return m.VM != nil || m.VMXML != nil
+}
+
+// RenamedGoDB is the error of a settings.xml with <go-db>, the former name of <db>.
+func RenamedGoDB(sdmDir string) error {
+	return fmt.Errorf("%s/settings.xml: <go-db> is <db> now, rename the element: <db url=\"...\" user=\"...\" pwd=\"...\"/>", sdmDir)
 }
 
 func LoadSettings(sdmDir string) (*Settings, error) {

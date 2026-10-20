@@ -432,8 +432,9 @@ func TestDbLabel(t *testing.T) {
 	}
 }
 
-// without <go-db>: an error with a hint; go-sdm does not read <jdbc> (settings.xml has it)
-func TestNoGoDB(t *testing.T) {
+// without <db>: an error with a hint; go-sdm does not read <jdbc> (settings.xml has it). <go-db>, the
+// former name of <db>: an error that asks to rename it.
+func TestNoDB(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 	if err := os.WriteFile("go.mod", []byte("module example.com/app\n"), 0o644); err != nil {
@@ -448,19 +449,29 @@ func TestNoGoDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := strings.Replace(string(b), `<go-db url="sqlite:app.sqlite3" user="" pwd=""/>`, "", 1) // only <jdbc> is left
+	const db = `<db url="sqlite:app.sqlite3" user="" pwd=""/>`
+	s := strings.Replace(string(b), db, "", 1) // only <jdbc> is left
 	if s == string(b) {
-		t.Fatal("<go-db> not found in settings.xml")
+		t.Fatal("<db> not found in settings.xml")
 	}
 	if err := os.WriteFile(settings, []byte(s), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	errOut.Reset()
 	if code := run([]string{"generate"}, &out, &errOut); code != 1 ||
-		!strings.Contains(errOut.String(), `has no <go-db>`) ||
-		!strings.Contains(errOut.String(), `<go-db url="mysql://localhost:3306/db" user="root" pwd=""/>`) ||
+		!strings.Contains(errOut.String(), `has no <db>`) ||
+		!strings.Contains(errOut.String(), `<db url="mysql://localhost:3306/db" user="root" pwd=""/>`) ||
 		strings.Contains(strings.ToLower(errOut.String()), "jdbc") {
-		t.Errorf("generate without <go-db>: %d %q", code, errOut.String())
+		t.Errorf("generate without <db>: %d %q", code, errOut.String())
+	}
+	if err := os.WriteFile(settings, []byte(strings.Replace(string(b), db, `<go-db url="sqlite:app.sqlite3"/>`, 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, cmd := range []string{"generate", "ds"} {
+		errOut.Reset()
+		if code := run([]string{cmd}, &out, &errOut); code != 1 || !strings.Contains(errOut.String(), "<go-db> is <db> now, rename the element") {
+			t.Errorf("%s with <go-db>: %d %q", cmd, code, errOut.String())
+		}
 	}
 }
 

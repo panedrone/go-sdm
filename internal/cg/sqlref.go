@@ -2,10 +2,12 @@ package cg
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"unicode/utf16"
 )
 
 // The grammar of 'ref' (SqlUtils.java). The branches and the order of checks are as in Java,
@@ -285,5 +287,61 @@ func FormatJdbcSQLForGo(sql string) string {
 		b.WriteString(line)
 	}
 	b.WriteString("`")
+	return b.String()
+}
+
+// FormatJdbcSQLForPython is the SQL inside """...""" (SqlUtils.jdbc_sql_to_python_string): each line is
+// escaped as by StringEscapeUtils.escapeJava, lines joined by " \n" and 16 spaces.
+func FormatJdbcSQLForPython(sql string) string {
+	var b strings.Builder
+	lines := sqlLines(sql)
+	for i, line := range lines {
+		b.WriteString(strings.ReplaceAll(escapeJava(line), `\/`, "/"))
+		if i < len(lines)-1 {
+			b.WriteString(" \n                ")
+		}
+	}
+	return b.String()
+}
+
+// escapeJava is StringEscapeUtils.escapeJava of commons-lang 2.4 (the one in the Velocity jar of the
+// plug-in): UTF-16 units, the escapes in upper case, '/' escaped too.
+func escapeJava(s string) string {
+	var b strings.Builder
+	for _, ch := range utf16.Encode([]rune(s)) {
+		switch {
+		case ch > 0xfff:
+			fmt.Fprintf(&b, `\u%X`, ch)
+		case ch > 0xff:
+			fmt.Fprintf(&b, `\u0%X`, ch)
+		case ch > 0x7f:
+			fmt.Fprintf(&b, `\u00%X`, ch)
+		case ch < 32:
+			switch {
+			case ch == '\b':
+				b.WriteString(`\b`)
+			case ch == '\n':
+				b.WriteString(`\n`)
+			case ch == '\t':
+				b.WriteString(`\t`)
+			case ch == '\f':
+				b.WriteString(`\f`)
+			case ch == '\r':
+				b.WriteString(`\r`)
+			case ch > 0xf:
+				fmt.Fprintf(&b, `\u00%X`, ch)
+			default:
+				fmt.Fprintf(&b, `\u000%X`, ch)
+			}
+		case ch == '"':
+			b.WriteString(`\"`)
+		case ch == '\\':
+			b.WriteString(`\\`)
+		case ch == '/':
+			b.WriteString(`\/`)
+		default:
+			b.WriteRune(rune(ch))
+		}
+	}
 	return b.String()
 }

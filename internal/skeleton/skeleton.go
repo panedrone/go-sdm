@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/panedrone/go-sdm/datastore"
+	"github.com/panedrone/go-sdm/internal/gen"
 	"github.com/panedrone/go-sdm/internal/sdmxml"
 )
 
@@ -27,19 +28,23 @@ import (
 var files embed.FS
 
 type Options struct {
-	ProjectDir string // the folder of go.mod
-	SdmDir     string // relative to ProjectDir, with '/'
-	DaoDir     string // relative to ProjectDir, with '/'; models go to DaoDir/models
-	ORM        string // data store: datastore.Variants, "" means the first
-	DB         string // type-map and url: pg, mysql, sqlite; "" means pg
+	ProjectDir string   // the folder of go.mod (Python: the project folder)
+	Lang       gen.Lang // "" means Go
+	SdmDir     string   // relative to ProjectDir, with '/'
+	DaoDir     string   // relative to ProjectDir, with '/'; Go models go to DaoDir/models, Python ones to DaoDir
+	ORM        string   // Go data store: datastore.Variants, "" means the first; Python has none
+	DB         string   // type-map and url: pg, mysql, sqlite; "" means pg
 }
+
+// Langs are the values of sdm init -lang, the first is the default.
+var Langs = []string{string(gen.Go), string(gen.Python)}
 
 var xsds = []string{"sdm.xsd", "dao.xsd", "settings.xsd"}
 
 // DBs are the values of sdm init -db, the first is the default.
 var DBs = datastore.DBs
 
-// dbConf holds <go-db> and the plug-in's <jdbc>: one settings.xml for both sdm and the IDE.
+// dbConf holds <db> and the plug-in's <jdbc>: one settings.xml for both sdm and the IDE.
 var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 	"pg": {"PostgreSQL", "postgres://localhost:5432/postgres", "postgres",
 		"postgresql-42.7.3.jar", "org.postgresql.Driver", "jdbc:postgresql://localhost:5432/postgres"},
@@ -51,6 +56,9 @@ var dbConf = map[string]struct{ name, url, user, jar, class, jdbcURL string }{
 
 // Init creates the configuration and the data store. It returns the created files.
 func Init(o Options) ([]string, error) {
+	if o.Lang == gen.Python {
+		return initPython(o)
+	}
 	module, err := readModule(filepath.Join(o.ProjectDir, "go.mod"))
 	if err != nil {
 		return nil, err
@@ -99,8 +107,6 @@ func Init(o Options) ([]string, error) {
 	)
 	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))
 	daoDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.DaoDir))
-	// src is a skeleton file, text is ready text (data store)
-	type step struct{ src, text, dst string }
 	steps := []step{
 		{src: "sdm.xml", dst: filepath.Join(sdmDir, "sdm.xml")},
 		{src: "settings.xml", dst: filepath.Join(sdmDir, "settings.xml")},
@@ -111,6 +117,79 @@ func Init(o Options) ([]string, error) {
 	for _, x := range xsds {
 		steps = append(steps, step{src: x, dst: filepath.Join(sdmDir, x)})
 	}
+	return write(steps, vars, sdmDir, daoDir)
+}
+
+// initPython is Init of a Python project: no go.mod, the models and DAO in one package DaoDir, the data
+// store without ORM, python.dal: the folder is Python for sdm and for the IDE plug-in.
+func initPython(o Options) ([]string, error) {
+	if o.ORM != "" {
+		return nil, errors.New("Python has no ORM in go-sdm: no -orm")
+	}
+	for _, p := range strings.Split(o.DaoDir, "/") {
+		if !isPythonIdentifier(p) {
+			return nil, fmt.Errorf("each element of the DAO folder must be a Python package name: %q", o.DaoDir)
+		}
+	}
+	db := o.DB
+	if db == "" {
+		db = DBs[0]
+	}
+	dc, ok := dbConf[db]
+	if !ok {
+		return nil, fmt.Errorf("unknown database %q, expected one of: %s", db, strings.Join(DBs, ", "))
+	}
+	ds, err := datastore.PythonText(db)
+	if err != nil {
+		return nil, err
+	}
+	tm, err := files.ReadFile("files/typemap_python_" + db + ".xml")
+	if err != nil {
+		return nil, err
+	}
+	vars := strings.NewReplacer(
+		"{{sql}}", path.Join(o.SdmDir, "sql"),
+		"{{dao}}", o.DaoDir,
+		"{{db}}", dc.name,
+		"{{driver}}", pyDrivers[db],
+		"{{url}}", dc.url,
+		"{{user}}", dc.user,
+		"{{jdbc-jar}}", dc.jar,
+		"{{jdbc-class}}", dc.class,
+		"{{jdbc-url}}", dc.jdbcURL,
+		"{{type-map}}", strings.TrimRight(string(tm), "\r\n"),
+	)
+	sdmDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.SdmDir))
+	daoDir := filepath.Join(o.ProjectDir, filepath.FromSlash(o.DaoDir))
+	steps := []step{
+		{src: "sdm.xml", dst: filepath.Join(sdmDir, "sdm.xml")},
+		{src: "settings_python.xml", dst: filepath.Join(sdmDir, "settings.xml")},
+		{dst: filepath.Join(sdmDir, gen.Python.RootFile())}, // empty, as the plug-in makes it
+		{text: ds, dst: filepath.Join(daoDir, datastore.PythonFile)},
+	}
+	for _, x := range xsds {
+		steps = append(steps, step{src: x, dst: filepath.Join(sdmDir, x)})
+	}
+	return write(steps, vars, sdmDir, daoDir)
+}
+
+// pyDrivers are the drivers the Python type map describes.
+var pyDrivers = map[string]string{"pg": "psycopg2, psycopg", "mysql": "mysql-connector-python", "sqlite": "sqlite3"}
+
+func isPythonIdentifier(s string) bool {
+	for i, r := range s {
+		if !(r == '_' || 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || i > 0 && '0' <= r && r <= '9') {
+			return false
+		}
+	}
+	return s != ""
+}
+
+// step is a file of Init: src is a skeleton file (with vars), text is ready text (data store).
+type step struct{ src, text, dst string }
+
+// write creates the files of steps and the folders sdmDir/sql and daoDir: either everything, or nothing.
+func write(steps []step, vars *strings.Replacer, sdmDir, daoDir string) ([]string, error) {
 	// check everything first: either everything is created, or nothing
 	var existing []string
 	for _, s := range steps {
@@ -169,7 +248,7 @@ func RefreshXSD(projectDir, sdmDir string) ([]string, error) {
 }
 
 // DataStoreFile is a data store found by RefreshDataStore: ORM by its name data_store_<orm>.go, DB by
-// <go-db url> (or -db).
+// <db url> (or -db).
 type DataStoreFile struct {
 	Path    string
 	ORM, DB string
@@ -178,21 +257,31 @@ type DataStoreFile struct {
 
 // RefreshDataStore rewrites data_store_<orm>.go in the DAO folder of settings.xml with the one of this
 // sdm version, for each data store found there. data_store_<orm>_ex.go (connection) is yours, it is not
-// touched. db "" means the database of <go-db url>. It returns the data stores found; the matching ones
-// are not touched.
+// touched. db "" means the database of <db url>. It returns the data stores found; the matching ones
+// are not touched. Python: data_store_no_orm.py in <folders target>.
 func RefreshDataStore(projectDir, sdmDir, db string) ([]DataStoreFile, error) {
 	dir := filepath.Join(projectDir, filepath.FromSlash(sdmDir))
+	lang, err := gen.LangOf(dir)
+	if err != nil {
+		return nil, err
+	}
 	s, err := sdmxml.LoadSettings(dir)
 	if err != nil {
 		return nil, err
 	}
 	if db == "" {
-		if s.GoDB == nil {
-			return nil, fmt.Errorf("%s/settings.xml: no <go-db url>, the database is unknown (-db %s)", sdmDir, strings.Join(DBs, "|"))
+		if s.DB == nil && s.GoDB != nil {
+			return nil, sdmxml.RenamedGoDB(sdmDir)
 		}
-		if db, err = dbOf(s.GoDB.URL); err != nil {
+		if s.DB == nil {
+			return nil, fmt.Errorf("%s/settings.xml: no <db url>, the database is unknown (-db %s)", sdmDir, strings.Join(DBs, "|"))
+		}
+		if db, err = dbOf(s.DB.URL); err != nil {
 			return nil, err
 		}
+	}
+	if lang == gen.Python {
+		return refreshPython(filepath.Join(projectDir, filepath.FromSlash(s.Folders.Target)), db)
 	}
 	daoDir := filepath.Join(projectDir, filepath.FromSlash(s.Dao.Scope))
 	var res []DataStoreFile
@@ -231,7 +320,30 @@ func RefreshDataStore(projectDir, sdmDir, db string) ([]DataStoreFile, error) {
 	return res, nil
 }
 
-// dbOf maps <go-db url> to pg, mysql or sqlite.
+func refreshPython(daoDir, db string) ([]DataStoreFile, error) {
+	dst := filepath.Join(daoDir, datastore.PythonFile)
+	got, err := os.ReadFile(dst)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("no %s in %s (sdm init -lang python creates it)", datastore.PythonFile, daoDir)
+	}
+	if err != nil {
+		return nil, err
+	}
+	want, err := datastore.PythonText(db)
+	if err != nil {
+		return nil, err
+	}
+	f := DataStoreFile{Path: dst, ORM: datastore.Variants[0], DB: db}
+	if strings.ReplaceAll(string(got), "\r\n", "\n") != want {
+		if err := os.WriteFile(dst, []byte(want), 0o644); err != nil {
+			return nil, err
+		}
+		f.Updated = true
+	}
+	return []DataStoreFile{f}, nil
+}
+
+// dbOf maps <db url> to pg, mysql or sqlite.
 func dbOf(url string) (string, error) {
 	u := strings.TrimPrefix(strings.TrimSpace(url), "jdbc:")
 	switch {
@@ -242,7 +354,7 @@ func dbOf(url string) (string, error) {
 	case strings.HasPrefix(u, "postgres:"), strings.HasPrefix(u, "postgresql:"):
 		return "pg", nil
 	}
-	return "", fmt.Errorf("the database of <go-db url=%q> is unknown (-db %s)", url, strings.Join(DBs, "|"))
+	return "", fmt.Errorf("the database of <db url=%q> is unknown (-db %s)", url, strings.Join(DBs, "|"))
 }
 
 // packageName is the package clause of a Go file: the data store keeps the package of the DAO folder.

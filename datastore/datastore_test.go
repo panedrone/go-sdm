@@ -78,3 +78,51 @@ func TestSpecific(t *testing.T) {
 		}
 	}
 }
+
+// The Python variants in datastore/python/<db>/ are exactly what is built from the template (go run ./cli/dsgen).
+func TestPythonVariantsUpToDate(t *testing.T) {
+	for _, db := range DBs {
+		want, err := GeneratePython(db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := PythonText(db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != string(want) {
+			t.Errorf("python/%s/%s is out of date: go run ./cli/dsgen", db, PythonFile)
+		}
+		if strings.Contains(got, "{{") || strings.Contains(got, "#sdm:") {
+			t.Errorf("python/%s/%s: a variable or a marker is left", db, PythonFile)
+		}
+	}
+}
+
+// Each Python variant has only what its database can do.
+func TestPythonSpecific(t *testing.T) {
+	cases := []struct {
+		db          string
+		has, hasNot []string
+	}{
+		{"pg", []string{"transaction_status", "RETURNING", "class OutParam", "replace('?', '%s')", "_get_sp_name"}, []string{"lastrowid", "callproc"}},
+		{"mysql", []string{"bool(self.conn.in_transaction)", "lastrowid", "class OutParam", "callproc", "stored_results", "replace('?', '%s')"}, []string{"RETURNING"}},
+		{"sqlite", []string{"return self.conn.in_transaction", "lastrowid", "execute('begin')"}, []string{"RETURNING", "OutParam", "callproc", "_get_sp_name", "%s"}},
+	}
+	for _, c := range cases {
+		text, err := PythonText(c.db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range c.has {
+			if !strings.Contains(text, s) {
+				t.Errorf("%s: %q expected", c.db, s)
+			}
+		}
+		for _, s := range c.hasNot {
+			if strings.Contains(text, s) {
+				t.Errorf("%s: %q not expected", c.db, s)
+			}
+		}
+	}
+}

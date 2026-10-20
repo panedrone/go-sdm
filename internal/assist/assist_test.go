@@ -56,7 +56,7 @@ func TestDtoClasses(t *testing.T) {
 }
 
 func TestDaoClasses(t *testing.T) {
-	got, err := DaoClasses(shop, "gorm", map[string]bool{"Category": true}, map[string]bool{"OrdersDao": true})
+	got, err := DaoClasses(shop, "gorm", false, map[string]bool{"Category": true}, map[string]bool{"OrdersDao": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,6 +67,23 @@ func TestDaoClasses(t *testing.T) {
 </dao-class>
 <dao-class name="VSalesDao">
     <crud dto="gorm-VSale" table="v_sales"/>
+</dao-class>
+`
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// Python: the FK access in snake_case, the DTO classes without a model.
+func TestDaoClassesPython(t *testing.T) {
+	got, err := DaoClasses(shop, "", true, map[string]bool{"Category": true}, map[string]bool{"OrdersDao": true, "VSalesDao": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `<dao-class name="OrderItemsDao">
+    <crud dto="OrderItem" table="order_items"/>
+    <query-dto-list dto="OrderItem" method="get_order_items_by_order(order_id)" ref="order_items(order_id)"/>
+    <query-dto-list dto="OrderItem" method="get_order_items_by_product(product_id, alt_product_id)" ref="order_items(product_id, alt_product_id)"/>
 </dao-class>
 `
 	if got != want {

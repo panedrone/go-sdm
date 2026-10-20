@@ -10,6 +10,10 @@
 //
 // templates/data_store_no_orm.go.txt comes from src/resources/data_store_no_orm.go of sdm-plugins
 // (without Oracle and SQL Server).
+//
+// Python has no ORM: one variant per database, python/<db>/data_store_no_orm.py, from
+// templates/data_store_no_orm.py.txt (src/resources/data_store_no_orm.py of sdm-plugins) with the markers
+// "#sdm:if", "#sdm:else", "#sdm:end".
 package datastore
 
 import (
@@ -20,7 +24,7 @@ import (
 	"strings"
 )
 
-//go:embed templates/*.go.txt pg/*/*.go mysql/*/*.go sqlite/*/*.go
+//go:embed templates/*.go.txt templates/*.py.txt pg/*/*.go mysql/*/*.go sqlite/*/*.go python/*/*.py
 var fs embed.FS
 
 // Variants are the values of sdm init -orm, the first is the default.
@@ -90,7 +94,7 @@ func Generate(variant, db string) (map[string][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		text, err := specialize(string(tmpl), db)
+		text, err := specialize(string(tmpl), db, "//")
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", name, err)
 		}
@@ -104,7 +108,9 @@ func Generate(variant, db string) (map[string][]byte, error) {
 }
 
 // specialize keeps the lines of "//sdm:if ..." blocks for db and removes the markers. Blocks nest.
-func specialize(tmpl, db string) (string, error) {
+// comment is the comment of the language: "//" for Go, "#" for Python.
+func specialize(tmpl, db, comment string) (string, error) {
+	ifMark, elseMark, endMark := comment+"sdm:if ", comment+"sdm:else", comment+"sdm:end"
 	var out strings.Builder
 	var stack []bool // for each open block: whether its lines are for db
 	keep := func() bool {
@@ -121,9 +127,9 @@ func specialize(tmpl, db string) (string, error) {
 		line := strings.TrimSuffix(sc.Text(), string(rune(13))) // CRLF
 		t := strings.TrimSpace(line)
 		switch {
-		case strings.HasPrefix(t, "//sdm:if "):
+		case strings.HasPrefix(t, ifMark):
 			match := false
-			for _, d := range strings.Fields(strings.TrimPrefix(t, "//sdm:if ")) {
+			for _, d := range strings.Fields(strings.TrimPrefix(t, ifMark)) {
 				if _, ok := dbNames[d]; !ok {
 					return "", fmt.Errorf("line %d: unknown database %q", n, d)
 				}
@@ -131,15 +137,15 @@ func specialize(tmpl, db string) (string, error) {
 			}
 			stack = append(stack, match)
 			continue
-		case t == "//sdm:else":
+		case t == elseMark:
 			if len(stack) == 0 {
-				return "", fmt.Errorf("line %d: //sdm:else without //sdm:if", n)
+				return "", fmt.Errorf("line %d: %s without %s", n, elseMark, strings.TrimSpace(ifMark))
 			}
 			stack[len(stack)-1] = !stack[len(stack)-1]
 			continue
-		case t == "//sdm:end":
+		case t == endMark:
 			if len(stack) == 0 {
-				return "", fmt.Errorf("line %d: //sdm:end without //sdm:if", n)
+				return "", fmt.Errorf("line %d: %s without %s", n, endMark, strings.TrimSpace(ifMark))
 			}
 			stack = stack[:len(stack)-1]
 			continue
@@ -150,7 +156,57 @@ func specialize(tmpl, db string) (string, error) {
 		}
 	}
 	if len(stack) > 0 {
-		return "", fmt.Errorf("//sdm:if without //sdm:end")
+		return "", fmt.Errorf("%s without %s", strings.TrimSpace(ifMark), endMark)
 	}
 	return out.String(), sc.Err()
+}
+
+// Python ----------------------------------------------------------
+
+// PythonFile is the data store of a Python DAO folder: no ORM, one file, no "_ex".
+const PythonFile = "data_store_no_orm.py"
+
+// pyVars are what the template of the Python data store says about each database.
+var pyVars = map[string][]string{
+	"pg": {"{{driver}}", "psycopg2 or psycopg", "{{import}}", "psycopg2",
+		"{{connect}}", "psycopg2.connect(host='localhost', dbname='postgres', user='postgres', password='')",
+		"{{out_param_note}}", " and OutParam",
+		"{{exec_dml_params}}", "; OutParam for OUT and INOUT of a procedure"},
+	"mysql": {"{{driver}}", "mysql-connector-python", "{{import}}", "mysql.connector",
+		"{{connect}}", "mysql.connector.connect(host='localhost', database='mysql', user='root', password='')",
+		"{{out_param_note}}", " and OutParam",
+		"{{exec_dml_params}}", "; OutParam for OUT and INOUT of a procedure, a list of callbacks for its result sets"},
+	"sqlite": {"{{driver}}", "sqlite3", "{{import}}", "sqlite3",
+		"{{connect}}", "sqlite3.connect('app.sqlite3')",
+		"{{out_param_note}}", "",
+		"{{exec_dml_params}}", ""},
+}
+
+// PythonText is the Python data store of db as it goes to the DAO folder, with LF.
+func PythonText(db string) (string, error) {
+	if err := check(Variants[0], db); err != nil {
+		return "", err
+	}
+	data, err := fs.ReadFile("python/" + db + "/" + PythonFile)
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(string(data), "\r\n", "\n"), nil
+}
+
+// GeneratePython returns the Python data store of db from its template.
+func GeneratePython(db string) ([]byte, error) {
+	if err := check(Variants[0], db); err != nil {
+		return nil, err
+	}
+	tmpl, err := fs.ReadFile("templates/" + PythonFile + ".txt")
+	if err != nil {
+		return nil, err
+	}
+	text, err := specialize(string(tmpl), db, "#")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", PythonFile, err)
+	}
+	vars := append([]string{"{{db}}", db, "{{DB}}", dbNames[db]}, pyVars[db]...)
+	return []byte(strings.NewReplacer(vars...).Replace(text)), nil
 }

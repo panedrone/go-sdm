@@ -15,7 +15,11 @@ import (
 // with what the Java plug-in generated on the same projects (sdm-plugins/harness, HarnessMain).
 //
 // The reference is retaken in sdm-plugins: harness with these projects, then the output
-// build/<out>/<label>/ is copied to testdata/golden/<label>/.
+// build/<out>/<label>/ is copied to testdata/golden/<label>/. The templates of sdm-plugins are LF
+// (.gitattributes there), as is the output of go-sdm.
+//
+// task_board/refcursors_python and task_board/python_branches are the plug-in project of
+// qt6_sqlite3_task_board with this XML (the sdm folder of the Java harness is an absolute path to them).
 var goldenCases = []struct {
 	label, project, sdm string
 }{
@@ -26,6 +30,10 @@ var goldenCases = []struct {
 	{"go_log_gorm", "log", "gorm/sdm"},
 	{"go_log_sqlx", "log", "sqlx/sdm"},
 	{"refcursors_go", "task_board", "refcursors"},
+	{"python_thesaurus", "thesaurus", "sdm"},
+	{"python_no_orm", "todolist", "sdm"},
+	{"refcursors_python", "task_board", "refcursors_python"},
+	{"python_branches", "task_board", "python_branches"},
 }
 
 func TestGolden(t *testing.T) {
@@ -102,7 +110,7 @@ func expect(t *testing.T, path, got string) {
 		t.Error(err)
 		return
 	}
-	want := string(b)
+	want := strings.ReplaceAll(string(b), "\r\n", "\n") // a checkout with core.autocrlf=true has CRLF
 	if got == want {
 		return
 	}

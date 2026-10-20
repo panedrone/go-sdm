@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:noNamespaceSchemaLocation="sdm.xsd">
+
+    <dto-class name="Project" ref="projects"/>
+
+    <dto-class name="ProjectLi" ref="get_projects.sql"/>
+
+    <dto-class name="Task" ref="tasks"/>
+
+    <dto-class name="TaskLi" ref="get_project_tasks.sql"/>
+
+    <dao-class name="ProjectsDao">
+        <crud dto="Project"/>
+        <query-dto-list dto="ProjectLi" method="get_projects"/>
+    </dao-class>
+
+    <dao-class name="TasksDao">
+        <crud dto="Task"/>
+        <query-dto-list dto="TaskLi" method="get_project_tasks(p_id)"/>
+    </dao-class>
+
+</sdm>

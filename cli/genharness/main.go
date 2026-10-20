@@ -81,9 +81,13 @@ func runProject(label, projectDir, sdmFolder, out string) error {
 	if err != nil {
 		return err
 	}
+	lang, err := gen.LangOf(sdmDir)
+	if err != nil {
+		return err
+	}
 	errors := write(filepath.Join(out, "dto"), res.DtoDir, res.Dto)
 	errors += write(filepath.Join(out, "dao"), res.DaoDir, res.Dao)
-	fmt.Printf("%s: go.dal, errors: %d\n", label, errors)
+	fmt.Printf("%s: %s, errors: %d\n", label, lang.RootFile(), errors)
 	return nil
 }
 

@@ -1,0 +1,42 @@
+    <type-map default="">
+
+        <type detected="INTEGER" target="int"/>
+        <type detected="INT" target="int"/>
+        <type detected="BIGINT" target="int"/>
+        <type detected="SMALLINT" target="int"/>
+        <type detected="TINYINT" target="int"/>
+        <type detected="MEDIUMINT" target="int"/>
+        <type detected="UNSIGNED BIG INT" target="int"/>
+        <type detected="INT2" target="int"/>
+        <type detected="INT8" target="int"/>
+        <type detected="STRING" target="str"/>
+        <type detected="VARYING CHARACTER" target="str"/>
+        <type detected="NATIVE CHARACTER" target="str"/>
+        <type detected="REAL" target="float"/>
+        <type detected="DOUBLE" target="float"/>
+        <type detected="FLOAT" target="float"/>
+        <type detected="NUMERIC" target="float"/>
+        <type detected="DECIMAL" target="float"/>
+        <type detected="TEXT" target="str"/>
+        <type detected="VARCHAR" target="str"/>
+        <type detected="CHAR" target="str"/>
+        <type detected="CHARACTER" target="str"/>
+        <type detected="NVARCHAR" target="str"/>
+        <type detected="NCHAR" target="str"/>
+        <type detected="CLOB" target="str"/>
+        <type detected="BLOB" target="bytes"/>
+        <type detected="DOUBLE PRECISION" target="float"/>
+        <type detected="MONEY" target="float"/>
+        <type detected="NTEXT" target="str"/>
+        <type detected="BINARY" target="bytes"/>
+        <type detected="VARBINARY" target="bytes"/>
+        <type detected="IMAGE" target="bytes"/>
+        <type detected="BIT" target="int"/>
+
+        <type detected="BOOLEAN" target="int"/>
+        <type detected="DATE" target="str"/>
+        <type detected="DATETIME" target="str"/>
+        <type detected="TIMESTAMP" target="str"/>
+        <type detected="unknown" target="object"/>
+
+    </type-map>

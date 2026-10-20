@@ -18,9 +18,9 @@ It works like the [SQL DAL Maker IDE plug-ins](https://sqldalmaker.sourceforge.n
 <dto-class name="Test" ref="tests"/>
 
 <dao-class name="TestsDao">
-    <crud dto="Test"/>
-    <query-dto-list dto="Test" method="GetTestsByRating(t_rating)" ref="tests_by_rating.sql"/>
-    <exec-dml method="SetTestRating(t_id, t_rating)" ref="call set_test_rating(?, ?)"/>
+<crud dto="Test"/>
+<query-dto-list dto="Test" method="GetTestsByRating(t_rating)" ref="tests_by_rating.sql"/>
+<exec-dml method="SetTestRating(t_id, t_rating)" ref="call set_test_rating(?, ?)"/>
 </dao-class>
 ```
 
@@ -90,15 +90,15 @@ Describe classes in `go-sdm/sdm.xml`, set `<db url>` in `go-sdm/settings.xml` an
 `sdm gen`: it generates models and DAO. It also keeps the XSD in step with the version of `sdm`.
 `sdm` without a command only prints the usage.
 
-| command                    |                                                                                       |
-|----------------------------|---------------------------------------------------------------------------------------|
-| `sdm init`                 | creates the files above; if any of them exists, it is an error and nothing is written |
-| `sdm generate`, `sdm gen`  | generates into the folders of `settings.xml`, writes only what changed                |
-| `sdm validate`, `sdm val`  | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate   |
-| `sdm list`, `sdm ls`       | the classes of `sdm.xml`, numbered in the order of declaration                        |
-| `sdm xml`                  | the starting XML from the database schema, to the console                             |
-| `sdm datastore`, `sdm ds`  | updates the data store of the DAO folder to this version of `sdm`                     |
-| `sdm version`, `-v`        | the version (also `--version`)                                                        |
+| command                   |                                                                                       |
+|---------------------------|---------------------------------------------------------------------------------------|
+| `sdm init`                | creates the files above; if any of them exists, it is an error and nothing is written |
+| `sdm generate`, `sdm gen` | generates into the folders of `settings.xml`, writes only what changed                |
+| `sdm validate`, `sdm val` | for CI: exit 1 if somebody changed the XML or the database and forgot to regenerate   |
+| `sdm list`, `sdm ls`      | the classes of `sdm.xml`, numbered in the order of declaration                        |
+| `sdm xml`                 | the starting XML from the database schema, to the console                             |
+| `sdm datastore`, `sdm ds` | updates the data store of the DAO folder to this version of `sdm`                     |
+| `sdm version`, `-v`       | the version (also `--version`)                                                        |
 
 `ls` prints one line, `ls -l` a table with the generated files and their dates:
 
@@ -180,19 +180,19 @@ All of them are required, `init` has no defaults:
 sdm init -dir sdm -dao internal/dbal -orm gorm -db pg
 ```
 
-| option                    |                                                                                                    |
-|---------------------------|----------------------------------------------------------------------------------------------------|
-| `-dir <folder>`           | the folder of `sdm.xml` and `settings.xml`, relative to `go.mod`; its line in `.sdm`: `<folder>/go.dal` |
-| `-dao <folder>`           | the folder of the DAO, models go to `<folder>/models`; the last element is the Go package name     |
+| option                    |                                                                                                               |
+|---------------------------|---------------------------------------------------------------------------------------------------------------|
+| `-dir <folder>`           | the folder of `sdm.xml` and `settings.xml`, relative to `go.mod`; its line in `.sdm`: `<folder>/go.dal`       |
+| `-dao <folder>`           | the folder of the DAO, models go to `<folder>/models`; the last element is the Go package name                |
 | `-orm no_orm\|sqlx\|gorm` | database/sql, sqlx or gorm: the data store; `field-assign-mode="0"` for `no_orm`, `"3"` for `sqlx` and `gorm` |
-| `-db pg\|mysql\|sqlite`   | the database: type map and url in `settings.xml`, the data store for it                            |
+| `-db pg\|mysql\|sqlite`   | the database: type map and url in `settings.xml`, the data store for it                                       |
 
 Options of the other commands:
 
-| option                    | default         |                                                                                     |
-|---------------------------|-----------------|-------------------------------------------------------------------------------------|
-| `-dir <folder>`           | `go-sdm`        | the folder of `sdm.xml` and `settings.xml`                                          |
-| `-c N\|all`               | from `.sdm`     | the configuration N of `.sdm`, or each of them, instead of `-dir`                   |
+| option          | default     |                                                                   |
+|-----------------|-------------|-------------------------------------------------------------------|
+| `-dir <folder>` | `go-sdm`    | the folder of `sdm.xml` and `settings.xml`                        |
+| `-c N\|all`     | from `.sdm` | the configuration N of `.sdm`, or each of them, instead of `-dir` |
 
 `SDM_PWD`, if set, overrides `pwd` of `settings.xml`.
 
@@ -290,7 +290,8 @@ rewrites `data_store_<orm>.go` in the DAO folder of `settings.xml` with the one 
 data store found there, for the database of `<db url>` (or `-db pg|mysql|sqlite`), with the package
 of the file. `_ex` is never touched. `data_store_<orm>.go` is rewritten as a whole: if you changed it,
 look at the diff and bring your changes back. Regenerate the DAO along with it (`sdm gen`): the
-generated code and the adapter change together. It prints which one it took and why: the ORM by the file name, the database
+generated code and the adapter change together. It prints which one it took and why: the ORM by the file name, the
+database
 by `<db url>` (or `-db`):
 
 ```
@@ -391,12 +392,12 @@ where you like. Each database has its own data store, with only what it can do, 
 [`datastore/templates/data_store_no_orm.py.txt`](datastore/templates/data_store_no_orm.py.txt) by
 `go run ./cli/dsgen`:
 
-|                         | PostgreSQL                                   | MySQL                                          | SQLite                                           |
-|-------------------------|----------------------------------------------|------------------------------------------------|--------------------------------------------------|
-| file                    | [python/pg](datastore/python/pg)             | [python/mysql](datastore/python/mysql)         | [python/sqlite](datastore/python/sqlite)         |
-| generated keys          | `RETURNING`                                  | `lastrowid`                                    | `lastrowid`                                      |
-| parameters              | `?` -> `%s`                                  | `?` -> `%s`                                    | `?`                                              |
-| procedures              | `call`, OUT and INOUT by `OutParam`          | `callproc`: result sets, OUT and INOUT         | —                                                |
+|                | PostgreSQL                          | MySQL                                  | SQLite                                   |
+|----------------|-------------------------------------|----------------------------------------|------------------------------------------|
+| file           | [python/pg](datastore/python/pg)    | [python/mysql](datastore/python/mysql) | [python/sqlite](datastore/python/sqlite) |
+| generated keys | `RETURNING`                         | `lastrowid`                            | `lastrowid`                              |
+| parameters     | `?` -> `%s`                         | `?` -> `%s`                            | `?`                                      |
+| procedures     | `call`, OUT and INOUT by `OutParam` | `callproc`: result sets, OUT and INOUT | —                                        |
 
 `sdm ds` rewrites `data_store_no_orm.py` as a whole: if you changed it, look at the diff and bring
 your changes back.
